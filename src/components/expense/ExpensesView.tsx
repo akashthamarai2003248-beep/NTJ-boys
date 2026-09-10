@@ -306,7 +306,7 @@ export function ExpensesView() {
         </AnimatePresence>
       </div>
 
-      <div className="card-surface overflow-hidden rounded-2xl">
+      <div className="card-surface rounded-2xl">
         {loading && !data ? (
           <div className="space-y-2 p-4">
             {[0, 1, 2, 3, 4].map((i) => (

@@ -254,7 +254,7 @@ export function CollectionsView() {
           </button>
         </div>
 
-        {/* Quick Category & Payment Chips */}
+        {/* Quick Category Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
@@ -293,26 +293,6 @@ export function CollectionsView() {
             👥 மன்றம் வசூல்
           </button>
 
-          <span className="h-4 w-px bg-line shrink-0 mx-0.5" />
-
-          {PAYMENT_CHOICES.map((m) => {
-            const active = payment === m.value;
-            return (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => { setPayment(active ? "" : m.value); setPage(1); }}
-                className={cn(
-                  "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-medium transition-colors",
-                  active
-                    ? "bg-navy-800 text-white dark:bg-saffron-500 dark:text-ink"
-                    : "border border-line bg-surface-2/50 text-muted hover:text-ink"
-                )}
-              >
-                {m.label}
-              </button>
-            );
-          })}
           {hasFilters && (
             <button
               type="button"
@@ -334,13 +314,22 @@ export function CollectionsView() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
+              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Event</label>
                   <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
                     <option value="">All events</option>
                     {events.map((ev) => (
                       <option key={ev.id} value={ev.id}>{ev.name}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Payment</label>
+                  <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                    <option value="">All payments</option>
+                    {PAYMENT_CHOICES.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
                     ))}
                   </Select>
                 </div>
@@ -367,7 +356,7 @@ export function CollectionsView() {
       </div>
 
       {/* results */}
-      <div className="card-surface overflow-hidden rounded-2xl">
+      <div className="card-surface rounded-2xl">
         {loading && !data ? (
           <div className="space-y-2 p-4">
             {[0, 1, 2, 3, 4].map((i) => (
