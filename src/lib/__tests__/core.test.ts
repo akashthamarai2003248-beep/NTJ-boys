@@ -4,7 +4,7 @@ import { formatShort, timeAgo } from "@/lib/utils/date";
 import { initials, normalizeName, normalizePhone } from "@/lib/utils/id";
 import { buildSeed } from "@/lib/data/seed";
 import { DEMO_TOTALS } from "@/lib/data/seed";
-import { applyRegister, buildReports, gameModeOf, listGames, publicOverview, resolvePodium } from "@/lib/data/repository";
+import { applyRegister, buildReports, gameModeOf, listGames, publicOverview, queryCollections, queryExpenses, resolvePodium } from "@/lib/data/repository";
 import { freshDB } from "@/lib/data/store";
 import { GAME_KINDS } from "@/lib/data/types";
 
@@ -215,5 +215,31 @@ describe("reports & public overview", () => {
     expect(json).not.toContain("phone");
     expect(json).not.toContain("984");
     expect(json).not.toContain("notes");
+  });
+});
+
+describe("queryExpenses and queryCollections filtering", () => {
+  const db = buildSeed(new Date(2026, 8, 5, 12));
+
+  it("filters expenses by payment method", () => {
+    const upiExpenses = queryExpenses(db, { payment: "upi" });
+    expect(upiExpenses.total).toBeGreaterThan(0);
+    for (const item of upiExpenses.items) {
+      expect(item.paymentMethod).toBe("upi");
+    }
+
+    const cashExpenses = queryExpenses(db, { payment: "cash" });
+    expect(cashExpenses.total).toBeGreaterThan(0);
+    for (const item of cashExpenses.items) {
+      expect(item.paymentMethod).toBe("cash");
+    }
+  });
+
+  it("filters collections by payment method", () => {
+    const upiCollections = queryCollections(db, { payment: "upi" });
+    expect(upiCollections.total).toBeGreaterThan(0);
+    for (const item of upiCollections.items) {
+      expect(item.paymentMethod).toBe("upi");
+    }
   });
 });

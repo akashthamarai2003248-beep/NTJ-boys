@@ -21,7 +21,6 @@ import {
 } from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -50,9 +49,6 @@ export function ExpensesView() {
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
   const [payment, setPayment] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -66,8 +62,8 @@ export function ExpensesView() {
   const [celebrate, setCelebrate] = useState<{ title: string; subtitle?: string; amount?: string } | null>(null);
 
   const url = useMemo(
-    () => `/api/expenses${qs({ q: debouncedQ, eventId, payment, from, to, sort, page, perPage: PER_PAGE })}`,
-    [debouncedQ, eventId, payment, from, to, sort, page],
+    () => `/api/expenses${qs({ q: debouncedQ, eventId, payment, page, perPage: PER_PAGE })}`,
+    [debouncedQ, eventId, payment, page],
   );
   const { data, loading, reload } = useFetch<ExpensePage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
@@ -79,7 +75,7 @@ export function ExpensesView() {
     },
     [events, lang, t],
   );
-  const hasFilters = Boolean(q || eventId || payment || from || to);
+  const hasFilters = Boolean(q || eventId || payment);
 
   useEffect(() => {
     if (searchParams.get("add") === "1") router.replace("/expenses", { scroll: false });
@@ -91,7 +87,7 @@ export function ExpensesView() {
     return () => clearTimeout(t);
   }, [celebrate]);
 
-  const clearFilters = () => { setQ(""); setEventId(""); setPayment(""); setFrom(""); setTo(""); setPage(1); };
+  const clearFilters = () => { setQ(""); setEventId(""); setPayment(""); setPage(1); };
 
   const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
   const openEdit = (rec: Expense) => { setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
@@ -210,16 +206,16 @@ export function ExpensesView() {
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
               "flex h-10.5 items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-bold transition-all shrink-0",
-              showFilters || (eventId || payment || from || to || sort !== "newest")
+              showFilters || (eventId || payment)
                 ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
             )}
           >
             <SlidersHorizontal className="size-3.5" />
             <span className="hidden sm:inline">{t("Filters", "வடிகட்டி")}</span>
-            {(eventId ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0) > 0 && (
+            {(eventId ? 1 : 0) + (payment ? 1 : 0) > 0 && (
               <span className="flex size-4.5 items-center justify-center rounded-full bg-saffron-500 text-[10px] font-black text-white">
-                {(eventId ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0)}
+                {(eventId ? 1 : 0) + (payment ? 1 : 0)}
               </span>
             )}
           </button>
@@ -278,7 +274,7 @@ export function ExpensesView() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
+              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
                   <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
@@ -292,23 +288,6 @@ export function ExpensesView() {
                     <option value="">{t("All payments", "அனைத்து முறைகள்")}</option>
                     {PAYMENT_CHOICES.map((m) => <option key={m.value} value={m.value}>{t(m.label, m.ta)}</option>)}
                   </Select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Sort", "வரிசைப்படுத்து")}</label>
-                  <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-full text-[12.5px] h-9">
-                    <option value="newest">{t("Newest first", "புதியவை முதலில்")}</option>
-                    <option value="amount_desc">{t("Highest amount", "அதிக தொகை")}</option>
-                    <option value="amount_asc">{t("Lowest amount", "குறைந்த தொகை")}</option>
-                    <option value="title">{t("Title A–Z", "தலைப்பு அகரவரிசை")}</option>
-                  </Select>
-                </div>
-                <div className="sm:col-span-3">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Date Range", "தேதி வரம்பு")}</label>
-                  <div className="flex items-center gap-1 max-w-sm">
-                    <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
-                    <span className="text-faint">–</span>
-                    <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
-                  </div>
                 </div>
               </div>
             </motion.div>

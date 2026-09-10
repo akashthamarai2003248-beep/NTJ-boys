@@ -486,6 +486,7 @@ export interface ExpenseFilters {
   q?: string;
   eventId?: string | null;
   category?: ExpenseCategory | null;
+  payment?: PaymentMethod | null;
   from?: string | null;
   to?: string | null;
   sort?: "newest" | "amount_desc" | "amount_asc" | "title";
@@ -516,7 +517,9 @@ export function queryExpenses(db: DB, f: ExpenseFilters): ExpensePage {
   }
   if (f.eventId) items = items.filter((e) => e.eventId === f.eventId);
   if (f.category) items = items.filter((e) => e.category === f.category);
-  if (f.from) items = items.filter((e) => e.date >= (f.from ?? ""));  if (f.to) items = items.filter((e) => e.date <= (f.to ?? ""));
+  if (f.payment) items = items.filter((e) => e.paymentMethod === f.payment);
+  if (f.from) items = items.filter((e) => e.date >= (f.from ?? ""));
+  if (f.to) items = items.filter((e) => e.date <= (f.to ?? ""));
 
   const sumFiltered = sum(items);
 

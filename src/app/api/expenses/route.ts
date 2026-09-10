@@ -3,7 +3,7 @@ import { loadDB } from "@/lib/data/supabase-store";
 import { queryExpenses, createExpense } from "@/lib/data/repository";
 import { requireUser } from "@/lib/auth";
 import { handleApiError, intParam } from "@/lib/api-helpers";
-import type { ExpenseCategory, ExpenseInput } from "@/lib/data/types";
+import type { ExpenseCategory, ExpenseInput, PaymentMethod } from "@/lib/data/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +12,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
     const category = searchParams.get("category") as ExpenseCategory | null;
+    const payment = searchParams.get("payment") as PaymentMethod | null;
     const page = queryExpenses(await loadDB(), {
       q: searchParams.get("q") ?? undefined,
       eventId: eventId || undefined,
       category: category || null,
+      payment: payment || null,
       from: searchParams.get("from"),
       to: searchParams.get("to"),
       sort: (searchParams.get("sort") as "newest" | "amount_desc" | "amount_asc" | "title") ?? "newest",
