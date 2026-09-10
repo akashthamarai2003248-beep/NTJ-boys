@@ -48,9 +48,10 @@ export async function POST(req: Request) {
         options: { data: { name, phone } },
       });
       if (error) {
+        const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.split("//")[1]?.split(".")[0] || "unknown";
         const msg = error.message?.toLowerCase().includes("already registered")
           ? "This email is already registered — try logging in"
-          : error.message;
+          : `${error.message} (Supabase project: ${projectRef})`;
         return NextResponse.json({ error: msg }, { status: 400 });
       }
       if (!data.user) {
