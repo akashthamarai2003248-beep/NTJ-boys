@@ -3,21 +3,18 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  CalendarDays, HandCoins, MapPin, Phone, Plus, Search, Trophy, Users,
+  HandCoins, Phone, Plus, Search, Trophy, Users,
 } from "lucide-react";
 import type { Member, MemberInput, MemberWithStats } from "@/lib/data/types";
-import { MEMBER_POSITIONS } from "@/lib/data/types";
 import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { RoleBadge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions } from "@/components/shared/RowActions";
@@ -29,19 +26,12 @@ interface MembersPayload {
   total: number;
 }
 
-function areaOf(street: string): string {
-  const idx = street.indexOf(",");
-  return (idx >= 0 ? street.slice(idx + 1) : street).trim();
-}
-
 export function MembersView() {
   const { can } = usePermissions();
   const writable = can.members;
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
-  const [area, setArea] = useState("");
-  const [role, setRole] = useState("");
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
@@ -50,14 +40,9 @@ export function MembersView() {
   const [deleting, setDeleting] = useState<Member | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const url = useMemo(() => `/api/members${qs({ q: debouncedQ, area, role })}`, [debouncedQ, area, role]);
+  const url = useMemo(() => `/api/members${qs({ q: debouncedQ })}`, [debouncedQ]);
   const { data, loading, reload } = useFetch<MembersPayload>(url);
   const members = data?.members ?? [];
-
-  const areas = useMemo(
-    () => [...new Set((data?.members ?? []).map((m) => areaOf(m.street)).filter(Boolean))].sort(),
-    [data],
-  );
 
   const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
   const openEdit = (m: Member) => { setEditing(m); setFormError(null); setFormOpen(true); };
@@ -97,7 +82,7 @@ export function MembersView() {
     }
   };
 
-  const hasFilters = Boolean(q || area || role);
+  const hasFilters = Boolean(q);
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -105,7 +90,7 @@ export function MembersView() {
         eyebrow="Community"
         title="உறுப்பினர்கள்"
         ta="Members"
-        subtitle={`${data?.total ?? "…"} people power the Mandram — board, volunteers and members`}
+        subtitle={`${data?.total ?? "…"} people power the Mandram — members & contributors`}
         actions={
           writable ? (
             <Button variant="primary" onClick={openAdd}>
@@ -116,25 +101,17 @@ export function MembersView() {
       />
 
       <div className="card-surface rounded-2xl p-3 sm:p-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, street or phone…"
-            className="min-w-44 flex-1"
+            placeholder="Search members by name or phone…"
+            className="flex-1"
             leading={<Search className="size-4" />}
           />
-          <Select value={area} onChange={(e) => setArea(e.target.value)} className="min-w-40">
-            <option value="">All areas</option>
-            {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-          </Select>
-          <Select value={role} onChange={(e) => setRole(e.target.value)} className="min-w-36">
-            <option value="">All roles</option>
-            {MEMBER_POSITIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-          </Select>
           {hasFilters ? (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setArea(""); setRole(""); }}>
-              Clear filters
+            <Button variant="ghost" size="sm" onClick={() => setQ("")}>
+              Clear
             </Button>
           ) : null}
         </div>
@@ -162,7 +139,7 @@ export function MembersView() {
         <EmptyState
           icon={hasFilters ? Search : Users}
           title={hasFilters ? "No members match" : "No members yet"}
-          message={hasFilters ? "Try a different name, area or role." : "Add the people who make the Mandram what it is."}
+          message={hasFilters ? "Try searching with a different name or phone number." : "Add the people who make the Mandram what it is."}
           action={writable && !hasFilters ? (
             <Button variant="primary" onClick={openAdd}><Plus className="size-4" /> Add Member</Button>
           ) : undefined}
@@ -211,7 +188,6 @@ function MemberCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const joined = member.joinedDate ? new Date(member.joinedDate).getFullYear() : null;
   return (
     <div
       className="card-surface group relative rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
@@ -222,35 +198,15 @@ function MemberCard({
       </div>
       <div className="flex items-center gap-3">
         <Avatar name={member.name} photo={member.photo} size="lg" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-extrabold tracking-tight">{member.name}</p>
-          <div className="mt-1 flex items-center gap-2">
-            <RoleBadge role={member.role || "Member"} />
-            {member.role && member.role !== "Member" && (
-              <span className="text-[11px] font-semibold text-gold-600 dark:text-gold-400">★ Board</span>
-            )}
-          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted">
+            <Phone className="size-3.5 shrink-0 text-faint" />
+            <a href={`tel:${member.phone}`} className="tabular-nums hover:text-navy-700 hover:underline dark:hover:text-navy-200">
+              +91 {member.phone.replace(/(\d{5})(\d{5})/, "$1 $2")}
+            </a>
+          </p>
         </div>
-      </div>
-      <div className="mt-3.5 space-y-1.5 text-[12.5px] text-muted">
-        <p className="flex items-center gap-2 truncate">
-          <Phone className="size-3.5 shrink-0 text-faint" />
-          <a href={`tel:${member.phone}`} className="tabular-nums hover:text-navy-700 hover:underline dark:hover:text-navy-200">
-            +91 {member.phone.replace(/(\d{5})(\d{5})/, "$1 $2")}
-          </a>
-        </p>
-        {Boolean(member.street && member.street.trim() && member.street !== "—") && (
-          <p className="flex items-center gap-2 truncate">
-            <MapPin className="size-3.5 shrink-0 text-faint" />
-            {member.street}
-          </p>
-        )}
-        {Boolean(joined && !isNaN(joined)) && (
-          <p className="flex items-center gap-2">
-            <CalendarDays className="size-3.5 shrink-0 text-faint" />
-            Member since {joined}
-          </p>
-        )}
       </div>
       <div className="mt-3.5 grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-leaf-50 px-3 py-2 dark:bg-leaf-500/10">
