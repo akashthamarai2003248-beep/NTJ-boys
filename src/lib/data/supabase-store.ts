@@ -111,56 +111,91 @@ export const mapSettings = (r: SettingsRow): AppSettings => ({
   publicView: r.public_view, updatedAt: r.updated_at,
 });
 
+let cachedDB: DB | null = null;
+let cacheTime = 0;
+let inFlightLoad: Promise<DB> | null = null;
+const CACHE_TTL_MS = 15_000;
+
+/** Invalidate the cached database snapshot so the next loadDB() fetches fresh data. */
+export function invalidateDBCache() {
+  cachedDB = null;
+  cacheTime = 0;
+  inFlightLoad = null;
+}
+
 /**
  * Read accessor for route handlers — the Supabase-aware replacement
  * for store.getDB(). Local mode returns the store document untouched;
- * Supabase mode pulls a fresh snapshot per request (each table read
- * is RLS-scoped to the signed-in user).
+ * Supabase mode pulls a fresh snapshot, coalescing concurrent requests
+ * and caching with a short TTL to keep page transitions and multi-endpoint
+ * views lightning fast.
  */
 export async function loadDB(): Promise<DB> {
   if (!isSupabaseMode()) return getDB();
 
-  const sb = await getSupabaseServer();
-  const [members, events, collections, expenses, games, teams, participants, matches, results, gallery, activity, settings] =
-    await Promise.all([
-      sb.from("members").select("*"),
-      sb.from("events").select("*"),
-      sb.from("collections").select("*"),
-      sb.from("expenses").select("*"),
-      sb.from("games").select("*"),
-      sb.from("teams").select("*"),
-      sb.from("participants").select("*"),
-      sb.from("matches").select("*"),
-      sb.from("game_results").select("*"),
-      sb.from("gallery").select("*"),
-      sb.from("activity_logs").select("*"),
-      sb.from("settings").select("*"),
-    ]);
-
-  const all = [
-    ["members", members], ["events", events], ["collections", collections],
-    ["expenses", expenses], ["games", games], ["teams", teams],
-    ["participants", participants], ["matches", matches], ["game_results", results],
-    ["gallery", gallery], ["activity_logs", activity], ["settings", settings],
-  ] as const;
-  for (const [name, q] of all) {
-    if (q.error) throw new Error(`Failed to read ${name}: ${q.error.message}`);
+  const now = Date.now();
+  if (cachedDB && now - cacheTime < CACHE_TTL_MS) {
+    return cachedDB;
   }
 
-  return {
-    users: [],
-    members: (members.data ?? []).map(mapMember),
-    events: (events.data ?? []).map(mapEvent),
-    collections: (collections.data ?? []).map(mapCollection),
-    expenses: (expenses.data ?? []).map(mapExpense),
-    games: (games.data ?? []).map(mapGame),
-    teams: (teams.data ?? []).map(mapTeam),
-    participants: (participants.data ?? []).map(mapParticipant),
-    matches: (matches.data ?? []).map(mapMatch),
-    results: (results.data ?? []).map(mapResult),
-    gallery: (gallery.data ?? []).map(mapGallery),
-    activity: (activity.data ?? []).map(mapActivity),
-    settings: settings.data?.[0] ? mapSettings(settings.data[0]) : { publicView: true, updatedAt: new Date().toISOString() },
-    meta: { demo: true, seededAt: new Date().toISOString() },
-  };
+  if (inFlightLoad) {
+    return inFlightLoad;
+  }
+
+  inFlightLoad = (async () => {
+    try {
+      const sb = await getSupabaseServer();
+      const [members, events, collections, expenses, games, teams, participants, matches, results, gallery, activity, settings] =
+        await Promise.all([
+          sb.from("members").select("*"),
+          sb.from("events").select("*"),
+          sb.from("collections").select("*"),
+          sb.from("expenses").select("*"),
+          sb.from("games").select("*"),
+          sb.from("teams").select("*"),
+          sb.from("participants").select("*"),
+          sb.from("matches").select("*"),
+          sb.from("game_results").select("*"),
+          sb.from("gallery").select("*"),
+          sb.from("activity_logs").select("*"),
+          sb.from("settings").select("*"),
+        ]);
+
+      const all = [
+        ["members", members], ["events", events], ["collections", collections],
+        ["expenses", expenses], ["games", games], ["teams", teams],
+        ["participants", participants], ["matches", matches], ["game_results", results],
+        ["gallery", gallery], ["activity_logs", activity], ["settings", settings],
+      ] as const;
+      for (const [name, q] of all) {
+        if (q.error) throw new Error(`Failed to read ${name}: ${q.error.message}`);
+      }
+
+      const fresh: DB = {
+        users: [],
+        members: (members.data ?? []).map(mapMember),
+        events: (events.data ?? []).map(mapEvent),
+        collections: (collections.data ?? []).map(mapCollection),
+        expenses: (expenses.data ?? []).map(mapExpense),
+        games: (games.data ?? []).map(mapGame),
+        teams: (teams.data ?? []).map(mapTeam),
+        participants: (participants.data ?? []).map(mapParticipant),
+        matches: (matches.data ?? []).map(mapMatch),
+        results: (results.data ?? []).map(mapResult),
+        gallery: (gallery.data ?? []).map(mapGallery),
+        activity: (activity.data ?? []).map(mapActivity),
+        settings: settings.data?.[0] ? mapSettings(settings.data[0]) : { publicView: true, updatedAt: new Date().toISOString() },
+        meta: { demo: true, seededAt: new Date().toISOString() },
+      };
+
+      cachedDB = fresh;
+      cacheTime = Date.now();
+      return fresh;
+    } finally {
+      inFlightLoad = null;
+    }
+  })();
+
+  return inFlightLoad;
 }
+

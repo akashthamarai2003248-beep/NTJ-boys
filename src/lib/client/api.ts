@@ -2,6 +2,8 @@
 
 /* Typed thin client for the route handlers. */
 
+import { clearClientCache } from "./hooks";
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -26,6 +28,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, message);
   }
+
+  // Clear client cache on successful mutations so views reflect new data immediately
+  if (init?.method && ["POST", "PATCH", "PUT", "DELETE"].includes(init.method.toUpperCase())) {
+    clearClientCache();
+  }
+
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }

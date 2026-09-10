@@ -15,7 +15,7 @@ import {
 import { getSupabaseServer } from "./supabase";
 import {
   mapCollection, mapEvent, mapExpense, mapGame, mapGallery, mapMatch,
-  mapMember, mapParticipant, mapResult, mapTeam,
+  mapMember, mapParticipant, mapResult, mapTeam, invalidateDBCache,
 } from "./supabase-store";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -54,6 +54,7 @@ async function log(
     eventName?: string | null;
   },
 ) {
+  invalidateDBCache();
   const { error } = await sb.from("activity_logs").insert({
     actor_id: actor.id,
     actor_name: actor.name,
