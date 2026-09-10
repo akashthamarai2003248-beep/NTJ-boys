@@ -1,0 +1,16 @@
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3123
+- Network:       http://192.168.1.34:3123
+- Environments: .env.local
+✓ Ready in 1261ms
+✓ Running next.config.ts took 116ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:61559
+- PID:          21440
+- Dir:          C:\manage\ntj
+- Log:          .next\dev\logs\next-development.log
+
+You can access the existing server at http://localhost:61559,
+or run taskkill /PID 21440 /F to stop it and start a new one.
+[?25h

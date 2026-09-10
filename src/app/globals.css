@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (next-themes adds `.dark` on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────
+   Semantic tokens — flip between light & dark
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --bg: #f2f4fa;
+  --surface: #ffffff;
+  --surface-2: #f7f9fd;
+  --line: #e4e9f3;
+  --line-strong: #d3dbe9;
+  --ink: #141d33;
+  --muted: #5f6c88;
+  --faint: #8e98af;
+}
+
+.dark {
+  --bg: #0a101f;
+  --surface: #0f1728;
+  --surface-2: #151f36;
+  --line: #1f2b46;
+  --line-strong: #2b3b5e;
+  --ink: #eef1f8;
+  --muted: #97a3bd;
+  --faint: #68759a;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Fixed palette — midnight navy / saffron / leaf / gold
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --color-navy-50: #f1f5fb;
+  --color-navy-100: #dfe6f4;
+  --color-navy-200: #bfcdea;
+  --color-navy-300: #8fa8d9;
+  --color-navy-400: #5f7fc4;
+  --color-navy-500: #3d5fac;
+  --color-navy-600: #2d4790;
+  --color-navy-700: #243a74;
+  --color-navy-800: #1a2c59;
+  --color-navy-900: #101f42;
+  --color-navy-950: #0a1330;
+
+  --color-saffron-50: #fff8ee;
+  --color-saffron-100: #ffeed4;
+  --color-saffron-200: #ffdcab;
+  --color-saffron-300: #ffc67c;
+  --color-saffron-400: #ffad4d;
+  --color-saffron-500: #ff9933;
+  --color-saffron-600: #ed7a10;
+  --color-saffron-700: #c45e0a;
+  --color-saffron-800: #9c4a0f;
+  --color-saffron-900: #7e3e10;
+
+  --color-leaf-50: #f0fbf4;
+  --color-leaf-100: #dcf5e5;
+  --color-leaf-200: #bbeacc;
+  --color-leaf-300: #8ed9ac;
+  --color-leaf-400: #57c189;
+  --color-leaf-500: #31a76c;
+  --color-leaf-600: #218757;
+  --color-leaf-700: #1b6c47;
+  --color-leaf-800: #18563b;
+  --color-leaf-900: #144731;
+
+  --color-gold-100: #fbf3d8;
+  --color-gold-200: #f6e3a4;
+  --color-gold-300: #efcf6b;
+  --color-gold-400: #e7b942;
+  --color-gold-500: #d9a128;
+  --color-gold-600: #b97f1e;
+  --color-gold-700: #945e1b;
+
+  --shadow-card: 0 1px 2px rgb(10 16 30 / 0.04), 0 10px 28px -14px rgb(10 16 30 / 0.14);
+  --shadow-card-hover: 0 2px 4px rgb(10 16 30 / 0.05), 0 18px 40px -16px rgb(10 16 30 / 0.22);
+  --shadow-pop: 0 4px 10px rgb(10 16 30 / 0.06), 0 24px 60px -20px rgb(10 16 30 / 0.3);
+  --shadow-modal: 0 12px 40px -8px rgb(10 16 30 / 0.35);
+}
+
+/* Semantic colors + fonts resolve to the CSS vars above (light/dark aware) */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --font-sans: var(--font-inter), var(--font-tamil), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────── */
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  /* iOS Safari inflates text when rotating to landscape — pin it. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html.dark {
+  color-scheme: dark;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: rgb(255 153 51 / 0.28);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reusable surfaces / patterns
+   ───────────────────────────────────────────────────────────── */
+.brand-gradient {
+  background-image: linear-gradient(135deg, #0a1330 0%, #14264f 42%, #1d3a76 78%, #24508f 100%);
+}
+.brand-gradient-deep {
+  background-image: linear-gradient(160deg, #070d20 0%, #0c1b3f 55%, #14305f 100%);
+}
+.brand-aurora {
+  background-image:
+    radial-gradient(600px 300px at 85% -10%, rgb(255 153 51 / 0.16), transparent 60%),
+    radial-gradient(500px 300px at -10% 110%, rgb(49 167 108 / 0.14), transparent 60%);
+}
+.card-surface {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mobile — iOS Safari auto-zooms the page when a focused form
+   control is smaller than 16px. Bump editable controls to 16px on
+   phones so tapping a field never triggers the zoom jump.
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Tall-but-narrow phones benefit from a touch of extra horizontal
+   air so focus rings and hover states never clip at the edge. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea,
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Receipt printing — the .print-sheet lives at body level, so
+   everything else is hidden and the sheet takes the full page.
+   ───────────────────────────────────────────────────────────── */
+.print-sheet {
+  display: none;
+}
+@media print {
+  body {
+    background: #fff !important;
+  }
+  body > :not(.print-sheet) {
+    display: none !important;
+  }
+  .print-sheet {
+    display: flex !important;
+    justify-content: center;
+    padding: 0;
+  }
+  .print-sheet .receipt-card {
+    max-width: none;
+    width: 190mm;
+    border: 1px solid #dfe3ec;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+}

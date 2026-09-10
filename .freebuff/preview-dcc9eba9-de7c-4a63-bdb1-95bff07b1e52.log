@@ -1,0 +1,32 @@
+
+> nethaji-boys-mandram@0.1.0 dev
+> next dev -p 3000
+
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.19:3000
+- Environments: .env.local
+✓ Ready in 1493ms
+✓ Running next.config.ts took 107ms
+
+ GET / 200 in 884ms (next.js: 276ms, proxy.ts: 12ms, application-code: 596ms)
+ GET /api/session 200 in 355ms (next.js: 207ms, proxy.ts: 11ms, application-code: 137ms)
+ GET /api/session 200 in 416ms (next.js: 40ms, proxy.ts: 348ms, application-code: 28ms)
+ GET /api/dashboard?period=year 200 in 461ms (next.js: 357ms, proxy.ts: 30ms, application-code: 74ms)
+ GET /collections 200 in 684ms (next.js: 85ms, proxy.ts: 12ms, application-code: 587ms)
+ GET /api/session 200 in 163ms (next.js: 127ms, proxy.ts: 17ms, application-code: 19ms)
+ GET /api/session 200 in 177ms (next.js: 145ms, proxy.ts: 21ms, application-code: 10ms)
+ GET /api/events 200 in 438ms (next.js: 373ms, proxy.ts: 40ms, application-code: 26ms)
+ GET /api/collections?sort=newest&page=1&perPage=10 200 in 700ms (next.js: 633ms, proxy.ts: 49ms, application-code: 18ms)
+ GET /expenses 200 in 184ms (next.js: 84ms, proxy.ts: 11ms, application-code: 89ms)
+ GET /api/events 200 in 92ms (next.js: 22ms, proxy.ts: 51ms, application-code: 19ms)
+ GET /api/expenses?sort=newest&page=1&perPage=10 200 in 316ms (next.js: 243ms, proxy.ts: 53ms, application-code: 20ms)
+ GET /api/expenses?sort=newest&page=1&perPage=10 200 in 383ms (next.js: 121ms, proxy.ts: 232ms, application-code: 30ms)
+ GET /api/events 200 in 445ms (next.js: 186ms, proxy.ts: 242ms, application-code: 17ms)
+✓ Compiled in 759ms
+ GET /expenses 200 in 74ms (next.js: 16ms, proxy.ts: 7ms, application-code: 51ms)
+ GET /expenses 200 in 66ms (next.js: 14ms, proxy.ts: 6ms, application-code: 46ms)
+✓ Compiled in 453ms
+ GET /expenses 200 in 57ms (next.js: 12ms, proxy.ts: 6ms, application-code: 40ms)
+ GET /expenses 200 in 102ms (next.js: 21ms, proxy.ts: 8ms, application-code: 72ms)
+[?25h
