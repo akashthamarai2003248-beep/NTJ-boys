@@ -27,16 +27,16 @@ export function PageHeader({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex items-center justify-between gap-3 sm:gap-6"
+      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
     >
       <div className="min-w-0 flex-1">
         {eyebrow ? <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-saffron-600 dark:text-saffron-400">{eyebrow}</p> : null}
         <h1 className="text-[20px] font-extrabold tracking-tight text-ink sm:text-2xl">
           {heading}
         </h1>
-        {subtitle ? <p className="mt-0.5 line-clamp-1 text-[12px] text-muted sm:line-clamp-none sm:text-[13px]">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-0.5 text-[12px] text-muted sm:text-[13px]">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">{actions}</div> : null}
     </motion.div>
   );
 }

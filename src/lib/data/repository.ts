@@ -1269,7 +1269,13 @@ export async function deleteGalleryItem(actor: DemoUser, id: string): Promise<vo
 /* ── Reports / public overview ───────────────────────────── */
 
 export interface ReportsData {
-  totals: EventStats & { members: number; collectionCount: number; expenseCount: number };
+  totals: EventStats & {
+    members: number;
+    paidMembers?: number;
+    paidCount?: number;
+    collectionCount: number;
+    expenseCount: number;
+  };
   year: string | "all";
   yearTotals: EventStats;
   byEvent: { id: string; name: string; tamilName: string; type: Event["type"]; status: Event["status"]; varavu: number; selavu: number; balance: number }[];
