@@ -40,14 +40,14 @@ interface ListPayload {
 
 type Tab = "overview" | "varavu" | "selavu" | "games" | "participants" | "photos" | "reports";
 
-const TABS: { id: Tab; label: string; ta: string }[] = [
-  { id: "overview", label: "Overview", ta: "கண்ணோட்டம்" },
-  { id: "varavu", label: "வரவு", ta: "Collections" },
-  { id: "selavu", label: "செலவு", ta: "Expenses" },
-  { id: "games", label: "Games", ta: "விளையாட்டுகள்" },
-  { id: "participants", label: "Participants", ta: "பங்கேற்பாளர்கள்" },
-  { id: "photos", label: "Photos", ta: "புகைப்படங்கள்" },
-  { id: "reports", label: "Reports", ta: "அறிக்கை" },
+const TABS: { id: Tab; label: string; countKey?: "cols" | "exps" | "games" | "photos" }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "varavu", label: "Collections", countKey: "cols" },
+  { id: "selavu", label: "Expenses", countKey: "exps" },
+  { id: "games", label: "Games", countKey: "games" },
+  { id: "participants", label: "Donors" },
+  { id: "photos", label: "Photos", countKey: "photos" },
+  { id: "reports", label: "Reports" },
 ];
 
 export function EventDetailView({ id }: { id: string }) {
@@ -154,12 +154,14 @@ export function EventDetailView({ id }: { id: string }) {
               </div>
               <div className="mt-2.5 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h1 className="text-[22px] font-black leading-tight tracking-tight drop-shadow-sm sm:text-[28px]">
+                  <h1 className="text-[20px] font-black leading-tight tracking-tight drop-shadow-sm sm:text-[28px]">
                     {event.name}
                   </h1>
-                  <p className="mt-1 text-[14px] font-semibold text-saffron-200">
-                    நேதாஜி பாய்ஸ் மன்றம் · {event.tamilName || "—"}
-                  </p>
+                  {event.tamilName ? (
+                    <p className="mt-1 text-[13px] font-bold text-saffron-200 sm:text-[14px]">
+                      {event.tamilName}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {admin && (
@@ -184,7 +186,7 @@ export function EventDetailView({ id }: { id: string }) {
                   )}
                   {writable && (
                     <Link href={`/collections?add=1&eventId=${event.id}`}>
-                      <Button size="sm" className="bg-saffron-500 text-white hover:bg-saffron-600">
+                      <Button size="sm" className="bg-saffron-500 text-white shadow-sm hover:bg-saffron-600">
                         <Plus className="size-3.5" /> Add Collection
                       </Button>
                     </Link>
@@ -195,27 +197,55 @@ export function EventDetailView({ id }: { id: string }) {
           </div>
 
           {/* stat strip */}
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-            <EventMoney label="Collection" ta="வரவு" value={formatINR(stats.varavu)} icon={HandCoins} tone="bg-saffron-100 text-saffron-700 dark:bg-saffron-500/15 dark:text-saffron-400" />
-            <EventMoney label="Expenses" ta="செலவு" value={formatINR(stats.selavu)} icon={TrendingDown} tone="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400" />
-            <EventMoney label="Balance" ta="இருப்பு" value={formatINR(stats.balance)} icon={HandCoins} tone={stats.balance >= 0 ? "bg-leaf-100 text-leaf-700 dark:bg-leaf-500/15 dark:text-leaf-400" : "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"} balance />
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <EventMoney
+              label="Collections"
+              value={formatINR(stats.varavu)}
+              icon={HandCoins}
+              tone="bg-saffron-100 text-saffron-700 dark:bg-saffron-500/15 dark:text-saffron-400"
+            />
+            <EventMoney
+              label="Expenses"
+              value={formatINR(stats.selavu)}
+              icon={TrendingDown}
+              tone="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"
+            />
+            <EventMoney
+              label="Balance"
+              value={formatINR(stats.balance)}
+              icon={HandCoins}
+              tone={stats.balance >= 0 ? "bg-leaf-100 text-leaf-700 dark:bg-leaf-500/15 dark:text-leaf-400" : "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"}
+              valueClass={stats.balance >= 0 ? "text-leaf-600 dark:text-leaf-400" : "text-red-600 dark:text-red-400"}
+            />
           </div>
 
           {/* tabs */}
-          <div className="hide-scrollbar -mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
+          <div className="flex items-center gap-1 overflow-x-auto border-b border-line pb-px scrollbar-none">
             {TABS.map((t) => {
               const active = tab === t.id;
+              const count = t.countKey === "cols" ? collections.length
+                : t.countKey === "exps" ? expenses.length
+                : t.countKey === "games" ? games.length
+                : t.countKey === "photos" ? photos.length
+                : undefined;
               return (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={cn(
-                    "relative shrink-0 px-3.5 py-2.5 text-[13px] font-bold transition-colors",
-                    active ? "text-navy-900 dark:text-white" : "text-muted hover:text-ink",
+                    "relative shrink-0 px-3 py-2 text-[12.5px] font-bold transition-all",
+                    active ? "text-navy-900 dark:text-white" : "text-muted hover:text-ink"
                   )}
                 >
                   {t.label}
-                  <span className={cn("ml-1 text-[11px] font-semibold", active ? "text-saffron-600" : "text-faint")}>{t.ta}</span>
+                  {count !== undefined && count > 0 && (
+                    <span className={cn(
+                      "ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] font-extrabold tabular-nums",
+                      active ? "bg-saffron-500/20 text-saffron-700 dark:bg-saffron-500/30 dark:text-saffron-300" : "bg-surface-2 text-faint"
+                    )}>
+                      {count}
+                    </span>
+                  )}
                   {active && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-saffron-500" />}
                 </button>
               );
@@ -271,23 +301,21 @@ export function EventDetailView({ id }: { id: string }) {
 }
 
 function EventMoney({
-  label, ta, value, icon: Icon, tone, balance,
+  label, value, icon: Icon, tone, valueClass,
 }: {
-  label: string; ta: string; value: string; icon: typeof HandCoins; tone: string; balance?: boolean;
+  label: string; value: string; icon: typeof HandCoins; tone: string; valueClass?: string;
 }) {
   return (
-    <div className="card-surface rounded-2xl p-3.5 sm:p-4">
-      <div className="flex items-center gap-2">
-        <span className={cn("flex size-8 items-center justify-center rounded-lg sm:size-9", tone)}>
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold text-muted sm:text-[12px]">{label} · {ta}</p>
-          <p className={cn("mt-0.5 truncate text-[17px] font-black leading-none tabular-nums sm:text-[20px]", balance ? "" : "")}>
-            {value}
-          </p>
-        </div>
-      </div>
+    <div className="card-surface rounded-2xl p-2.5 text-center shadow-sm sm:p-4">
+      <span className={cn("mx-auto mb-1.5 flex size-8 items-center justify-center rounded-xl", tone)}>
+        <Icon className="size-4" />
+      </span>
+      <p className={cn("truncate text-[15px] font-black leading-tight tabular-nums sm:text-[20px]", valueClass ?? "text-ink")}>
+        {value}
+      </p>
+      <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-faint sm:text-[11px]">
+        {label}
+      </p>
     </div>
   );
 }
@@ -309,27 +337,33 @@ function TabContent({
   const meta = eventTypeMeta(event.type);
 
   if (tab === "overview") {
+    const dateRange = event.startDate === event.endDate
+      ? formatLong(event.startDate)
+      : `${formatLong(event.startDate)} → ${formatLong(event.endDate)}`;
+
     return (
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card-surface rounded-2xl p-5 lg:col-span-2">
+        <div className="card-surface rounded-2xl p-4 sm:p-5 lg:col-span-2">
           <h3 className="text-[15px] font-extrabold">About this event</h3>
           {event.description ? <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{event.description}</p> : null}
-          <dl className="mt-4 grid gap-x-6 gap-y-3 text-[13px] sm:grid-cols-2">
-            <DetailRow icon={<CalendarDays className="size-4" />} label="Dates · தேதிகள்" value={`${formatLong(event.startDate)} → ${formatLong(event.endDate)}`} />
+          <dl className="mt-4 grid gap-x-6 gap-y-3.5 text-[13px] sm:grid-cols-2">
+            <DetailRow icon={<CalendarDays className="size-4" />} label="Date · தேதி" value={dateRange} />
             <DetailRow icon={<MapPin className="size-4" />} label="Location · இடம்" value={event.location || "—"} />
             <DetailRow icon={<Users className="size-4" />} label="Type · வகை" value={`${meta.label} ${meta.emoji}`} />
-            <DetailRow icon={<HandCoins className="size-4" />} label="Event name · பெயர்" value={event.tamilName || event.name} />
+            {event.tamilName ? (
+              <DetailRow icon={<HandCoins className="size-4" />} label="Tamil name · தமிழ் பெயர்" value={event.tamilName} />
+            ) : null}
           </dl>
         </div>
         <div className="space-y-4">
-          <div className="card-surface rounded-2xl p-5">
+          <div className="card-surface rounded-2xl p-4 sm:p-5">
             <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-faint">Event balance</p>
             <p className={cn("mt-1 text-[26px] font-black tabular-nums", stats.balance >= 0 ? "text-leaf-600 dark:text-leaf-400" : "text-red-600 dark:text-red-400")}>
               {formatINR(stats.balance)}
             </p>
             <div className="mt-3 space-y-2 text-[13px]">
-              <div className="flex justify-between"><span className="text-muted">வரவு · Collections</span><b className="tabular-nums">{formatINR(stats.varavu)}</b></div>
-              <div className="flex justify-between"><span className="text-muted">செலவு · Expenses</span><b className="tabular-nums">{formatINR(stats.selavu)}</b></div>
+              <div className="flex justify-between"><span className="text-muted">Collections · வரவு</span><b className="tabular-nums">{formatINR(stats.varavu)}</b></div>
+              <div className="flex justify-between"><span className="text-muted">Expenses · செலவு</span><b className="tabular-nums">{formatINR(stats.selavu)}</b></div>
               <div className="flex justify-between border-t border-line pt-2"><span className="text-muted">Donors</span><b>{collections.length}</b></div>
               <div className="flex justify-between"><span className="text-muted">Expense entries</span><b>{expenses.length}</b></div>
             </div>
