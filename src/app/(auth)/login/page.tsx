@@ -111,8 +111,8 @@ function LoginInner() {
       /* storage unavailable */
     }
     console.info(`[demo] signed in as ${user.name} (${user.role})`);
-    router.replace(next && next.startsWith("/") ? next : "/");
-    router.refresh();
+    const destination = next && next.startsWith("/") ? next : "/";
+    window.location.href = destination;
   };
 
   const login = async (identifierArg: string, passwordArg: string) => {
