@@ -282,9 +282,9 @@ export interface EventInput {
 export interface MemberInput {
   name: string;
   phone: string;
-  street: string;
-  role: MemberPosition;
-  joinedDate: string;
+  street?: string;
+  role?: MemberPosition;
+  joinedDate?: string;
   photo?: string | null;
 }
 

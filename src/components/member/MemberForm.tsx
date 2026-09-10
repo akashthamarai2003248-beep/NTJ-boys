@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { CalendarDays, Camera, MapPin, Phone, UserRound, X } from "lucide-react";
-import type { Member, MemberInput, MemberPosition } from "@/lib/data/types";
-import { MEMBER_POSITIONS } from "@/lib/data/types";
+import { Camera, Phone, UserRound, X } from "lucide-react";
+import type { Member, MemberInput } from "@/lib/data/types";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Avatar } from "@/components/ui/Avatar";
 import { todayISO } from "@/lib/utils/date";
 
@@ -22,9 +20,6 @@ interface Props {
 export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [street, setStreet] = useState(initial?.street ?? "");
-  const [role, setRole] = useState<MemberPosition>(initial?.role ?? "Member");
-  const [joinedDate, setJoinedDate] = useState(initial?.joinedDate ?? todayISO());
   const [photo, setPhoto] = useState<string | null>(initial?.photo ?? null);
   const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -46,9 +41,9 @@ export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: P
     onSubmit({
       name: name.trim(),
       phone: digits,
-      street: street.trim() || "—",
-      role,
-      joinedDate,
+      street: initial?.street ?? "",
+      role: initial?.role ?? "Member",
+      joinedDate: initial?.joinedDate ?? todayISO(),
       photo,
     });
   };
@@ -85,23 +80,24 @@ export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: P
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Full name" ta="பெயர்" required className="sm:col-span-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ravi Kumar" leading={<UserRound className="size-4" />} />
+      <div className="space-y-4">
+        <Field label="Full name" ta="பெயர்" required>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Ravi Kumar"
+            leading={<UserRound className="size-4" />}
+            autoFocus
+          />
         </Field>
-        <Field label="Phone" ta="தொலைபேசி" required>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98400 00000" inputMode="tel" leading={<Phone className="size-4" />} />
-        </Field>
-        <Field label="Street / Area" ta="தெரு / பகுதி">
-          <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="e.g. 12, South Street" leading={<MapPin className="size-4" />} />
-        </Field>
-        <Field label="Role" ta="பதவி" required>
-          <Select value={role} onChange={(e) => setRole(e.target.value as MemberPosition)}>
-            {MEMBER_POSITIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-          </Select>
-        </Field>
-        <Field label="Joined date" ta="இணைந்த நாள்" required>
-          <Input type="date" value={joinedDate} onChange={(e) => setJoinedDate(e.target.value)} leading={<CalendarDays className="size-4" />} />
+        <Field label="Phone number" ta="தொலைபேசி" required>
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="98400 00000"
+            inputMode="tel"
+            leading={<Phone className="size-4" />}
+          />
         </Field>
       </div>
 

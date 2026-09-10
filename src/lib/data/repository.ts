@@ -8,7 +8,7 @@ import type {
 import { GAME_KINDS, PAYMENT_CHOICES } from "./types";
 import { getDB, mutateDB, resetToSeed } from "./store";
 import { normalizeName, normalizePhone, uid } from "@/lib/utils/id";
-import { toISO, resolveEventStatus } from "@/lib/utils/date";
+import { toISO, resolveEventStatus, todayISO } from "@/lib/utils/date";
 import {
   HttpError, canWriteFinances, canWriteEvents, canWriteMembers, canManageSettings,
   assertPermission as assert,
@@ -727,13 +727,15 @@ export function getMember(db: DB, id: string) {
   return m ? normalizeMember(db)(m) : null;
 }
 
-function validateMember(input: MemberInput): MemberInput {
+function validateMember(input: MemberInput): Required<Omit<MemberInput, "photo">> & { photo?: string | null } {
   const name = input.name?.trim();
   if (!name) throw new HttpError(400, "Member name is required");
   if (!input.phone?.trim()) throw new HttpError(400, "Phone number is required");
   if (normalizePhone(input.phone).length < 10) throw new HttpError(400, "Enter a valid 10-digit phone number");
-  if (!input.joinedDate) throw new HttpError(400, "Joined date is required");
-  return { ...input, name, street: input.street?.trim() || "" };
+  const joinedDate = input.joinedDate || todayISO();
+  const role = input.role || "Member";
+  const street = input.street?.trim() || "";
+  return { ...input, name, phone: input.phone.trim(), street, role, joinedDate, photo: input.photo || null };
 }
 
 export async function createMember(actor: DemoUser, raw: MemberInput): Promise<Member> {
@@ -764,7 +766,12 @@ export async function updateMember(actor: DemoUser, id: string, raw: MemberInput
   return mutateDB((db) => {
     const rec = db.members.find((m) => m.id === id);
     if (!rec) throw new HttpError(404, "Member not found");
-    const input = validateMember(raw);
+    const input = validateMember({
+      ...raw,
+      street: raw.street !== undefined ? raw.street : rec.street,
+      role: raw.role !== undefined ? raw.role : rec.role,
+      joinedDate: raw.joinedDate !== undefined ? raw.joinedDate : rec.joinedDate,
+    });
     rec.name = input.name;
     rec.phone = input.phone.trim();
     rec.street = input.street;

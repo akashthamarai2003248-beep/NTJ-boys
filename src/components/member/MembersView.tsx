@@ -179,8 +179,8 @@ export function MembersView() {
         open={formOpen}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
         title={editing ? "Edit Member" : "Add Member"}
-        description="உறுப்பினர் · board position, area and contact"
-        maxWidth="max-w-xl"
+        description="உறுப்பினர் விவரங்கள் · Member details"
+        maxWidth="max-w-md"
       >
         <MemberForm initial={editing} submitting={submitting} error={formError} onSubmit={handleSubmit} onCancel={() => setFormOpen(false)} />
       </Modal>
@@ -211,7 +211,7 @@ function MemberCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const joined = new Date(member.joinedDate).getFullYear();
+  const joined = member.joinedDate ? new Date(member.joinedDate).getFullYear() : null;
   return (
     <div
       className="card-surface group relative rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
@@ -225,8 +225,8 @@ function MemberCard({
         <div className="min-w-0">
           <p className="truncate text-[15px] font-extrabold tracking-tight">{member.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            <RoleBadge role={member.role} />
-            {member.role !== "Member" && (
+            <RoleBadge role={member.role || "Member"} />
+            {member.role && member.role !== "Member" && (
               <span className="text-[11px] font-semibold text-gold-600 dark:text-gold-400">★ Board</span>
             )}
           </div>
@@ -239,14 +239,18 @@ function MemberCard({
             +91 {member.phone.replace(/(\d{5})(\d{5})/, "$1 $2")}
           </a>
         </p>
-        <p className="flex items-center gap-2 truncate">
-          <MapPin className="size-3.5 shrink-0 text-faint" />
-          {member.street}
-        </p>
-        <p className="flex items-center gap-2">
-          <CalendarDays className="size-3.5 shrink-0 text-faint" />
-          Member since {joined}
-        </p>
+        {Boolean(member.street && member.street.trim() && member.street !== "—") && (
+          <p className="flex items-center gap-2 truncate">
+            <MapPin className="size-3.5 shrink-0 text-faint" />
+            {member.street}
+          </p>
+        )}
+        {Boolean(joined && !isNaN(joined)) && (
+          <p className="flex items-center gap-2">
+            <CalendarDays className="size-3.5 shrink-0 text-faint" />
+            Member since {joined}
+          </p>
+        )}
       </div>
       <div className="mt-3.5 grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-leaf-50 px-3 py-2 dark:bg-leaf-500/10">

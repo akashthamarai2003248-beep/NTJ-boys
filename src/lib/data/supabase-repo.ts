@@ -17,7 +17,7 @@ import {
   mapCollection, mapEvent, mapExpense, mapGame, mapGallery, mapMatch,
   mapMember, mapParticipant, mapResult, mapTeam, invalidateDBCache,
 } from "./supabase-store";
-import { resolveEventStatus } from "@/lib/utils/date";
+import { resolveEventStatus, todayISO } from "@/lib/utils/date";
 
 /* ═══════════════════════════════════════════════════════════════
  * SUPABASE WRITE REPOSITORY
@@ -336,13 +336,15 @@ export async function deleteEvent(actor: DemoUser, id: string): Promise<void> {
 
 /* ── Members ──────────────────────────────────────────────── */
 
-function validateMember(input: MemberInput): MemberInput {
+function validateMember(input: MemberInput): Required<Omit<MemberInput, "photo">> & { photo?: string | null } {
   const name = input.name?.trim();
   if (!name) throw new HttpError(400, "Member name is required");
   if (!input.phone?.trim()) throw new HttpError(400, "Phone number is required");
   if (input.phone.replace(/\D/g, "").length < 10) throw new HttpError(400, "Enter a valid 10-digit phone number");
-  if (!input.joinedDate) throw new HttpError(400, "Joined date is required");
-  return { ...input, name, street: input.street?.trim() || "" };
+  const joinedDate = input.joinedDate || todayISO();
+  const role = input.role || "Member";
+  const street = input.street?.trim() || "";
+  return { ...input, name, phone: input.phone.trim(), street, role, joinedDate, photo: input.photo || null };
 }
 
 export async function createMember(actor: DemoUser, raw: MemberInput): Promise<Member> {
@@ -369,8 +371,14 @@ export async function createMember(actor: DemoUser, raw: MemberInput): Promise<M
 
 export async function updateMember(actor: DemoUser, id: string, raw: MemberInput): Promise<Member> {
   assertPermission(canWriteMembers(actor.role));
-  const input = validateMember(raw);
   const sb = await getSupabaseServer();
+  const { data: existing } = await sb.from("members").select("*").eq("id", id).maybeSingle();
+  const input = validateMember({
+    ...raw,
+    street: raw.street !== undefined ? raw.street : existing?.street,
+    role: raw.role !== undefined ? raw.role : existing?.role,
+    joinedDate: raw.joinedDate !== undefined ? raw.joinedDate : existing?.joined_date,
+  });
   const { data, error } = await sb
     .from("members")
     .update({
