@@ -9,7 +9,7 @@ import { EVENT_STATUSES } from "@/lib/data/types";
 import { api } from "@/lib/client/api";
 import { useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
-import { PageHeader } from "@/components/shared/PageHeader";
+import { useLang } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,6 +34,7 @@ export function EventsView() {
   const router = useRouter();
   const params = useSearchParams();
   const { can } = usePermissions();
+  const { t, lang } = useLang();
   const admin = can.events;
 
   const [filter, setFilter] = useState<Filter>("all");
@@ -73,7 +74,7 @@ export function EventsView() {
     setFormError(null);
     try {
       const res = await api.post<{ event: Event }>("/api/events", input);
-      toast.success(`“${res.event.name}” created`);
+      toast.success(t(`“${res.event.name}” created`, `“${res.event.tamilName || res.event.name}” உருவாக்கப்பட்டது`));
       setFormOpen(false);
       router.push(`/events/${res.event.id}`);
     } catch (e) {
@@ -83,21 +84,23 @@ export function EventsView() {
     }
   };
 
+  const filterName = (val: Filter) => {
+    if (val === "all") return t("All", "அனைத்தும்");
+    if (val === "active") return t("Active", "நடைபெறுபவை");
+    if (val === "upcoming") return t("Upcoming", "வரவிருப்பவை");
+    if (val === "completed") return t("Completed", "முடிந்தவை");
+    return val;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageHeader
-        eyebrow="Celebrations"
-        title="Events"
-        ta="நிகழ்வுகள்"
-        subtitle="Festivals, sports, meetings and community moments"
-        actions={
-          admin ? (
-            <Button variant="primary" onClick={() => { setFormError(null); setFormOpen(true); }}>
-              <Plus className="size-4" /> Create Event
-            </Button>
-          ) : undefined
-        }
-      />
+      {admin && (
+        <div className="flex items-center justify-end">
+          <Button variant="primary" size="sm" onClick={() => { setFormError(null); setFormOpen(true); }}>
+            <Plus className="size-4" /> {t("Create Event", "நிகழ்வை உருவாக்கு")}
+          </Button>
+        </div>
+      )}
 
       {/* 4-Column responsive tabs bar: clean on mobile without horizontal scrolling */}
       <div className="grid grid-cols-4 gap-1.5 sm:flex sm:items-center sm:gap-2">
@@ -109,14 +112,14 @@ export function EventsView() {
               type="button"
               onClick={() => setFilter(f.value)}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[12px] font-bold transition-all sm:px-3.5 sm:py-1.5",
+                "inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-bold transition-all sm:px-3.5 sm:py-1.5",
                 active
                   ? "bg-navy-900 text-white shadow-sm dark:bg-saffron-500 dark:text-ink"
                   : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink",
               )}
             >
-              <span>{f.label}</span>
-              <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums", active ? "bg-white/20 dark:bg-navy-950/20" : "bg-surface text-faint")}>
+              <span>{filterName(f.value)}</span>
+              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-extrabold tabular-nums", active ? "bg-white/20 dark:bg-navy-950/20" : "bg-surface text-faint")}>
                 {counts[f.value] ?? 0}
               </span>
             </button>

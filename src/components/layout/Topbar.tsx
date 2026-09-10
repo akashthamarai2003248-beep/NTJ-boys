@@ -18,6 +18,7 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   const isCollections = pathname?.startsWith("/collections");
   const isExpenses = pathname?.startsWith("/expenses");
+  const isEvents = pathname === "/events" || pathname?.startsWith("/events");
 
   const roleName =
     user?.role === "admin"
@@ -34,11 +35,17 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/85 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2.5 px-4 sm:gap-3 sm:px-6 lg:px-8">
-        {isCollections || isExpenses ? (
+        {isCollections || isExpenses || isEvents ? (
           <div className="flex shrink-0 items-center gap-2.5">
             <div className="leading-tight">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-saffron-600 dark:text-saffron-400">
-                {lang === "ta" ? "நிதி" : "FINANCE"}
+                {isEvents
+                  ? lang === "ta"
+                    ? "கொண்டாட்டங்கள்"
+                    : "CELEBRATIONS"
+                  : lang === "ta"
+                  ? "நிதி"
+                  : "FINANCE"}
               </p>
               <h1 className="text-[16px] sm:text-[18px] font-black tracking-tight text-ink dark:text-white leading-tight">
                 {isCollections
@@ -47,11 +54,17 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
                     : lang === "both"
                     ? "Collections · வரவு"
                     : "Collections"
+                  : isExpenses
+                  ? lang === "ta"
+                    ? "செலவு"
+                    : lang === "both"
+                    ? "Expenses · செலவு"
+                    : "Expenses"
                   : lang === "ta"
-                  ? "செலவு"
+                  ? "நிகழ்வுகள்"
                   : lang === "both"
-                  ? "Expenses · செலவு"
-                  : "Expenses"}
+                  ? "Events · நிகழ்வுகள்"
+                  : "Events"}
               </h1>
             </div>
           </div>
