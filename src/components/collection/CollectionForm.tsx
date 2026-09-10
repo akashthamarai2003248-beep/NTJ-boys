@@ -12,6 +12,7 @@ import { todayISO } from "@/lib/utils/date";
 import { parseRupees, formatINR } from "@/lib/utils/money";
 import { parseVoiceTranscript } from "@/lib/utils/voice";
 import { VoiceToText } from "@/components/shared/VoiceToText";
+import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
 
 /** Field values just before voice dictation, so Undo can restore them. */
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function CollectionForm({ events, initial, submitting, error, onSubmit, onCancel }: Props) {
+  const { t } = useLang();
   const [personName, setPersonName] = useState(initial?.personName ?? "");
   const [category, setCategory] = useState<string>(initial?.category || initial?.street || "ஊர் வசூல்");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
@@ -81,9 +83,9 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    if (!personName.trim()) return setLocalError("Please enter the contributor's name");
-    if (!rupees || rupees <= 0) return setLocalError("Amount must be a positive number");
-    if (!date) return setLocalError("Please choose a date");
+    if (!personName.trim()) return setLocalError(t("Please enter the contributor's name", "நன்கொடையாளர் பெயரை உள்ளிடவும்"));
+    if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை சரியான எண்ணாக இருக்க வேண்டும்"));
+    if (!date) return setLocalError(t("Please choose a date", "தேதியைத் தேர்ந்தெடுக்கவும்"));
     setLocalError(null);
     setVoiceTranscript(null);
     setVoiceSnapshot(null);
@@ -111,7 +113,7 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
   return (
     <form onSubmit={submit} className="space-y-4 sm:space-y-5">
       <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-saffron-600 dark:text-saffron-400">
-        Contributor details · நன்கொடையாளர்
+        {t("Contributor details", "நன்கொடையாளர் விவரங்கள்")}
       </p>
 
       <VoiceToText
@@ -138,7 +140,7 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
         {/* Category selector */}
         <div className="sm:col-span-2">
           <label className="mb-1.5 block text-[12.5px] font-bold text-ink">
-            Category <span className="font-medium text-faint">வசூல் வகை *</span>
+            {t("Category", "வசூல் வகை")} <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {COLLECTION_CATEGORIES.map((cat) => {
@@ -155,9 +157,9 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
                       : "border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
                   )}
                 >
-                  <span className="text-[13px] font-extrabold">{cat.label}</span>
+                  <span className="text-[13px] font-extrabold">{t(cat.sub, cat.label)}</span>
                   <span className={cn("text-[10px] font-medium", active ? "text-saffron-700 dark:text-saffron-400" : "text-faint")}>
-                    {cat.sub}
+                    {t(cat.label, cat.sub)}
                   </span>
                 </button>
               );
@@ -169,7 +171,7 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
           <Input
             value={personName}
             onChange={(e) => setPersonName(e.target.value)}
-            placeholder="e.g. Ravi Kumar"
+            placeholder={t("e.g. Ravi Kumar", "எ.கா. ரவி குமார்")}
             leading={<UserRound className="size-4" />}
           />
         </Field>
@@ -187,7 +189,7 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
           <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
             {methodOptions.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label} · {m.ta}
+                {t(m.label, m.ta)}
               </option>
             ))}
           </Select>
@@ -202,10 +204,10 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
         </Field>
         <Field label="Event" ta="நிகழ்வு">
           <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">General fund · பொது நிதி</option>
+            <option value="">{t("General fund", "பொது நிதி")}</option>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
-                {ev.name}
+                {t(ev.name, ev.tamilName)}
               </option>
             ))}
           </Select>
@@ -220,11 +222,11 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
 
       <div className="flex flex-col-reverse gap-2.5 pt-1 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          {t("Cancel", "ரத்து செய்")}
         </Button>
         <Button type="submit" variant="primary" loading={submitting} className={cn(submitting ? "opacity-90" : "")}>
           <ReceiptText className="size-4" />
-          {initial ? "Save changes" : "Add Collection"}
+          {initial ? t("Save changes", "மாற்றங்களைச் சேமி") : t("Add Collection", "வரவு சேர்க்க")}
         </Button>
       </div>
     </form>

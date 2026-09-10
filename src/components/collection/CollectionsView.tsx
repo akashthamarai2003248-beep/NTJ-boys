@@ -14,6 +14,12 @@ import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
+import {
+  translatePersonName,
+  translateStreet,
+  translateCategory,
+  translateEventName,
+} from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -42,7 +48,7 @@ interface EventsPayload {
 export function CollectionsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { can } = usePermissions();
   const writable = can.finances;
 
@@ -78,8 +84,11 @@ export function CollectionsView() {
 
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
   const eventName = useCallback(
-    (id?: string | null) => events.find((e) => e.id === id)?.name,
-    [events],
+    (id?: string | null) => {
+      const ev = events.find((e) => e.id === id);
+      return ev ? translateEventName(ev.name, ev.tamilName, lang) : t("General fund", "பொது நிதி");
+    },
+    [events, lang, t],
   );
   const hasFilters = Boolean(q || eventId || category || payment || from || to);
 
@@ -110,7 +119,7 @@ export function CollectionsView() {
     setFormOpen(true);
   };
   const viewReceipt = (rec: Collection): RowExtraAction => ({
-    label: "View receipt",
+    label: t("View receipt", "ரசீது பார்க்க"),
     icon: ReceiptText,
     onSelect: () => setReceipt(rec),
   });
@@ -121,15 +130,15 @@ export function CollectionsView() {
     try {
       if (editing) {
         await api.patch(`/api/collections/${editing.id}`, input);
-        toast.success("Collection updated");
+        toast.success(t("Collection updated", "வரவு புதுப்பிக்கப்பட்டது"));
       } else {
         const res = await api.post<{ collection: Collection }>("/api/collections", input);
         setCelebrate({
-          title: "Collection Added",
-          subtitle: `Received from ${input.personName}`,
+          title: t("Collection Added", "வரவு சேர்க்கப்பட்டது"),
+          subtitle: `${t("Received from", "பெறப்பட்டது")} ${input.personName}`,
           amount: formatINR(input.amount),
         });
-        toast.success(`Receipt ${res.collection.receiptNumber} issued`);
+        toast.success(`${t("Receipt", "ரசீது")} ${res.collection.receiptNumber} ${t("issued", "வழங்கப்பட்டது")}`);
       }
       setFormOpen(false);
       reload();
@@ -145,7 +154,7 @@ export function CollectionsView() {
     setDeleteBusy(true);
     try {
       await api.del(`/api/collections/${deleting.id}`);
-      toast.success("Collection removed");
+      toast.success(t("Collection removed", "வரவு நீக்கப்பட்டது"));
       setDeleting(null);
       reload();
     } catch (e) {
@@ -159,23 +168,25 @@ export function CollectionsView() {
   const filteredSum = data?.sum ?? 0;
 
   const sortedOptions = [
-    { value: "newest", label: "Newest first" },
-    { value: "amount_desc", label: "Highest amount" },
-    { value: "amount_asc", label: "Lowest amount" },
-    { value: "name", label: "Name A–Z" },
+    { value: "newest", label: t("Newest first", "புதியவை முதலில்") },
+    { value: "amount_desc", label: t("Highest amount", "அதிக தொகை") },
+    { value: "amount_asc", label: t("Lowest amount", "குறைந்த தொகை") },
+    { value: "name", label: t("Name A–Z", "பெயர் அகரவரிசை") },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-5">
       <PageHeader
         eyebrow="Finance"
-        title="வரவு"
-        ta="Collections · money received"
+        eyebrowTa="நிதி"
+        title="Collections"
+        ta="வரவு"
         subtitle="Every contribution, receipt and donor of the Mandram"
+        subtitleTa="மன்றத்தின் அனைத்து வரவுகள், ரசீதுகள் மற்றும் நன்கொடைகள்"
         actions={
           writable ? (
             <Button variant="primary" onClick={openAdd}>
-              <Plus className="size-4" /> Add Collection
+              <Plus className="size-4" /> {t("Add Collection", "வரவு சேர்க்க")}
             </Button>
           ) : undefined
         }
@@ -186,24 +197,26 @@ export function CollectionsView() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-saffron-500/30 bg-saffron-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-saffron-700 dark:border-transparent dark:bg-saffron-500/20 dark:text-saffron-300">
-              Total Collection · மொத்த வரவு
+              {t("Total Collection", "மொத்த வரவு")}
             </span>
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
             <p className="text-[11.5px] text-muted dark:text-navy-200/80">
-              {hasFilters ? `filtered from ${formatINR(data?.allSum ?? 0)} overall` : "all contributions received"}
+              {hasFilters
+                ? t(`filtered from ${formatINR(data?.allSum ?? 0)} overall`, `மொத்தம் ${formatINR(data?.allSum ?? 0)} இலிருந்து`)
+                : t("all contributions received", "பெறப்பட்ட அனைத்து வரவுகள்")}
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-4">
             <div className="rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5">
               <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{data?.total ?? "–"}</p>
-              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">Receipts</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">{t("Receipts", "ரசீதுகள்")}</p>
             </div>
             {data && data.total > 0 && (
               <div className="hidden rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5 sm:block">
                 <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
-                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">Average</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">{t("Average", "சராசரி")}</p>
               </div>
             )}
           </div>
@@ -266,7 +279,7 @@ export function CollectionsView() {
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
-            All
+            {t("All", "அனைத்தும்")}
           </button>
           <button
             type="button"
@@ -278,7 +291,7 @@ export function CollectionsView() {
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
-            🏘️ ஊர் வசூல்
+            🏘️ {t("Oor Vasul", "ஊர் வசூல்")}
           </button>
           <button
             type="button"
@@ -290,7 +303,7 @@ export function CollectionsView() {
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
-            👥 மன்றம் வசூல்
+            👥 {t("Mandram Vasul", "மன்றம் வசூல்")}
           </button>
 
           {hasFilters && (
@@ -299,7 +312,7 @@ export function CollectionsView() {
               onClick={clearFilters}
               className="ml-auto shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
-              <Eraser className="size-3" /> Clear
+              <Eraser className="size-3" /> {t("Clear", "அழி")}
             </button>
           )}
         </div>
@@ -316,25 +329,25 @@ export function CollectionsView() {
             >
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-[12px]">
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Event</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
                   <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
-                    <option value="">All events</option>
+                    <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {events.map((ev) => (
-                      <option key={ev.id} value={ev.id}>{ev.name}</option>
+                      <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Payment</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Payment", "செலுத்திய முறை")}</label>
                   <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
-                    <option value="">All payments</option>
+                    <option value="">{t("All payments", "அனைத்து முறைகள்")}</option>
                     {PAYMENT_CHOICES.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
+                      <option key={m.value} value={m.value}>{t(m.label, m.ta)}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Sort</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Sort", "வரிசைப்படுத்து")}</label>
                   <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-full text-[12.5px] h-9">
                     {sortedOptions.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -342,7 +355,7 @@ export function CollectionsView() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Date Range</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Date Range", "தேதி வரம்பு")}</label>
                   <div className="flex items-center gap-1">
                     <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
                     <span className="text-faint">–</span>
@@ -373,16 +386,16 @@ export function CollectionsView() {
         ) : items.length === 0 ? (
           <EmptyState
             icon={hasFilters ? SearchX : HandCoins}
-            title={hasFilters ? "No matching collections" : "No collections yet"}
+            title={hasFilters ? t("No matching collections", "பொருந்தும் வரவுகள் இல்லை") : t("No collections yet", "வரவுகள் இன்னும் இல்லை")}
             message={
               hasFilters
-                ? "Try adjusting or clearing the filters above."
-                : "Start recording your first contribution for the Mandram."
+                ? t("Try adjusting or clearing the filters above.", "வடிகட்டிகளை மாற்றி அல்லது அழித்து பார்க்கவும்.")
+                : t("Start recording your first contribution for the Mandram.", "மன்றத்திற்கான முதல் வரவை பதிவு செய்யுங்கள்.")
             }
             action={
               writable && !hasFilters ? (
                 <Button variant="primary" onClick={openAdd}>
-                  <Plus className="size-4" /> Add Collection
+                  <Plus className="size-4" /> {t("Add Collection", "வரவு சேர்க்க")}
                 </Button>
               ) : undefined
             }
@@ -394,11 +407,11 @@ export function CollectionsView() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-line bg-surface-2/70 text-[10.5px] font-bold uppercase tracking-[0.1em] text-faint">
-                    <th className="px-5 py-3">Name</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Payment</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Event</th>
+                    <th className="px-5 py-3">{t("Name", "பெயர்")}</th>
+                    <th className="px-4 py-3 text-right">{t("Amount", "தொகை")}</th>
+                    <th className="px-4 py-3">{t("Payment", "கட்டண முறை")}</th>
+                    <th className="px-4 py-3">{t("Date", "தேதி")}</th>
+                    <th className="px-4 py-3">{t("Event", "நிகழ்வு")}</th>
                     <th className="px-2 py-3" />
                   </tr>
                 </thead>
@@ -407,12 +420,12 @@ export function CollectionsView() {
                     <tr key={c.id} className="group border-b border-line/70 text-[13px] transition-colors last:border-0 hover:bg-surface-2/50">
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                          <p className="font-bold">{c.personName}</p>
+                          <p className="font-bold">{translatePersonName(c.personName, lang)}</p>
                           <CategoryBadge category={c.category} street={c.street} />
                           <TypeBadge type={c.contributionType} />
                         </div>
                         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-faint">
-                          {c.street && c.street !== c.category && <span>{c.street}</span>}
+                          {c.street && c.street !== c.category && <span>{translateStreet(c.street, lang)}</span>}
                           {c.contributionType === "namePhone" && c.phone && (
                             <span>{c.phone}</span>
                           )}
@@ -422,7 +435,7 @@ export function CollectionsView() {
                       <td className="px-4 py-3"><PaymentLabel method={c.paymentMethod} /></td>
                       <td className="px-4 py-3 text-muted">{formatShort(c.date)}</td>
                       <td className="max-w-40 px-4 py-3">
-                        <p className="truncate text-muted">{eventName(c.eventId) ?? <span className="text-faint">General fund</span>}</p>
+                        <p className="truncate text-muted">{eventName(c.eventId)}</p>
                       </td>
                       <td className="px-2 py-3 opacity-0 transition-opacity group-hover:opacity-100">
                         <RowActions extras={[viewReceipt(c)]} onEdit={writable ? () => openEdit(c) : undefined} onDelete={writable ? () => setDeleting(c) : undefined} />
@@ -438,16 +451,16 @@ export function CollectionsView() {
               {items.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-saffron-100 font-bold text-saffron-700 dark:bg-saffron-500/15 dark:text-saffron-400">
-                    {c.personName.slice(0, 1)}
+                    {translatePersonName(c.personName, lang).slice(0, 1)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <p className="truncate text-[14px] font-bold">{c.personName}</p>
+                      <p className="truncate text-[14px] font-bold">{translatePersonName(c.personName, lang)}</p>
                       <CategoryBadge category={c.category} street={c.street} />
                       <TypeBadge type={c.contributionType} />
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-faint">
-                      {c.street && c.street !== c.category && <span>{c.street}</span>}
+                      {c.street && c.street !== c.category && <span>{translateStreet(c.street, lang)}</span>}
                       {c.contributionType === "namePhone" && c.phone && (
                         <span>{c.phone}</span>
                       )}
@@ -457,7 +470,7 @@ export function CollectionsView() {
                       <span className="text-faint">·</span>
                       <span>{formatShort(c.date)}</span>
                       <span className="text-faint">·</span>
-                      <span className="truncate">{eventName(c.eventId) ?? "General fund"}</span>
+                      <span className="truncate">{eventName(c.eventId)}</span>
                     </p>
                   </div>
                   <div className="text-right">
@@ -488,8 +501,8 @@ export function CollectionsView() {
       <Modal
         open={formOpen}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
-        title={editing ? "Edit Collection" : "Add Collection"}
-        description={editing ? `Receipt ${editing.receiptNumber} · ${formatShort(editing.date)}` : "Record a new contribution — a receipt number is generated automatically"}
+        title={editing ? t("Edit Collection", "வரவு திருத்து") : t("Add Collection", "வரவு சேர்க்க")}
+        description={editing ? `${t("Receipt", "ரசீது")} ${editing.receiptNumber} · ${formatShort(editing.date)}` : t("Record a new contribution — a receipt number is generated automatically", "புதிய வரவைப் பதிவு செய்யுங்கள் — ரசீது எண் தானாக உருவாக்கப்படும்")}
         maxWidth="max-w-xl"
       >
         <CollectionForm
@@ -507,14 +520,16 @@ export function CollectionsView() {
         onClose={() => setDeleting(null)}
         onConfirm={handleDelete}
         loading={deleteBusy}
-        title="Delete this collection?"
+        title={t("Delete this collection?", "இந்த வரவை நீக்கவா?")}
         body={
           <>
-            This removes <b>{deleting?.personName}</b>’s contribution of{" "}
-            <b>{deleting ? formatINR(deleting.amount) : ""}</b> and its receipt. The action is recorded in the audit log.
+            {t("This removes", "இது")} <b>{translatePersonName(deleting?.personName ?? "", lang)}</b>
+            {t("’s contribution of ", " அவர்களின் நன்கொடை ")}
+            <b>{deleting ? formatINR(deleting.amount) : ""}</b>
+            {t(" and its receipt. The action is recorded in the audit log.", " மற்றும் அதன் ரசீதை நீக்கும். இந்த நடவடிக்கை தணிக்கை பதிவேட்டில் பதிவு செய்யப்படும்.")}
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel={t("Delete", "நீக்கு")}
       />
 
       <SuccessOverlay
@@ -530,19 +545,22 @@ export function CollectionsView() {
 }
 
 function TypeBadge({ type }: { type: ContributionType }) {
+  const { t } = useLang();
   if (type === "voice") {
-    return <Badge tone="saffron" className="px-1.5 py-0 text-[9px]">🎙 Voice</Badge>;
+    return <Badge tone="saffron" className="px-1.5 py-0 text-[9px]">🎙 {t("Voice", "குரல் பதிவு")}</Badge>;
   }
   if (type === "name") {
-    return <Badge tone="muted" className="px-1.5 py-0 text-[9px]">Name only</Badge>;
+    return <Badge tone="muted" className="px-1.5 py-0 text-[9px]">{t("Name only", "பெயர் மட்டும்")}</Badge>;
   }
   return null;
 }
 
 function CategoryBadge({ category, street }: { category?: string | null; street?: string | null }) {
-  const cat = category || (street?.includes("வசூல்") ? street : "ஊர் வசூல்");
-  const isMandram = cat.includes("மன்றம்");
-  const isOor = cat.includes("ஊர்");
+  const { lang } = useLang();
+  const rawCat = category || (street?.includes("வசூல்") ? street : "ஊர் வசூல்");
+  const cat = translateCategory(rawCat, lang);
+  const isMandram = rawCat.includes("மன்றம்") || rawCat.toLowerCase().includes("mandram");
+  const isOor = rawCat.includes("ஊர்") || rawCat.toLowerCase().includes("oor") || rawCat.toLowerCase().includes("village");
 
   return (
     <span

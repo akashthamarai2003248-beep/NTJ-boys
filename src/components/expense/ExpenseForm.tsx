@@ -16,6 +16,7 @@ import { parseVoiceExpenseTranscript } from "@/lib/utils/voice";
 import { VoiceToText } from "@/components/shared/VoiceToText";
 import { useSession } from "@/components/layout/session";
 import { uploadImage } from "@/lib/client/upload";
+import { useLang } from "@/lib/i18n";
 
 /** Field values just before voice dictation, so Undo can restore them. */
 interface VoiceSnapshot {
@@ -37,6 +38,7 @@ interface Props {
 
 export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCancel }: Props) {
   const { user } = useSession();
+  const { lang, t } = useLang();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [eventId, setEventId] = useState(initial?.eventId ?? "");
@@ -78,17 +80,21 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
   const onPickBill = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      return setLocalError("Please choose an image file (PNG, JPG, WEBP)");
+      return setLocalError(t("Please choose an image file (PNG, JPG, WEBP)", "தயவுசெய்து படக் கோப்பைத் தேர்ந்தெடுக்கவும் (PNG, JPG, WEBP)"));
     }
     setLocalError(null);
     setUploadingBill(true);
-    setBillInfo("Compressing to <400KB & uploading…");
+    setBillInfo(t("Compressing to <400KB & uploading…", "400KB-க்குள் சுருக்கி பதிவேற்றப்படுகிறது…"));
     try {
       const result = await uploadImage(file, "expenses");
       setBillUrl(result.url);
-      setBillInfo(`Compressed (${result.formattedSize}) · ${result.storage === "supabase" ? "Supabase Storage" : "Ready"}`);
+      setBillInfo(
+        `${t("Compressed", "சுருக்கப்பட்டது")} (${result.formattedSize}) · ${
+          result.storage === "supabase" ? t("Supabase Storage", "சுபாபேஸ் சேமிப்பகம்") : t("Ready", "தயார்")
+        }`
+      );
     } catch (err) {
-      setLocalError((err as Error).message || "Could not process bill image");
+      setLocalError((err as Error).message || t("Could not process bill image", "ரசீது படத்தை செயலாக்க முடியவில்லை"));
     } finally {
       setUploadingBill(false);
     }
@@ -97,9 +103,9 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    if (!title.trim()) return setLocalError("Expense title is required");
-    if (!rupees || rupees <= 0) return setLocalError("Amount must be a positive number");
-    if (!date) return setLocalError("Please choose a date");
+    if (!title.trim()) return setLocalError(t("Expense title is required", "செலவின் தலைப்பு தேவை"));
+    if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை நேர்மறை எண்ணாக இருக்க வேண்டும்"));
+    if (!date) return setLocalError(t("Please choose a date", "தயவுசெய்து தேதியைத் தேர்ந்தெடுக்கவும்"));
     setLocalError(null);
     setVoiceTranscript(null);
     setVoiceSnapshot(null);
@@ -126,7 +132,7 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
   return (
     <form onSubmit={submit} className="space-y-5">
       <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-navy-700 dark:text-navy-300">
-        Expense details · செலவு விவரங்கள்
+        {lang === "ta" ? "செலவு விவரங்கள்" : lang === "en" ? "Expense details" : "Expense details · செலவு விவரங்கள்"}
       </p>
       <VoiceToText
         onTranscript={handleVoiceTranscript}
@@ -139,11 +145,13 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
       {voiceTranscript && (
         <div className="flex items-start justify-between gap-3 rounded-xl border border-leaf-500/40 bg-leaf-500/5 px-3 py-2.5">
           <div className="min-w-0">
-            <p className="text-[12.5px] font-bold text-leaf-700 dark:text-leaf-400">Voice captured · குரல் பதிவு</p>
+            <p className="text-[12.5px] font-bold text-leaf-700 dark:text-leaf-400">
+              {lang === "ta" ? "குரல் பதிவு" : lang === "en" ? "Voice captured" : "Voice captured · குரல் பதிவு"}
+            </p>
             <p className="mt-0.5 truncate text-[12px] italic text-muted">“{voiceTranscript}”</p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={undoVoice}>
-            <Undo2 className="size-3.5" /> Undo
+            <Undo2 className="size-3.5" /> {t("Undo", "முந்தைய நிலை")}
           </Button>
         </div>
       )}
@@ -152,7 +160,7 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Sound system hire"
+            placeholder={t("e.g. Sound system hire", "எ.கா. ஒலிபெருக்கி அமைப்பு வாடகை")}
             leading={<Tag className="size-4" />}
           />
         </Field>
@@ -176,16 +184,20 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
         </Field>
         <Field label="Event" ta="நிகழ்வு">
           <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">General · பொது</option>
+            <option value="">{t("General fund", "பொது நிதி")}</option>
             {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>{ev.name}</option>
+              <option key={ev.id} value={ev.id}>
+                {lang === "ta" ? (ev.tamilName || ev.name) : lang === "en" ? ev.name : `${ev.name}${ev.tamilName ? ` · ${ev.tamilName}` : ""}`}
+              </option>
             ))}
           </Select>
         </Field>
         <Field label="Payment method" ta="கட்டண முறை">
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
             {methodOptions.map((m) => (
-              <option key={m.value} value={m.value}>{m.label} · {m.ta}</option>
+              <option key={m.value} value={m.value}>
+                {lang === "ta" ? m.ta : lang === "en" ? m.label : `${m.label} · ${m.ta}`}
+              </option>
             ))}
           </Select>
         </Field>
@@ -193,7 +205,8 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
 
       <div>
         <label className="mb-1.5 block text-[12.5px] font-bold text-ink">
-          Bill / Receipt photo <span className="font-medium text-faint">ரசீது புகைப்படம் (optional)</span>
+          {lang === "ta" ? "ரசீது புகைப்படம்" : lang === "en" ? "Bill / Receipt photo" : "Bill / Receipt photo · ரசீது"}{" "}
+          <span className="font-medium text-faint">({t("optional", "விருப்பத்தேர்வு")})</span>
         </label>
         <input
           ref={billFileRef}
@@ -207,7 +220,7 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={billUrl} alt="Bill preview" className="size-14 rounded-lg object-cover" />
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-bold text-ink">✓ Bill attached</p>
+              <p className="text-[12.5px] font-bold text-ink">{t("✓ Bill attached", "✓ ரசீது இணைக்கப்பட்டது")}</p>
               {billInfo && <p className="text-[11px] font-semibold text-leaf-600 dark:text-leaf-400">{billInfo}</p>}
             </div>
             <Button
@@ -230,12 +243,17 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             {uploadingBill ? (
               <>
                 <Loader2 className="size-4 animate-spin text-saffron-600" />
-                <span>Compressing to &le;400 KB & uploading…</span>
+                <span>{t("Compressing to ≤400 KB & uploading…", "400 KB-க்குள் சுருக்கி பதிவேற்றப்படுகிறது…")}</span>
               </>
             ) : (
               <>
                 <Camera className="size-4 text-faint" />
-                <span>Attach bill photo (&le;400 KB · Supabase Storage)</span>
+                <span>
+                  {t(
+                    "Attach bill photo (≤400 KB · Supabase Storage)",
+                    "ரசீது புகைப்படம் இணைக்கவும் (≤400 KB · சுபாபேஸ் சேமிப்பகம்)"
+                  )}
+                </span>
               </>
             )}
           </button>
@@ -250,11 +268,11 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
 
       <div className="flex flex-col-reverse gap-2.5 pt-1 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
+          {t("Cancel", "ரத்து செய்")}
         </Button>
         <Button type="submit" variant="primary" loading={submitting}>
           <ReceiptText className="size-4" />
-          {initial ? "Save changes" : "Add Expense"}
+          {initial ? t("Save changes", "மாற்றங்களைச் சேமி") : t("Add Expense", "செலவு சேர்க்க")}
         </Button>
       </div>
     </form>

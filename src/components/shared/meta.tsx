@@ -8,6 +8,8 @@ import {
 import { EVENT_STATUSES } from "@/lib/data/types";
 import { Badge, type BadgeTone } from "./tone";
 
+import { useLang } from "@/lib/i18n";
+
 export { EVENT_TYPES, EXPENSE_CATEGORIES, PAYMENT_METHODS };
 
 export const paymentMeta: Record<PaymentMethod, { label: string; ta: string; icon: LucideIcon }> = {
@@ -18,11 +20,12 @@ export const paymentMeta: Record<PaymentMethod, { label: string; ta: string; ico
 };
 
 export function PaymentLabel({ method }: { method: PaymentMethod }) {
-  const m = paymentMeta[method];
+  const { t } = useLang();
+  const m = paymentMeta[method] ?? paymentMeta.other;
   return (
     <span className="inline-flex items-center gap-1.5 text-[13px] text-ink">
       <m.icon className="size-3.5 text-faint" />
-      <span>{m.label}</span>
+      <span>{t(m.label, m.ta)}</span>
     </span>
   );
 }
@@ -32,8 +35,9 @@ export function eventTypeMeta(type: EventType) {
 }
 
 export function EventStatusPill({ status }: { status: EventStatus }) {
+  const { t } = useLang();
   const s = EVENT_STATUSES.find((x) => x.value === status) ?? EVENT_STATUSES[2];
-  return <Badge tone={s.tone as BadgeTone}>{s.label}</Badge>;
+  return <Badge tone={s.tone as BadgeTone}>{t(s.label, s.ta)}</Badge>;
 }
 
 const catTones: BadgeTone[] = ["saffron", "leaf", "navy", "gold", "red", "violet", "muted"];

@@ -14,6 +14,11 @@ import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
+import {
+  translateExpenseTitle,
+  translateEventName,
+  translatePaymentMethod,
+} from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -26,7 +31,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions } from "@/components/shared/RowActions";
-import { PaymentLabel } from "@/components/shared/meta";
+import { PaymentLabel, paymentMeta } from "@/components/shared/meta";
 import { formatINR } from "@/lib/utils/money";
 import { formatShort } from "@/lib/utils/date";
 import { ExpenseForm } from "./ExpenseForm";
@@ -38,7 +43,7 @@ interface EventsPayload { events: Event[] }
 export function ExpensesView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { can } = usePermissions();
   const writable = can.finances;
 
@@ -68,7 +73,13 @@ export function ExpensesView() {
   const { data, loading, reload } = useFetch<ExpensePage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
-  const eventName = useCallback((id?: string | null) => events.find((e) => e.id === id)?.name, [events]);
+  const eventName = useCallback(
+    (id?: string | null) => {
+      const ev = events.find((e) => e.id === id);
+      return ev ? translateEventName(ev.name, ev.tamilName, lang) : t("General", "பொது நிதி");
+    },
+    [events, lang, t],
+  );
   const hasFilters = Boolean(q || eventId || payment || from || to);
 
   useEffect(() => {
@@ -92,11 +103,15 @@ export function ExpensesView() {
     try {
       if (editing) {
         await api.patch(`/api/expenses/${editing.id}`, input);
-        toast.success("Expense updated");
+        toast.success(t("Expense updated", "செலவு புதுப்பிக்கப்பட்டது"));
       } else {
         await api.post<{ expense: Expense }>("/api/expenses", input);
-        setCelebrate({ title: "Expense Added", subtitle: `Recorded ${input.title}`, amount: formatINR(input.amount) });
-        toast.success("Expense recorded");
+        setCelebrate({
+          title: t("Expense Added", "செலவு சேர்க்கப்பட்டது"),
+          subtitle: `${t("Recorded", "பதிவு செய்யப்பட்டது")} ${input.title}`,
+          amount: formatINR(input.amount),
+        });
+        toast.success(t("Expense recorded", "செலவு பதிவு செய்யப்பட்டது"));
       }
       setFormOpen(false);
       reload();
@@ -112,7 +127,7 @@ export function ExpensesView() {
     setDeleteBusy(true);
     try {
       await api.del(`/api/expenses/${deleting.id}`);
-      toast.success("Expense removed");
+      toast.success(t("Expense removed", "செலவு நீக்கப்பட்டது"));
       setDeleting(null);
       setViewing(null);
       reload();
@@ -130,13 +145,15 @@ export function ExpensesView() {
     <div className="space-y-4 sm:space-y-5">
       <PageHeader
         eyebrow="Finance"
-        title="செலவு"
-        ta="Expenses · money spent"
+        eyebrowTa="நிதி"
+        title="Expenses"
+        ta="செலவு"
         subtitle="Every expense of the Mandram — transparent and audited"
+        subtitleTa="மன்றத்தின் அனைத்து செலவுகள் — வெளிப்படையானது மற்றும் சரிபார்க்கப்பட்டது"
         actions={
           writable ? (
             <Button variant="primary" onClick={openAdd}>
-              <Plus className="size-4" /> Add Expense
+              <Plus className="size-4" /> {t("Add Expense", "செலவு சேர்க்க")}
             </Button>
           ) : undefined
         }
@@ -147,24 +164,26 @@ export function ExpensesView() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red-700 dark:border-transparent dark:bg-gold-400/20 dark:text-gold-300">
-              Total Expenses · மொத்த செலவு
+              {t("Total Expenses", "மொத்த செலவு")}
             </span>
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
             <p className="text-[11.5px] text-muted dark:text-white/75">
-              {hasFilters ? `filtered from ${formatINR(data?.allSum ?? 0)} overall` : "spent across all events & general"}
+              {hasFilters
+                ? t(`filtered from ${formatINR(data?.allSum ?? 0)} overall`, `மொத்தம் ${formatINR(data?.allSum ?? 0)} இலிருந்து`)
+                : t("spent across all events & general", "அனைத்து நிகழ்வுகள் மற்றும் பொது செலவுகள்")}
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-4">
             <div className="rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5">
               <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{data?.total ?? "–"}</p>
-              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">Entries</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">{t("Entries", "செலவு பதிவுகள்")}</p>
             </div>
             {data && data.total > 0 && (
               <div className="hidden rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5 sm:block">
                 <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
-                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">Average</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">{t("Average", "சராசரி")}</p>
               </div>
             )}
           </div>
@@ -227,7 +246,7 @@ export function ExpensesView() {
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
-            All
+            {t("All", "அனைத்தும்")}
           </button>
           {PAYMENT_CHOICES.map((m) => {
             const active = payment === m.value;
@@ -243,7 +262,7 @@ export function ExpensesView() {
                     : "border border-line bg-surface-2/50 text-muted hover:text-ink"
                 )}
               >
-                {m.label}
+                {t(m.label, m.ta)}
               </button>
             );
           })}
@@ -270,30 +289,30 @@ export function ExpensesView() {
             >
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Event</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
                   <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
-                    <option value="">All events</option>
-                    {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+                    <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
+                    {events.map((ev) => <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>)}
                   </Select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Payment Method</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Payment Method", "செலுத்திய முறை")}</label>
                   <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
-                    <option value="">All payments</option>
-                    {PAYMENT_CHOICES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    <option value="">{t("All payments", "அனைத்து முறைகள்")}</option>
+                    {PAYMENT_CHOICES.map((m) => <option key={m.value} value={m.value}>{t(m.label, m.ta)}</option>)}
                   </Select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Sort</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Sort", "வரிசைப்படுத்து")}</label>
                   <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-full text-[12.5px] h-9">
-                    <option value="newest">Newest first</option>
-                    <option value="amount_desc">Highest amount</option>
-                    <option value="amount_asc">Lowest amount</option>
-                    <option value="title">Title A–Z</option>
+                    <option value="newest">{t("Newest first", "புதியவை முதலில்")}</option>
+                    <option value="amount_desc">{t("Highest amount", "அதிக தொகை")}</option>
+                    <option value="amount_asc">{t("Lowest amount", "குறைந்த தொகை")}</option>
+                    <option value="title">{t("Title A–Z", "தலைப்பு அகரவரிசை")}</option>
                   </Select>
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Date Range</label>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Date Range", "தேதி வரம்பு")}</label>
                   <div className="flex items-center gap-1 max-w-sm">
                     <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
                     <span className="text-faint">–</span>
@@ -324,14 +343,14 @@ export function ExpensesView() {
           <EmptyState
             icon={hasFilters ? SearchX : TrendingDown}
             tone={hasFilters ? "navy" : "saffron"}
-            title={hasFilters ? "No matching expenses" : "No expenses yet"}
+            title={hasFilters ? t("No matching expenses", "பொருந்தும் செலவுகள் இல்லை") : t("No expenses yet", "செலவுகள் இன்னும் இல்லை")}
             message={
               hasFilters
-                ? "Try adjusting or clearing the filters above."
-                : "Record the first expense to keep the Mandram fully transparent."
+                ? t("Try adjusting or clearing the filters above.", "வடிகட்டிகளை மாற்றி அல்லது அழித்து பார்க்கவும்.")
+                : t("Record the first expense to keep the Mandram fully transparent.", "மன்ற செலவை பதிவு செய்யுங்கள்.")
             }
             action={writable && !hasFilters ? (
-              <Button variant="primary" onClick={openAdd}><Plus className="size-4" /> Add Expense</Button>
+              <Button variant="primary" onClick={openAdd}><Plus className="size-4" /> {t("Add Expense", "செலவு சேர்க்க")}</Button>
             ) : undefined}
           />
         ) : (
@@ -340,11 +359,11 @@ export function ExpensesView() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-line bg-surface-2/70 text-[10.5px] font-bold uppercase tracking-[0.1em] text-faint">
-                    <th className="px-5 py-3">Expense</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Payment</th>
-                    <th className="px-4 py-3">Event</th>
-                    <th className="px-4 py-3">Date</th>
+                    <th className="px-5 py-3">{t("Expense", "செலவு")}</th>
+                    <th className="px-4 py-3 text-right">{t("Amount", "தொகை")}</th>
+                    <th className="px-4 py-3">{t("Payment", "கட்டண முறை")}</th>
+                    <th className="px-4 py-3">{t("Event", "நிகழ்வு")}</th>
+                    <th className="px-4 py-3">{t("Date", "தேதி")}</th>
                     <th className="px-2 py-3" />
                   </tr>
                 </thead>
@@ -352,15 +371,15 @@ export function ExpensesView() {
                   {items.map((e) => (
                     <tr key={e.id} className="group border-b border-line/70 text-[13px] transition-colors last:border-0 hover:bg-surface-2/50">
                       <td className="max-w-64 px-5 py-3">
-                        <p className="truncate font-bold">{e.title}</p>
+                        <p className="truncate font-bold">{translateExpenseTitle(e.title, lang)}</p>
                       </td>
                       <td className="px-4 py-3 text-right font-bold tabular-nums text-red-600 dark:text-red-400">− {formatINR(e.amount)}</td>
                       <td className="px-4 py-3"><PaymentLabel method={e.paymentMethod} /></td>
-                      <td className="max-w-36 px-4 py-3"><p className="truncate text-muted">{eventName(e.eventId) ?? <span className="text-faint">General</span>}</p></td>
+                      <td className="max-w-36 px-4 py-3"><p className="truncate text-muted">{eventName(e.eventId)}</p></td>
                       <td className="px-4 py-3 text-muted">{formatShort(e.date)}</td>
                       <td className="px-2 py-3 opacity-0 transition-opacity group-hover:opacity-100">
                         <RowActions
-                          extras={[{ label: "View", icon: Eye, onSelect: () => setViewing(e) }]}
+                          extras={[{ label: t("View", "பார்க்க"), icon: Eye, onSelect: () => setViewing(e) }]}
                           onEdit={writable ? () => openEdit(e) : undefined}
                           onDelete={writable ? () => setDeleting(e) : undefined}
                         />
@@ -378,9 +397,9 @@ export function ExpensesView() {
                     <TrendingDown className="size-5" />
                   </div>
                   <button className="min-w-0 flex-1 text-left" onClick={() => setViewing(e)}>
-                    <p className="truncate text-[14px] font-bold">{e.title}</p>
+                    <p className="truncate text-[14px] font-bold">{translateExpenseTitle(e.title, lang)}</p>
                     <p className="mt-0.5 truncate text-[11.5px] text-muted">
-                      {eventName(e.eventId) ?? "General · பொது"} · {e.paymentMethod.toUpperCase()}
+                      {eventName(e.eventId)} · {translatePaymentMethod(e.paymentMethod, lang)}
                     </p>
                   </button>
                   <div className="text-right">
@@ -389,7 +408,7 @@ export function ExpensesView() {
                   </div>
                   <RowActions
                     canEdit={writable} canDelete={writable}
-                    extras={[{ label: "View", icon: Eye, onSelect: () => setViewing(e) }]}
+                    extras={[{ label: t("View", "பார்க்க"), icon: Eye, onSelect: () => setViewing(e) }]}
                     onEdit={() => openEdit(e)}
                     onDelete={() => setDeleting(e)}
                   />
@@ -404,8 +423,8 @@ export function ExpensesView() {
       <Modal
         open={formOpen}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
-        title={editing ? "Edit Expense" : "Add Expense"}
-        description="செலவு பதிவு · record what the Mandram spent"
+        title={editing ? t("Edit Expense", "செலவு திருத்து") : t("Add Expense", "செலவு சேர்க்க")}
+        description={t("Record what the Mandram spent", "மன்றம் செய்த செலவை பதிவு செய்யவும்")}
         maxWidth="max-w-md"
       >
         <ExpenseForm
@@ -433,15 +452,14 @@ export function ExpensesView() {
         onClose={() => setDeleting(null)}
         onConfirm={handleDelete}
         loading={deleteBusy}
-        title="Delete this expense?"
+        title={t("Delete this expense?", "இந்த செலவை நீக்கவா?")}
         body={
           <>
-            This removes <b>{deleting?.title}</b> ({deleting ? formatINR(deleting.amount) : ""}). The action is recorded in the audit log.
+            {t("This removes", "இது")} <b>{translateExpenseTitle(deleting?.title ?? "", lang)}</b> ({deleting ? formatINR(deleting.amount) : ""}). {t("The action is recorded in the audit log.", "இந்த நடவடிக்கை தணிக்கை பதிவேட்டில் பதிவு செய்யப்படும்.")}
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel={t("Delete", "நீக்கு")}
       />
-
       <SuccessOverlay open={Boolean(celebrate)} title={celebrate?.title ?? ""} subtitle={celebrate?.subtitle} amount={celebrate?.amount} />
     </div>
   );
