@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Eraser, Eye, Plus, Search, SearchX, SlidersHorizontal, TrendingDown, X,
+  CheckCircle2, Eraser, Eye, Plus, Search, SearchX, SlidersHorizontal, TrendingDown, X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Expense, ExpenseInput, Event } from "@/lib/data/types";
@@ -195,19 +195,19 @@ export function ExpensesView() {
         {/* Search Bar + Filter Toggle */}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-faint" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-faint" />
             <input
               type="text"
               value={q}
               onChange={(e) => { setQ(e.target.value); setPage(1); }}
               placeholder={t("Search expense title…", "செலவுத் தலைப்பைத் தேடுங்கள்…")}
-              className="h-10 w-full rounded-xl border border-line bg-surface-2/60 pl-9 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
+              className="h-10.5 w-full rounded-full border border-line bg-surface-2/60 pl-10 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
             />
             {q && (
               <button
                 type="button"
                 onClick={() => { setQ(""); setPage(1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
               >
                 <X className="size-3.5" />
               </button>
@@ -218,7 +218,7 @@ export function ExpensesView() {
             type="button"
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[12px] font-bold transition-all shrink-0",
+              "flex h-10.5 items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-bold transition-all shrink-0",
               showFilters || (eventId || payment || from || to || sort !== "newest")
                 ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
@@ -235,15 +235,15 @@ export function ExpensesView() {
         </div>
 
         {/* Quick Payment Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
             onClick={() => { setPayment(""); setPage(1); }}
             className={cn(
-              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               payment === ""
-                ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
-                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink shadow-sm"
+                : "border border-line bg-surface-2/60 text-muted hover:text-ink"
             )}
           >
             {t("All", "அனைத்தும்")}
@@ -256,10 +256,10 @@ export function ExpensesView() {
                 type="button"
                 onClick={() => { setPayment(active ? "" : m.value); setPage(1); }}
                 className={cn(
-                  "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+                  "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
                   active
-                    ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
-                    : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                    ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink shadow-sm"
+                    : "border border-line bg-surface-2/60 text-muted hover:text-ink"
                 )}
               >
                 {t(m.label, m.ta)}
@@ -270,9 +270,9 @@ export function ExpensesView() {
             <button
               type="button"
               onClick={clearFilters}
-              className="ml-auto shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+              className="ml-auto shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
-              <Eraser className="size-3.5" /> Clear
+              <Eraser className="size-3.5" /> {t("Clear", "அழி")}
             </button>
           )}
         </div>
@@ -390,28 +390,57 @@ export function ExpensesView() {
               </table>
             </div>
 
-            <div className="divide-y divide-line md:hidden">
+            {/* mobile cards matching reference layout */}
+            <div className="divide-y divide-line/60 md:hidden">
               {items.map((e) => (
-                <div key={e.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                <div
+                  key={e.id}
+                  onClick={() => setViewing(e)}
+                  className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2/60 cursor-pointer"
+                >
+                  {/* Circular Icon Avatar */}
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500 dark:bg-red-500/15 dark:text-red-400 border border-red-500/20 text-[15px] shadow-sm">
                     <TrendingDown className="size-5" />
                   </div>
-                  <button className="min-w-0 flex-1 text-left" onClick={() => setViewing(e)}>
-                    <p className="truncate text-[14px] font-bold">{translateExpenseTitle(e.title, lang)}</p>
-                    <p className="mt-0.5 truncate text-[11.5px] text-muted">
-                      {eventName(e.eventId)} · {translatePaymentMethod(e.paymentMethod, lang)}
+
+                  {/* Middle Details */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-bold tracking-tight text-ink dark:text-white">
+                      {translateExpenseTitle(e.title, lang)}
                     </p>
-                  </button>
-                  <div className="text-right">
-                    <p className="text-[15px] font-extrabold tabular-nums text-red-600 dark:text-red-400">− {formatINR(e.amount)}</p>
-                    <p className="text-[10.5px] text-faint">{formatShort(e.date)}</p>
+                    <p className="mt-0.5 truncate text-[12px] font-medium text-muted dark:text-navy-200/70">
+                      {eventName(e.eventId)}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint">
+                      <span>{translatePaymentMethod(e.paymentMethod, lang)}</span>
+                      <span>•</span>
+                      <span>{formatShort(e.date)}</span>
+                    </p>
                   </div>
-                  <RowActions
-                    canEdit={writable} canDelete={writable}
-                    extras={[{ label: t("View", "பார்க்க"), icon: Eye, onSelect: () => setViewing(e) }]}
-                    onEdit={() => openEdit(e)}
-                    onDelete={() => setDeleting(e)}
-                  />
+
+                  {/* Right Column: Amount & Status Pill */}
+                  <div className="flex flex-col items-end shrink-0 gap-1 pl-2 text-right">
+                    <p className="text-[15.5px] font-black tabular-nums tracking-tight text-red-600 dark:text-red-400">
+                      − {formatINR(e.amount)}
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-red-600 dark:bg-red-500/20 dark:text-red-400 border border-red-500/20">
+                      <CheckCircle2 className="size-3 shrink-0" />
+                      {t("Paid", "செலுத்தப்பட்டது")}
+                    </span>
+                  </div>
+
+                  {/* Admin quick actions */}
+                  {writable && (
+                    <div onClick={(ev) => ev.stopPropagation()} className="shrink-0 -mr-1.5">
+                      <RowActions
+                        canEdit={writable}
+                        canDelete={writable}
+                        extras={[{ label: t("View", "பார்க்க"), icon: Eye, onSelect: () => setViewing(e) }]}
+                        onEdit={() => openEdit(e)}
+                        onDelete={() => setDeleting(e)}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

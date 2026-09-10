@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  CalendarRange, Eraser, HandCoins, Plus, ReceiptText, Search, SearchX, SlidersHorizontal, X,
+  CalendarRange, CheckCircle2, Eraser, HandCoins, Plus, ReceiptText, Search, SearchX, SlidersHorizontal, X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Collection, CollectionInput, ContributionType, Event } from "@/lib/data/types";
@@ -18,6 +18,7 @@ import {
   translatePersonName,
   translateCategory,
   translateEventName,
+  translatePaymentMethod,
 } from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -227,19 +228,19 @@ export function CollectionsView() {
         {/* Search Bar + Filter Toggle */}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-faint" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-faint" />
             <input
               type="text"
               value={q}
               onChange={(e) => { setQ(e.target.value); setPage(1); }}
               placeholder={t("Search donor, street, receipt…", "நன்கொடையாளர், தெரு, ரசீது தேடுங்கள்…")}
-              className="h-10 w-full rounded-xl border border-line bg-surface-2/60 pl-9 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
+              className="h-10.5 w-full rounded-full border border-line bg-surface-2/60 pl-10 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
             />
             {q && (
               <button
                 type="button"
                 onClick={() => { setQ(""); setPage(1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
               >
                 <X className="size-3.5" />
               </button>
@@ -250,7 +251,7 @@ export function CollectionsView() {
             type="button"
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[12px] font-bold transition-all shrink-0",
+              "flex h-10.5 items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-bold transition-all shrink-0",
               showFilters || (eventId || payment || from || to || sort !== "newest")
                 ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
@@ -267,15 +268,15 @@ export function CollectionsView() {
         </div>
 
         {/* Quick Category Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
             onClick={() => { setCategory(""); setPage(1); }}
             className={cn(
-              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === ""
-                ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
-                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink shadow-sm"
+                : "border border-line bg-surface-2/60 text-muted hover:text-ink"
             )}
           >
             {t("All", "அனைத்தும்")}
@@ -284,10 +285,10 @@ export function CollectionsView() {
             type="button"
             onClick={() => { setCategory(category === "ஊர் வசூல்" ? "" : "ஊர் வசூல்"); setPage(1); }}
             className={cn(
-              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === "ஊர் வசூல்"
                 ? "bg-amber-600 text-white dark:bg-amber-500 dark:text-ink shadow-sm"
-                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                : "border border-line bg-surface-2/60 text-muted hover:text-ink"
             )}
           >
             🏘️ {t("Oor Vasul", "ஊர் வசூல்")}
@@ -296,10 +297,10 @@ export function CollectionsView() {
             type="button"
             onClick={() => { setCategory(category === "மன்றம் வசூல்" ? "" : "மன்றம் வசூல்"); setPage(1); }}
             className={cn(
-              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === "மன்றம் வசூல்"
                 ? "bg-purple-700 text-white dark:bg-purple-600 dark:text-white shadow-sm"
-                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                : "border border-line bg-surface-2/60 text-muted hover:text-ink"
             )}
           >
             👥 {t("Mandram Vasul", "மன்றம் வசூல்")}
@@ -309,7 +310,7 @@ export function CollectionsView() {
             <button
               type="button"
               onClick={clearFilters}
-              className="ml-auto shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+              className="ml-auto shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
               <Eraser className="size-3" /> {t("Clear", "அழி")}
             </button>
@@ -445,42 +446,57 @@ export function CollectionsView() {
               </table>
             </div>
 
-            {/* mobile cards */}
-            <div className="divide-y divide-line md:hidden">
+            {/* mobile cards matching reference layout */}
+            <div className="divide-y divide-line/60 md:hidden">
               {items.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-saffron-100 font-bold text-saffron-700 dark:bg-saffron-500/15 dark:text-saffron-400">
+                <div
+                  key={c.id}
+                  onClick={() => setReceipt(c)}
+                  className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2/60 cursor-pointer"
+                >
+                  {/* Circular Avatar with Initial */}
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink/85 dark:bg-white/10 dark:text-white border border-line/40 text-[15px] font-bold shadow-sm">
                     {translatePersonName(c.personName, lang).slice(0, 1)}
                   </div>
+
+                  {/* Middle Details */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <p className="truncate text-[14px] font-bold">{translatePersonName(c.personName, lang)}</p>
-                      <CategoryBadge category={c.category} street={c.street} />
-                      <TypeBadge type={c.contributionType} />
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-faint">
-                      {c.street && c.street !== c.category && <span>{c.street}</span>}
-                      {c.contributionType === "namePhone" && c.phone && (
-                        <span>{c.phone}</span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-muted">
-                      <PaymentLabel method={c.paymentMethod} />
-                      <span className="text-faint">·</span>
+                    <p className="truncate text-[15px] font-bold tracking-tight text-ink dark:text-white">
+                      {translatePersonName(c.personName, lang)}
+                    </p>
+                    <p className="mt-0.5 truncate text-[12px] font-medium text-muted dark:text-navy-200/70">
+                      {c.street || eventName(c.eventId) || translateCategory(c.category, lang)}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint">
+                      <span>{translatePaymentMethod(c.paymentMethod, lang)}</span>
+                      <span>•</span>
                       <span>{formatShort(c.date)}</span>
-                      <span className="text-faint">·</span>
-                      <span className="truncate">{eventName(c.eventId)}</span>
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[15px] font-extrabold tabular-nums">{formatINR(c.amount)}</p>
+
+                  {/* Right Column: Amount & Status Pill */}
+                  <div className="flex flex-col items-end shrink-0 gap-1 pl-2 text-right">
+                    <p className="text-[15.5px] font-black tabular-nums tracking-tight text-ink dark:text-white">
+                      {formatINR(c.amount)}
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
+                      <CheckCircle2 className="size-3 shrink-0" />
+                      {t("Received", "பெறப்பட்டது")}
+                    </span>
                   </div>
-                  <RowActions
-                    extras={[viewReceipt(c)]}
-                    canEdit={writable} canDelete={writable}
-                    onEdit={() => openEdit(c)}
-                    onDelete={() => setDeleting(c)}
-                  />
+
+                  {/* Admin quick actions (only if writable, placed cleanly) */}
+                  {writable && (
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 -mr-1.5">
+                      <RowActions
+                        extras={[viewReceipt(c)]}
+                        canEdit={writable}
+                        canDelete={writable}
+                        onEdit={() => openEdit(c)}
+                        onDelete={() => setDeleting(c)}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -538,7 +554,13 @@ export function CollectionsView() {
         amount={celebrate?.amount}
       />
 
-      <ReceiptDialog collection={receipt} open={Boolean(receipt)} onClose={() => setReceipt(null)} />
+      <ReceiptDialog
+        collection={receipt}
+        open={Boolean(receipt)}
+        onClose={() => setReceipt(null)}
+        onEdit={writable ? openEdit : undefined}
+        onDelete={writable ? (c) => setDeleting(c) : undefined}
+      />
     </div>
   );
 }
