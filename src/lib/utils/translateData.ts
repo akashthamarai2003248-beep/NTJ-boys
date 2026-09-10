@@ -56,27 +56,6 @@ export const PERSON_NAMES_EN_TO_TA: Record<string, string> = {
   "Gopal": "கோபால்",
 };
 
-export const STREETS_EN_TO_TA: Record<string, string> = {
-  "South Street": "தெற்கு தெரு",
-  "North Street": "வடக்கு தெரு",
-  "East Street": "கிழக்கு தெரு",
-  "West Street": "மேற்கு தெரு",
-  "Temple Street": "கோவில் தெரு",
-  "Anna Salai": "அண்ணா சாலை",
-  "Middle Street": "நடுத்தெரு",
-  "Mettu Street": "மேட்டுத்தெரு",
-  "Kamraj Street": "காமராஜர் தெரு",
-  "Nethaji Street": "நேதாஜி தெரு",
-  "1st Cross Street": "1வது குறுக்குத் தெரு",
-  "Gandhi Nagar": "காந்தி நகர்",
-  "Pudur Road": "புதூர் ரோடு",
-  "Perumal Kovil St": "பெருமாள் கோவில் தெரு",
-  "Church Street": "சர்ச் தெரு",
-  "Bus Stand Road": "பேருந்து நிலைய சாலை",
-  "Main Road": "முக்கிய சாலை",
-  "Station Road": "ஸ்டேஷன் ரோடு",
-};
-
 export const EXPENSE_TITLES_EN_TO_TA: Record<string, string> = {
   "Pandal erection material": "பந்தல் அமைக்கும் பொருட்கள்",
   "Idol + pooja items": "விநாயகர் சிலை மற்றும் பூசைப் பொருட்கள்",
@@ -158,18 +137,9 @@ export function translatePersonName(name: string, lang: Lang): string {
   return hasMatch ? translated : name;
 }
 
-/** Translate street address */
-export function translateStreet(street: string | null | undefined, lang: Lang): string {
-  if (!street) return "";
-  if (lang === "en") return street;
-
-  let res = street;
-  for (const [en, ta] of Object.entries(STREETS_EN_TO_TA)) {
-    if (res.includes(en)) {
-      res = res.replace(en, ta);
-    }
-  }
-  return res;
+/** Return street address as-is (preserved without translation) */
+export function translateStreet(street: string | null | undefined, _lang?: Lang): string {
+  return street ?? "";
 }
 
 /** Translate expense title */
@@ -206,10 +176,6 @@ export function translateCategory(category: string | null | undefined, lang: Lan
     if (lang === "ta") return meta.ta;
     if (lang === "both") return `${meta.ta} · ${meta.en}`;
     return meta.en;
-  }
-  // Check if street name contained in category
-  if (lang === "ta") {
-    return translateStreet(category, lang);
   }
   return category;
 }

@@ -16,7 +16,6 @@ import { usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
 import {
   translatePersonName,
-  translateStreet,
   translateCategory,
   translateEventName,
 } from "@/lib/utils/translateData";
@@ -425,7 +424,7 @@ export function CollectionsView() {
                           <TypeBadge type={c.contributionType} />
                         </div>
                         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-faint">
-                          {c.street && c.street !== c.category && <span>{translateStreet(c.street, lang)}</span>}
+                          {c.street && c.street !== c.category && <span>{c.street}</span>}
                           {c.contributionType === "namePhone" && c.phone && (
                             <span>{c.phone}</span>
                           )}
@@ -460,7 +459,7 @@ export function CollectionsView() {
                       <TypeBadge type={c.contributionType} />
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-faint">
-                      {c.street && c.street !== c.category && <span>{translateStreet(c.street, lang)}</span>}
+                      {c.street && c.street !== c.category && <span>{c.street}</span>}
                       {c.contributionType === "namePhone" && c.phone && (
                         <span>{c.phone}</span>
                       )}
