@@ -17,6 +17,7 @@ import {
   mapCollection, mapEvent, mapExpense, mapGame, mapGallery, mapMatch,
   mapMember, mapParticipant, mapResult, mapTeam, invalidateDBCache,
 } from "./supabase-store";
+import { resolveEventStatus } from "@/lib/utils/date";
 
 /* ═══════════════════════════════════════════════════════════════
  * SUPABASE WRITE REPOSITORY
@@ -268,7 +269,8 @@ function validateEvent(input: EventInput): EventInput {
   if (!input.startDate) throw new HttpError(400, "Start date is required");
   if (!input.endDate || input.endDate < input.startDate)
     throw new HttpError(400, "End date must be on or after the start date");
-  return { ...input, name, tamilName: input.tamilName?.trim() || "" };
+  const status = resolveEventStatus(input.status, input.startDate, input.endDate);
+  return { ...input, name, tamilName: input.tamilName?.trim() || "", status };
 }
 
 export async function createEvent(actor: DemoUser, raw: EventInput): Promise<Event> {

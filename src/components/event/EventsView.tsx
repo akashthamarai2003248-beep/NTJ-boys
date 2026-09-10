@@ -15,6 +15,7 @@ import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
+import { resolveEventStatus } from "@/lib/utils/date";
 import { EventCard, EventCardSkeleton } from "./EventCard";
 import { EventForm } from "./EventForm";
 
@@ -42,7 +43,12 @@ export function EventsView() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data, loading } = useFetch<EventsPayload>("/api/events");
-  const events = useMemo(() => data?.events ?? [], [data]);
+  const events = useMemo(() => {
+    return (data?.events ?? []).map((e) => ({
+      ...e,
+      status: resolveEventStatus(e.status, e.startDate, e.endDate),
+    }));
+  }, [data]);
 
   useEffect(() => {
     if (params.get("new") === "1") router.replace("/events", { scroll: false });

@@ -1,4 +1,5 @@
 /** Date helpers — all app dates travel as yyyy-mm-dd (local). */
+import type { EventStatus } from "../data/types";
 
 export const DAY = 86400000;
 
@@ -75,4 +76,47 @@ export function addDaysISO(iso: string, days: number): string {
   const d = parseISO(iso);
   d.setDate(d.getDate() + days);
   return toISO(d);
+}
+
+/** Format a single date or date range: "Tue 8 Sept" or "Tue 8 Sept – Sat 12 Sept" */
+export function friendlyDateRange(startISO: string, endISO?: string | null): string {
+  if (!startISO) return "";
+  if (!endISO || endISO === startISO) return friendlyDay(startISO);
+  return `${friendlyDay(startISO)} – ${friendlyDay(endISO)}`;
+}
+
+/**
+ * Dynamically resolves event status based on calendar dates and explicitly set status.
+ * - If status is explicitly "completed", it stays "completed".
+ * - If startDate is in the future (> refDate), it is "upcoming" (or "registration" if set).
+ * - If startDate <= refDate (event has arrived / started):
+ *     - If !endDate or refDate <= endDate, it is actively running -> "active".
+ *     - If endDate has passed within 7 days (wrap-up / settlement grace period), it remains "active".
+ *     - If endDate has passed by more than 7 days, it is "completed".
+ */
+export function resolveEventStatus(
+  status: EventStatus,
+  startDate: string,
+  endDate?: string | null,
+  refDate: string = todayISO()
+): EventStatus {
+  if (status === "completed") return "completed";
+  if (!startDate) return status;
+
+  if (startDate > refDate) {
+    return status === "registration" ? "registration" : "upcoming";
+  }
+
+  // Event has started (startDate <= refDate)
+  if (!endDate || refDate <= endDate) {
+    return "active";
+  }
+
+  // endDate is in the past
+  const daysPastEnd = diffDays(endDate, refDate);
+  if (daysPastEnd <= 7) {
+    return "active";
+  }
+
+  return "completed";
 }

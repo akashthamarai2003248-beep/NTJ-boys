@@ -31,7 +31,7 @@ function hydrateShape(db: DB): DB {
 function readFromDisk(): DB {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf8");
+      const raw = fs.readFileSync(DATA_FILE, "utf8").replace(/^\uFEFF/, "");
       const parsed = JSON.parse(raw) as DB;
       if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.collections)) {
         hydrateShape(parsed);

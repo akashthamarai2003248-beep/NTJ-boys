@@ -5,6 +5,7 @@ import type {
 } from "./types";
 import { isSupabaseMode, getSupabaseServer } from "./supabase";
 import { getDB } from "./store";
+import { resolveEventStatus } from "@/lib/utils/date";
 
 /* ─────────────────────────────────────────────────────────────
  * READ SEAM (Supabase mode)
@@ -39,10 +40,18 @@ export const mapMember = (r: MemberRow): Member => ({
 });
 
 export const mapEvent = (r: EventRow): Event => ({
-  id: r.id, name: r.name, tamilName: r.tamil_name, type: r.type, status: r.status,
-  startDate: r.start_date, endDate: r.end_date, location: r.location,
-  description: r.description, cover: r.cover_url,
-  createdAt: r.created_at, updatedAt: r.updated_at,
+  id: r.id,
+  name: r.name,
+  tamilName: r.tamil_name,
+  type: r.type,
+  status: resolveEventStatus(r.status, r.start_date, r.end_date),
+  startDate: r.start_date,
+  endDate: r.end_date,
+  location: r.location,
+  description: r.description,
+  cover: r.cover_url,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
 });
 
 export const mapCollection = (r: CollectionRow): Collection => {

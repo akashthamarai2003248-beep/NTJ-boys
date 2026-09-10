@@ -8,7 +8,7 @@ import type {
 import { GAME_KINDS, PAYMENT_CHOICES } from "./types";
 import { getDB, mutateDB, resetToSeed } from "./store";
 import { normalizeName, normalizePhone, uid } from "@/lib/utils/id";
-import { toISO } from "@/lib/utils/date";
+import { toISO, resolveEventStatus } from "@/lib/utils/date";
 import {
   HttpError, canWriteFinances, canWriteEvents, canWriteMembers, canManageSettings,
   assertPermission as assert,
@@ -257,7 +257,11 @@ export function totals(db: DB): EventStats & { members: number } {
 
 export function listEvents(db: DB) {
   return db.events
-    .map((e) => ({ ...e, ...collectionStats(db, e.id) }))
+    .map((e) => ({
+      ...e,
+      status: resolveEventStatus(e.status, e.startDate, e.endDate),
+      ...collectionStats(db, e.id),
+    }))
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
@@ -597,7 +601,8 @@ function validateEvent(input: EventInput): EventInput {
   if (!input.startDate) throw new HttpError(400, "Start date is required");
   if (!input.endDate || input.endDate < input.startDate)
     throw new HttpError(400, "End date must be on or after the start date");
-  return { ...input, name, tamilName: input.tamilName?.trim() || "" };
+  const status = resolveEventStatus(input.status, input.startDate, input.endDate);
+  return { ...input, name, tamilName: input.tamilName?.trim() || "", status };
 }
 
 export async function createEvent(actor: DemoUser, raw: EventInput): Promise<Event> {

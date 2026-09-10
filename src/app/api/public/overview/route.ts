@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDB } from "@/lib/data/store";
 import { publicOverview } from "@/lib/data/repository";
 import { isSupabaseMode, getSupabaseServer } from "@/lib/data/supabase";
+import { resolveEventStatus } from "@/lib/utils/date";
 import { handleApiError } from "@/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,12 @@ export async function GET() {
       if (!data) return NextResponse.json({ enabled: false, totals: null, events: [] });
       // PostgREST returns `json` as a string — parse so the client gets an object.
       const payload = typeof data === "string" ? JSON.parse(data) : data;
+      if (payload && Array.isArray(payload.events)) {
+        payload.events = payload.events.map((e: any) => ({
+          ...e,
+          status: resolveEventStatus(e.status, e.startDate, e.endDate),
+        }));
+      }
       return NextResponse.json(payload);
     }
     return NextResponse.json(publicOverview(getDB()));

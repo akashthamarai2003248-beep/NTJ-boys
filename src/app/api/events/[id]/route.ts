@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadDB } from "@/lib/data/supabase-store";
 import { getEventStats, updateEvent, deleteEvent } from "@/lib/data/repository";
+import { resolveEventStatus } from "@/lib/utils/date";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-helpers";
 import type { EventInput } from "@/lib/data/types";
@@ -13,8 +14,12 @@ export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
     const db = await loadDB();
-    const event = db.events.find((e) => e.id === id);
-    if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    const rawEvent = db.events.find((e) => e.id === id);
+    if (!rawEvent) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    const event = {
+      ...rawEvent,
+      status: resolveEventStatus(rawEvent.status, rawEvent.startDate, rawEvent.endDate),
+    };
     return NextResponse.json({ event, stats: getEventStats(db, id) });
   } catch (e) {
     return handleApiError(e);

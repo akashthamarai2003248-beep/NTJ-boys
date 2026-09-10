@@ -23,7 +23,7 @@ import { EventCover } from "./EventCover";
 import { EventForm } from "./EventForm";
 import { EventStatusPill, PaymentLabel, eventTypeMeta } from "@/components/shared/meta";
 import { formatINR } from "@/lib/utils/money";
-import { formatLong, formatShort } from "@/lib/utils/date";
+import { formatLong, formatShort, friendlyDateRange, resolveEventStatus } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
 
 interface DetailPayload {
@@ -141,10 +141,14 @@ export function EventDetailView({ id }: { id: string }) {
             <EventCover event={event} className="h-48 sm:h-56" showEmoji={false} />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-950/95 via-navy-950/45 to-navy-950/10" />
             <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-7">
-              <div className="flex items-center gap-2">
-                <EventStatusPill status={event.status} />
+              <div className="flex flex-wrap items-center gap-2">
+                <EventStatusPill status={resolveEventStatus(event.status, event.startDate, event.endDate)} />
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold backdrop-blur">
                   {eventTypeMeta(event.type).emoji} {eventTypeMeta(event.type).label}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold backdrop-blur">
+                  <CalendarDays className="size-3" />
+                  {friendlyDateRange(event.startDate, event.endDate)}
                 </span>
               </div>
               <div className="mt-2.5 flex flex-wrap items-end justify-between gap-3">

@@ -11,7 +11,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { todayISO } from "@/lib/utils/date";
+import { todayISO, resolveEventStatus } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -28,9 +28,14 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
   const [name, setName] = useState(initial?.name ?? "");
   const [tamilName, setTamilName] = useState(initial?.tamilName ?? "");
   const [type, setType] = useState<EventType>(initial?.type ?? "festival");
-  const [status, setStatus] = useState<EventStatus>(initial?.status ?? "upcoming");
   const [startDate, setStartDate] = useState(initial?.startDate ?? todayISO());
   const [endDate, setEndDate] = useState(initial?.endDate ?? todayISO());
+  const [status, setStatus] = useState<EventStatus>(() => {
+    if (initial?.status) return initial.status;
+    const defaultStart = initial?.startDate ?? todayISO();
+    const defaultEnd = initial?.endDate ?? todayISO();
+    return resolveEventStatus("upcoming", defaultStart, defaultEnd);
+  });
   const [location, setLocation] = useState(initial?.location ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [cover, setCover] = useState<string | null>(initial?.cover ?? null);
@@ -38,6 +43,20 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
   const [urlInput, setUrlInput] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    if (endDate < val) {
+      setEndDate(val);
+    }
+    if (!initial) {
+      if (val <= todayISO()) {
+        setStatus("active");
+      } else {
+        setStatus("upcoming");
+      }
+    }
+  };
 
   const meta = EVENT_TYPES.find((t) => t.value === type);
 
@@ -69,11 +88,12 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
     if (!startDate) return setLocalError("Start date is required");
     if (endDate < startDate) return setLocalError("End date must be on or after the start date");
     setLocalError(null);
+    const resolvedStatus = resolveEventStatus(status, startDate, endDate);
     onSubmit({
       name: name.trim(),
       tamilName: tamilName.trim(),
       type,
-      status,
+      status: resolvedStatus,
       startDate,
       endDate,
       location: location.trim(),
@@ -217,7 +237,7 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
           <Input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => handleStartDateChange(e.target.value)}
             leading={<CalendarDays className="size-4" />}
           />
         </Field>

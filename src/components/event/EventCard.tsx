@@ -6,13 +6,14 @@ import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import type { EventWithStats } from "@/lib/data/types";
 import { cn } from "@/lib/utils/cn";
 import { formatINR } from "@/lib/utils/money";
-import { friendlyDay } from "@/lib/utils/date";
+import { friendlyDateRange, resolveEventStatus } from "@/lib/utils/date";
 import { EventStatusPill } from "@/components/shared/meta";
 import { EventCover } from "./EventCover";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export function EventCard({ event, index = 0 }: { event: EventWithStats; index?: number }) {
   const running = event.balance >= 0;
+  const status = resolveEventStatus(event.status, event.startDate, event.endDate);
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -26,7 +27,7 @@ export function EventCard({ event, index = 0 }: { event: EventWithStats; index?:
         <div className="relative h-36 sm:h-40">
           <EventCover event={event} className="h-full w-full" emojiClass="text-5xl" />
           <div className="absolute left-3 top-3">
-            <EventStatusPill status={event.status} />
+            <EventStatusPill status={status} />
           </div>
         </div>
         <div className="p-4 sm:p-4.5">
@@ -37,7 +38,7 @@ export function EventCard({ event, index = 0 }: { event: EventWithStats; index?:
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px] font-medium text-muted">
             <span className="inline-flex items-center gap-1">
               <CalendarDays className="size-3.5 text-faint" />
-              {friendlyDay(event.startDate)}
+              {friendlyDateRange(event.startDate, event.endDate)}
             </span>
             {event.location ? (
               <span className="inline-flex max-w-36 items-center gap-1 truncate">
