@@ -10,7 +10,7 @@ import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
-import type { SessionUser } from "@/components/layout/session";
+import { useSession, type SessionUser } from "@/components/layout/session";
 
 
 export default function LoginPage() {
@@ -69,6 +69,7 @@ function HeroInput({
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
+  const { user, loading: sessionLoading } = useSession();
   const { t: tr } = useLang();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [identifier, setIdentifier] = useState("");
@@ -84,6 +85,15 @@ function LoginInner() {
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
 
+  // Auto-redirect if already signed in — never show login/signup page to active users
+  useEffect(() => {
+    if (!sessionLoading && user) {
+      const next = params.get("next");
+      const destination = next && next.startsWith("/") ? next : "/";
+      router.replace(destination);
+    }
+  }, [user, sessionLoading, params, router]);
+
   // "Remember me" — prefill the identifier from a previous session
   useEffect(() => {
     try {
@@ -96,6 +106,14 @@ function LoginInner() {
       /* storage unavailable */
     }
   }, []);
+
+  if (sessionLoading || user) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#0b192c]">
+        <LogoMark className="size-12 animate-pulse" />
+      </div>
+    );
+  }
 
   const fail = (msg: string) => {
     setError(msg);

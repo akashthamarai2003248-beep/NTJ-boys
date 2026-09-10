@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import type { AppRole, DemoUser } from "./data/types";
 import { getUserById, HttpError } from "./data/repository";
-import { isSupabaseMode, getSupabaseUser, actorToDemoUser } from "./data/supabase";
+import {
+  isSupabaseMode, getSupabaseUser, getSupabaseServer, actorToDemoUser,
+} from "./data/supabase";
 import { SESSION_COOKIE, SESSION_MAX_AGE } from "./constants";
 
 /* Server-only session helpers. DEMO auth (local mode) stores the
@@ -23,12 +25,36 @@ export function toSessionUser(u: DemoUser): SessionUser {
 }
 
 export async function getSessionUser(): Promise<DemoUser | null> {
-  if (isSupabaseMode()) {
-    const actor = await getSupabaseUser();
-    return actor ? actorToDemoUser(actor) : null;
-  }
   const jar = await cookies();
   const id = jar.get(SESSION_COOKIE)?.value;
+
+  if (isSupabaseMode()) {
+    const actor = await getSupabaseUser();
+    if (actor) return actorToDemoUser(actor);
+
+    // Fallback: If Supabase auth session token expired or wasn't renewed, check SESSION_COOKIE
+    if (id) {
+      try {
+        const sb = await getSupabaseServer();
+        const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
+        if (profile) {
+          return {
+            id: profile.id,
+            name: profile.name,
+            phone: profile.phone ?? "",
+            email: profile.email ?? "",
+            password: "",
+            role: profile.role,
+            position: (profile.position || "Member") as DemoUser["position"],
+          };
+        }
+      } catch {
+        /* ignore fallback fetch error */
+      }
+    }
+    return null;
+  }
+
   if (!id) return null;
   return getUserById(id);
 }
@@ -46,7 +72,9 @@ export async function requireUser(roles?: AppRole[]): Promise<DemoUser> {
 export const cookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  // Only enforce secure cookie when explicitly on HTTPS or when VERCEL is present, preventing dropped cookies on HTTP/LAN
+  secure: process.env.NODE_ENV === "production" && (process.env.VERCEL === "1" || Boolean(process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https"))),
   path: "/",
   maxAge: SESSION_MAX_AGE,
+  expires: new Date(Date.now() + SESSION_MAX_AGE * 1000),
 };

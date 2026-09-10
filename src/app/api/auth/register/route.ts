@@ -95,7 +95,10 @@ export async function POST(req: Request) {
       if (!actor) {
         return NextResponse.json({ error: "Account created — sign in to continue" });
       }
-      return NextResponse.json({ user: toSessionUser(actorToDemoUser(actor)) });
+      const user = actorToDemoUser(actor);
+      const res = NextResponse.json({ user: toSessionUser(user) });
+      res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
+      return res;
     }
 
     const user = await registerUser({ name, phone, email, password });

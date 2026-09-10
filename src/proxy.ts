@@ -21,6 +21,11 @@ export function proxy(req: NextRequest) {
   const isAuthApi = pathname.startsWith("/api/auth");
   const isPublicApi = pathname.startsWith("/api/public");
 
+  // Already logged in? Skip login page and go straight to the app
+  if (hasSession && isLogin) {
+    return NextResponse.redirect(new URL("/", origin));
+  }
+
   if (!hasSession && !isLogin && !isPublicView && !isAuthApi && !isPublicApi) {
     const url = new URL("/login", origin);
     if (pathname !== "/") url.searchParams.set("next", pathname);

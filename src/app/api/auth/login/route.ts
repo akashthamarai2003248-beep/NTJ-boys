@@ -38,9 +38,9 @@ export async function POST(req: Request) {
         );
       }
       const user = actorToDemoUser(actor);
-      // The session cookie is written by the server client; the demo
-      // cookie is only used in local mode.
-      return NextResponse.json({ user: toSessionUser(user) });
+      const res = NextResponse.json({ user: toSessionUser(user) });
+      res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
+      return res;
     }
 
     const user = findUser(identifier, password);
