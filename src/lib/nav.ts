@@ -1,6 +1,6 @@
 import {
   BarChart3, CalendarDays, HandCoins, Image as ImageIcon, LayoutDashboard,
-  ReceiptText, Settings, TrendingDown, Trophy, Users,
+  Settings, TrendingDown, Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,8 +21,6 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "expenses", en: "Expenses", ta: "செலவு", href: "/expenses", icon: TrendingDown, bottom: true },
   { id: "events", en: "Events", ta: "நிகழ்வுகள்", href: "/events", icon: CalendarDays, bottom: true },
   { id: "members", en: "Members", ta: "உறுப்பினர்கள்", href: "/members", icon: Users },
-  { id: "games", en: "Games", ta: "விளையாட்டுகள்", href: "/games", icon: Trophy },
-  { id: "receipts", en: "Receipts", ta: "ரசீதுகள்", href: "/receipts", icon: ReceiptText },
   { id: "reports", en: "Reports", ta: "அறிக்கைகள்", href: "/reports", icon: BarChart3 },
   { id: "gallery", en: "Gallery", ta: "புகைப்படங்கள்", href: "/gallery", icon: ImageIcon },
 ];

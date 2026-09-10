@@ -6,11 +6,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft, BarChart3, CalendarDays, ChevronRight, HandCoins, MapPin, Pencil, Plus,
-  Trash2, TrendingDown, Trophy, Users, Camera,
+  Trash2, TrendingDown, Users, Camera,
 } from "lucide-react";
-import type { Collection, Event, EventInput, EventStats, Expense, GalleryPhoto, GameStatus } from "@/lib/data/types";
-import type { GameListItem } from "@/lib/data/repository";
-import { GAME_KINDS } from "@/lib/data/types";
+import type { Collection, Event, EventInput, EventStats, Expense, GalleryPhoto } from "@/lib/data/types";
 import { api, qs } from "@/lib/client/api";
 import { useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
@@ -38,13 +36,12 @@ interface ListPayload {
   sum: number;
 }
 
-type Tab = "overview" | "varavu" | "selavu" | "games" | "participants" | "photos" | "reports";
+type Tab = "overview" | "varavu" | "selavu" | "participants" | "photos" | "reports";
 
-const TABS: { id: Tab; label: string; countKey?: "cols" | "exps" | "games" | "photos" }[] = [
+const TABS: { id: Tab; label: string; countKey?: "cols" | "exps" | "photos" }[] = [
   { id: "overview", label: "Overview" },
   { id: "varavu", label: "Collections", countKey: "cols" },
   { id: "selavu", label: "Expenses", countKey: "exps" },
-  { id: "games", label: "Games", countKey: "games" },
   { id: "participants", label: "Donors" },
   { id: "photos", label: "Photos", countKey: "photos" },
   { id: "reports", label: "Reports" },
@@ -60,7 +57,6 @@ export function EventDetailView({ id }: { id: string }) {
   const { data, loading, error, reload } = useFetch<DetailPayload>(`/api/events/${id}`);
   const colFetch = useFetch<ListPayload>(`/api/collections${qs({ eventId: id, perPage: 200 })}`);
   const expFetch = useFetch<ListPayload>(`/api/expenses${qs({ eventId: id, perPage: 200 })}`);
-  const gamesFetch = useFetch<{ games: GameListItem[] }>(`/api/games${qs({ eventId: id })}`);
   const galleryFetch = useFetch<{ photos: GalleryPhoto[] }>(`/api/gallery${qs({ eventId: id })}`);
 
   const event = data?.event ?? null;
@@ -115,7 +111,6 @@ export function EventDetailView({ id }: { id: string }) {
 
   const collections = (colFetch.data?.items ?? []) as Collection[];
   const expenses = (expFetch.data?.items ?? []) as Expense[];
-  const games = gamesFetch.data?.games ?? [];
   const photos = galleryFetch.data?.photos ?? [];
 
   if (error) {
@@ -225,7 +220,6 @@ export function EventDetailView({ id }: { id: string }) {
               const active = tab === t.id;
               const count = t.countKey === "cols" ? collections.length
                 : t.countKey === "exps" ? expenses.length
-                : t.countKey === "games" ? games.length
                 : t.countKey === "photos" ? photos.length
                 : undefined;
               return (
@@ -259,7 +253,6 @@ export function EventDetailView({ id }: { id: string }) {
             expenses={expenses}
             contributors={contributors}
             stats={stats}
-            games={games}
             photos={photos}
             collectionTotal={colFetch.data?.sum ?? 0}
             expenseTotal={expFetch.data?.sum ?? 0}
@@ -321,7 +314,7 @@ function EventMoney({
 }
 
 function TabContent({
-  tab, event, collections, expenses, contributors, stats, games, photos, collectionTotal, expenseTotal,
+  tab, event, collections, expenses, contributors, stats, photos, collectionTotal, expenseTotal,
 }: {
   tab: Tab;
   event: Event;
@@ -329,7 +322,6 @@ function TabContent({
   expenses: Expense[];
   contributors: { name: string; total: number; count: number }[];
   stats: EventStats;
-  games: GameListItem[];
   photos: GalleryPhoto[];
   collectionTotal: number;
   expenseTotal: number;
@@ -483,50 +475,6 @@ function TabContent({
     );
   }
 
-  if (tab === "games") {
-    const kindOf = (k: GameListItem["kind"]) => GAME_KINDS.find((x) => x.value === k);
-    return (
-      <div className="card-surface overflow-hidden rounded-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
-          <p className="text-[14px] font-extrabold">Games · விளையாட்டுகள் <span className="ml-1 text-[11.5px] font-semibold text-faint">{games.length} for this event</span></p>
-          <Link href={`/games${event.id ? `?eventId=${event.id}` : ""}`} className="inline-flex items-center gap-1 text-[12px] font-bold text-saffron-600 hover:underline dark:text-saffron-400">
-            Open in Games <ChevronRight className="size-3.5" />
-          </Link>
-        </div>
-        {games.length === 0 ? (
-          <EmptyPanel
-            icon={Trophy}
-            title="No games for this event yet"
-            message="Create competitions — tug of war, running, cricket — and they appear here with teams and results."
-            action={
-              <Link href={`/games${event.id ? `?eventId=${event.id}` : ""}`}>
-                <Button size="sm"><Plus className="size-4" /> Go to Games</Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="divide-y divide-line">
-            {games.map((g) => {
-              const km = kindOf(g.kind);
-              return (
-                <Link key={g.id} href={`/games/${g.id}`} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-2/70">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-100 text-lg dark:bg-navy-500/15">{km?.emoji ?? "🎯"}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-bold">{g.name}</p>
-                    <p className="text-[11.5px] font-medium text-muted">
-                      {g.participantCount} player{g.participantCount === 1 ? "" : "s"} · {g.mode === "team" ? `${g.teamCount} teams · ${g.playedCount} played` : "individual event"}
-                    </p>
-                  </div>
-                  <GameStatusBadge status={g.status} />
-                  <ChevronRight className="size-4 text-faint" />
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   if (tab === "photos") {
     return (
@@ -578,17 +526,6 @@ function TabContent({
   );
 }
 
-function GameStatusBadge({ status }: { status: GameStatus }) {
-  const map: Record<GameStatus, { label: string; tone: "saffron" | "navy" | "leaf" | "gold" | "muted" }> = {
-    open: { label: "Open", tone: "leaf" },
-    ongoing: { label: "In Progress", tone: "saffron" },
-    results: { label: "Results", tone: "gold" },
-    completed: { label: "Completed", tone: "navy" },
-  };
-  const m = map[status];
-  return <Badge tone={m.tone}>{m.label}</Badge>;
-}
-
 function MoneyTab({
   title, emptyTitle, emptyMessage, total, children, link, linkLabel, ctaHref,
 }: {
@@ -627,7 +564,7 @@ function MoneyTab({
 function EmptyPanel({
   icon: Icon, title, message, action,
 }: {
-  icon: typeof Trophy; title: string; message: string; action?: React.ReactNode;
+  icon: typeof Camera; title: string; message: string; action?: React.ReactNode;
 }) {
   return <EmptyState icon={Icon} title={title} message={message} action={action} />;
 }
