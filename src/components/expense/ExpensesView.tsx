@@ -143,28 +143,28 @@ export function ExpensesView() {
       />
 
       {/* total banner */}
-      <div className="card-surface overflow-hidden rounded-2xl border border-line/80 bg-gradient-to-br from-[#2a1222] via-[#431932] to-[#5a2132] p-4 text-white shadow-sm sm:p-5">
+      <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-red-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-[#2a1222] dark:via-[#431932] dark:to-[#5a2132] dark:text-white">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-gold-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red-700 dark:border-transparent dark:bg-gold-400/20 dark:text-gold-300">
               Total Expenses · மொத்த செலவு
             </span>
-            <p className="mt-1 text-[24px] font-black leading-tight tracking-tight sm:text-[28px] tabular-nums">
+            <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
-            <p className="text-[11.5px] text-white/75">
+            <p className="text-[11.5px] text-muted dark:text-white/75">
               {hasFilters ? `filtered from ${formatINR(data?.allSum ?? 0)} overall` : "spent across all events & general"}
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-4">
-            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-center">
-              <p className="text-base font-extrabold tabular-nums leading-none sm:text-lg">{data?.total ?? "–"}</p>
-              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white/70">Entries</p>
+            <div className="rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5">
+              <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{data?.total ?? "–"}</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">Entries</p>
             </div>
             {data && data.total > 0 && (
-              <div className="hidden rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-center sm:block">
-                <p className="text-base font-extrabold tabular-nums leading-none sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
-                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white/70">Average</p>
+              <div className="hidden rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5 sm:block">
+                <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-white/70">Average</p>
               </div>
             )}
           </div>
