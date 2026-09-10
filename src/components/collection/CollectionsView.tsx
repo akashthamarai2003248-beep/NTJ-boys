@@ -21,7 +21,6 @@ import {
   translatePaymentMethod,
 } from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -176,21 +175,13 @@ export function CollectionsView() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageHeader
-        eyebrow="Finance"
-        eyebrowTa="நிதி"
-        title="Collections"
-        ta="வரவு"
-        subtitle="Every contribution, receipt and donor of the Mandram"
-        subtitleTa="மன்றத்தின் அனைத்து வரவுகள், ரசீதுகள் மற்றும் நன்கொடைகள்"
-        actions={
-          writable ? (
-            <Button variant="primary" onClick={openAdd}>
-              <Plus className="size-4" /> {t("Add Collection", "வரவு சேர்க்க")}
-            </Button>
-          ) : undefined
-        }
-      />
+      {writable && (
+        <div className="flex items-center justify-end">
+          <Button variant="primary" size="sm" onClick={openAdd}>
+            <Plus className="size-4" /> {t("Add Collection", "வரவு சேர்க்க")}
+          </Button>
+        </div>
+      )}
 
       {/* total banner */}
       <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-saffron-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-navy-950 dark:via-navy-900 dark:to-navy-800 dark:text-white">

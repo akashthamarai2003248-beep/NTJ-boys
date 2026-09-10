@@ -2,6 +2,7 @@
 
 import { Moon, Search, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useSession } from "./session";
 import { langShort, useLang, type Lang } from "@/lib/i18n";
@@ -9,10 +10,14 @@ import { langShort, useLang, type Lang } from "@/lib/i18n";
 const CYCLE: Lang[] = ["en", "ta", "both"];
 
 export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
+  const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const { user } = useSession();
   const { lang, setLang, t } = useLang();
   const dark = resolvedTheme === "dark";
+
+  const isCollections = pathname?.startsWith("/collections");
+  const isExpenses = pathname?.startsWith("/expenses");
 
   const roleName =
     user?.role === "admin"
@@ -29,15 +34,38 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/85 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2.5 px-4 sm:gap-3 sm:px-6 lg:px-8">
-        <div className="flex shrink-0 items-center gap-2 lg:hidden">
-          <Logo markOnly compact />
-          <div className="leading-none">
-            <p className="text-[12.5px] font-extrabold tracking-[0.02em]">NETHAJI&nbsp;BOYS</p>
-            <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.28em] text-saffron-600 dark:text-saffron-400">
-              {lang === "ta" ? "மன்றம்" : lang === "both" ? "மன்றம் · Mandram" : "Mandram"}
-            </p>
+        {isCollections || isExpenses ? (
+          <div className="flex shrink-0 items-center gap-2.5">
+            <div className="leading-tight">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-saffron-600 dark:text-saffron-400">
+                {lang === "ta" ? "நிதி" : "FINANCE"}
+              </p>
+              <h1 className="text-[16px] sm:text-[18px] font-black tracking-tight text-ink dark:text-white leading-tight">
+                {isCollections
+                  ? lang === "ta"
+                    ? "வரவு"
+                    : lang === "both"
+                    ? "Collections · வரவு"
+                    : "Collections"
+                  : lang === "ta"
+                  ? "செலவு"
+                  : lang === "both"
+                  ? "Expenses · செலவு"
+                  : "Expenses"}
+              </h1>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex shrink-0 items-center gap-2 lg:hidden">
+            <Logo markOnly compact />
+            <div className="leading-none">
+              <p className="text-[12.5px] font-extrabold tracking-[0.02em]">NETHAJI&nbsp;BOYS</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.28em] text-saffron-600 dark:text-saffron-400">
+                {lang === "ta" ? "மன்றம்" : lang === "both" ? "மன்றம் · Mandram" : "Mandram"}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 sm:hidden" />
 

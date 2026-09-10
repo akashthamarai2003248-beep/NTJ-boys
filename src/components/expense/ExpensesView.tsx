@@ -20,7 +20,6 @@ import {
   translatePaymentMethod,
 } from "@/lib/utils/translateData";
 import { cn } from "@/lib/utils/cn";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -143,21 +142,13 @@ export function ExpensesView() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageHeader
-        eyebrow="Finance"
-        eyebrowTa="நிதி"
-        title="Expenses"
-        ta="செலவு"
-        subtitle="Every expense of the Mandram — transparent and audited"
-        subtitleTa="மன்றத்தின் அனைத்து செலவுகள் — வெளிப்படையானது மற்றும் சரிபார்க்கப்பட்டது"
-        actions={
-          writable ? (
-            <Button variant="primary" onClick={openAdd}>
-              <Plus className="size-4" /> {t("Add Expense", "செலவு சேர்க்க")}
-            </Button>
-          ) : undefined
-        }
-      />
+      {writable && (
+        <div className="flex items-center justify-end">
+          <Button variant="primary" size="sm" onClick={openAdd}>
+            <Plus className="size-4" /> {t("Add Expense", "செலவு சேர்க்க")}
+          </Button>
+        </div>
+      )}
 
       {/* total banner */}
       <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-red-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-[#2a1222] dark:via-[#431932] dark:to-[#5a2132] dark:text-white">
