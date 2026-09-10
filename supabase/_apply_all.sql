@@ -647,3 +647,42 @@ where not exists (
   select 1 from public.users pu where pu.id = au.id
 )
 on conflict (id) do nothing;
+
+-- ════════════════════════════════════════════════════════════════
+-- NETHAJI BOYS MANDRAM — Phase 5 migration
+-- Supabase Storage Bucket for Images (400 KB Limit)
+-- ════════════════════════════════════════════════════════════════
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'images',
+  'images',
+  true,
+  409600, -- 400 KB strictly enforced by Supabase Storage
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 409600,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+drop policy if exists "Public images access" on storage.objects;
+create policy "Public images access"
+  on storage.objects for select
+  using (bucket_id = 'images');
+
+drop policy if exists "Allow image uploads" on storage.objects;
+create policy "Allow image uploads"
+  on storage.objects for insert
+  with check (bucket_id = 'images');
+
+drop policy if exists "Allow image updates" on storage.objects;
+create policy "Allow image updates"
+  on storage.objects for update
+  using (bucket_id = 'images');
+
+drop policy if exists "Allow image deletes" on storage.objects;
+create policy "Allow image deletes"
+  on storage.objects for delete
+  using (bucket_id = 'images');
+

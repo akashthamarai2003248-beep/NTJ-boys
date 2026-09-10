@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { Camera, Phone, UserRound, X } from "lucide-react";
+import { Camera, Loader2, Phone, UserRound, X } from "lucide-react";
 import type { Member, MemberInput } from "@/lib/data/types";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Avatar } from "@/components/ui/Avatar";
 import { todayISO } from "@/lib/utils/date";
+import { uploadImage } from "@/lib/client/upload";
 
 interface Props {
   initial?: Member | null;
@@ -21,15 +22,26 @@ export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: P
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [photo, setPhoto] = useState<string | null>(initial?.photo ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const onPickPhoto = (file: File | undefined) => {
+  const onPickPhoto = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) return setLocalError("Please choose an image file");
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(String(reader.result));
-    reader.readAsDataURL(file);
+    setLocalError(null);
+    setUploading(true);
+    setUploadInfo("Compressing to <400KB & uploading…");
+    try {
+      const result = await uploadImage(file, "members");
+      setPhoto(result.url);
+      setUploadInfo(`Compressed (${result.formattedSize}) · ${result.storage === "supabase" ? "Supabase Storage" : "Ready"}`);
+    } catch (err) {
+      setLocalError((err as Error).message || "Could not process image");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const submit = (e: FormEvent) => {
@@ -54,12 +66,13 @@ export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: P
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="group relative"
+          disabled={uploading}
+          className="group relative disabled:opacity-60"
           aria-label="Add profile photo"
         >
           <Avatar name={name || "?"} photo={photo} size="xl" />
           <span className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full border-2 border-surface bg-navy-800 text-white transition-colors group-hover:bg-saffron-600">
-            <Camera className="size-3.5" />
+            {uploading ? <Loader2 className="size-3.5 animate-spin text-saffron-300" /> : <Camera className="size-3.5" />}
           </span>
         </button>
         <input
@@ -71,9 +84,18 @@ export function MemberForm({ initial, submitting, error, onSubmit, onCancel }: P
         />
         <div>
           <p className="text-[13.5px] font-bold">Profile photo</p>
-          <p className="text-[12px] text-muted">சுயவிவர புகைப்படம் · optional</p>
+          <p className="text-[12px] text-muted">சுயவிவர புகைப்படம் · &le;400 KB</p>
+          {uploadInfo && (
+            <p className="mt-0.5 text-[11px] font-semibold text-leaf-600 dark:text-leaf-400">
+              {uploadInfo}
+            </p>
+          )}
           {photo && (
-            <button type="button" onClick={() => setPhoto(null)} className="mt-1 inline-flex items-center gap-1 text-[11.5px] font-semibold text-red-500 hover:underline">
+            <button
+              type="button"
+              onClick={() => { setPhoto(null); setUploadInfo(null); }}
+              className="mt-1 inline-flex items-center gap-1 text-[11.5px] font-semibold text-red-500 hover:underline"
+            >
               <X className="size-3" /> Remove photo
             </button>
           )}

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, ImagePlus, Link2, SearchX, Trash2, X } from "lucide-react";
+import { Camera, ImagePlus, Link2, Loader2, SearchX, Trash2, X } from "lucide-react";
 import type { Event, GalleryInput, GalleryPhoto } from "@/lib/data/types";
 import { api, qs } from "@/lib/client/api";
 import { useFetch } from "@/lib/client/hooks";
@@ -19,6 +19,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { timeAgo } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
+import { uploadImage } from "@/lib/client/upload";
 
 interface GalleryPayload { photos: GalleryPhoto[] }
 interface EventsPayload { events: Event[] }
@@ -201,26 +202,31 @@ function AddPhotoForm({
   const [caption, setCaption] = useState("");
   const [eventId, setEventId] = useState(defaultEventId ?? events[0]?.id ?? "");
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
 
-  const onFile = (f: File | undefined) => {
+  const onFile = async (f: File | undefined) => {
     setReadError(null);
     if (!f) return;
     if (!f.type.startsWith("image/")) {
       setReadError("Choose an image file (jpg, png, webp…)");
       return;
     }
-    if (f.size > 2_500_000) {
-      setReadError("Photo is larger than ~2.5 MB — please choose a smaller image.");
-      return;
+    setUploading(true);
+    setUploadInfo("Compressing to <400KB & uploading…");
+    try {
+      const result = await uploadImage(f, "gallery");
+      setPreview(result.url);
+      setUploadInfo(`Compressed (${result.formattedSize}) · ${result.storage === "supabase" ? "Supabase Storage" : "Ready"}`);
+    } catch (err) {
+      setReadError((err as Error).message || "Could not process that image.");
+    } finally {
+      setUploading(false);
     }
-    const reader = new FileReader();
-    reader.onload = () => setPreview(String(reader.result));
-    reader.onerror = () => setReadError("Could not read that image.");
-    reader.readAsDataURL(f);
   };
 
-  const canSubmit = mode === "url" ? url.trim().length > 0 : Boolean(preview);
+  const canSubmit = !uploading && (mode === "url" ? url.trim().length > 0 : Boolean(preview));
 
   return (
     <div className="space-y-4">
@@ -247,16 +253,37 @@ function AddPhotoForm({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface-2/60 px-4 py-8 text-center transition-colors hover:border-saffron-400 hover:bg-saffron-50/60 dark:hover:bg-saffron-500/5"
+            disabled={uploading}
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface-2/60 px-4 py-8 text-center transition-colors hover:border-saffron-400 hover:bg-saffron-50/60 disabled:opacity-60 dark:hover:bg-saffron-500/5"
           >
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="Selected" className="max-h-44 rounded-xl object-contain" />
+            {uploading ? (
+              <>
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-saffron-100 text-saffron-600 dark:bg-saffron-500/15 dark:text-saffron-400">
+                  <Loader2 className="size-6 animate-spin" />
+                </span>
+                <span className="text-[13.5px] font-bold">Compressing to &le;400 KB…</span>
+                <span className="text-[11px] font-medium text-faint">Uploading to Supabase Storage</span>
+              </>
+            ) : preview ? (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="Selected" className="max-h-44 rounded-xl object-contain" />
+                {uploadInfo && (
+                  <p className="text-[11px] font-semibold text-leaf-600 dark:text-leaf-400">
+                    {uploadInfo}
+                  </p>
+                )}
+                <p className="text-[11px] font-bold text-saffron-600 dark:text-saffron-400">Click to replace photo</p>
+              </div>
             ) : (
               <>
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-saffron-100 text-saffron-600 dark:bg-saffron-500/15 dark:text-saffron-400"><ImagePlus className="size-6" /></span>
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-saffron-100 text-saffron-600 dark:bg-saffron-500/15 dark:text-saffron-400">
+                  <ImagePlus className="size-6" />
+                </span>
                 <span className="text-[13.5px] font-bold">Choose a photo</span>
-                <span className="text-[11px] font-medium text-faint">JPG / PNG / WEBP · up to ~2.5 MB</span>
+                <span className="text-[11px] font-medium text-faint">
+                  Auto-compressed to &le;400 KB · Stored on Supabase Storage
+                </span>
               </>
             )}
           </button>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import {
-  CalendarDays, ReceiptText, Tag, Undo2,
+  CalendarDays, Camera, Loader2, ReceiptText, Tag, Undo2, X,
 } from "lucide-react";
 import type { Event, Expense, ExpenseInput, PaymentMethod } from "@/lib/data/types";
 import { PAYMENT_CHOICES, PAYMENT_METHODS } from "@/lib/data/types";
@@ -15,6 +15,7 @@ import { parseRupees, formatINR } from "@/lib/utils/money";
 import { parseVoiceExpenseTranscript } from "@/lib/utils/voice";
 import { VoiceToText } from "@/components/shared/VoiceToText";
 import { useSession } from "@/components/layout/session";
+import { uploadImage } from "@/lib/client/upload";
 
 /** Field values just before voice dictation, so Undo can restore them. */
 interface VoiceSnapshot {
@@ -41,8 +42,12 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
   const [eventId, setEventId] = useState(initial?.eventId ?? "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [method, setMethod] = useState<PaymentMethod>(initial?.paymentMethod ?? "cash");
+  const [billUrl, setBillUrl] = useState<string | null>(initial?.billUrl ?? null);
+  const [uploadingBill, setUploadingBill] = useState(false);
+  const [billInfo, setBillInfo] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
+  const billFileRef = useRef<HTMLInputElement>(null);
   const [voiceSnapshot, setVoiceSnapshot] = useState<VoiceSnapshot | null>(null);
 
   const handleVoiceTranscript = useCallback(
@@ -70,6 +75,25 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
     setVoiceSnapshot(null);
   };
 
+  const onPickBill = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      return setLocalError("Please choose an image file (PNG, JPG, WEBP)");
+    }
+    setLocalError(null);
+    setUploadingBill(true);
+    setBillInfo("Compressing to <400KB & uploading…");
+    try {
+      const result = await uploadImage(file, "expenses");
+      setBillUrl(result.url);
+      setBillInfo(`Compressed (${result.formattedSize}) · ${result.storage === "supabase" ? "Supabase Storage" : "Ready"}`);
+    } catch (err) {
+      setLocalError((err as Error).message || "Could not process bill image");
+    } finally {
+      setUploadingBill(false);
+    }
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
@@ -88,7 +112,7 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
       eventId: eventId || null,
       paidBy: initial?.paidBy || user?.name || "Mandram",
       description: initial?.description ?? undefined,
-      billUrl: initial?.billUrl ?? null,
+      billUrl: billUrl ?? null,
     });
   };
 
@@ -165,6 +189,57 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             ))}
           </Select>
         </Field>
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-[12.5px] font-bold text-ink">
+          Bill / Receipt photo <span className="font-medium text-faint">ரசீது புகைப்படம் (optional)</span>
+        </label>
+        <input
+          ref={billFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => onPickBill(e.target.files?.[0])}
+        />
+        {billUrl ? (
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2 p-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={billUrl} alt="Bill preview" className="size-14 rounded-lg object-cover" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-bold text-ink">✓ Bill attached</p>
+              {billInfo && <p className="text-[11px] font-semibold text-leaf-600 dark:text-leaf-400">{billInfo}</p>}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { setBillUrl(null); setBillInfo(null); }}
+              className="text-red-500 hover:text-red-600"
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => billFileRef.current?.click()}
+            disabled={uploadingBill}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface-2/40 py-2.5 text-[12.5px] font-bold text-muted transition-colors hover:border-saffron-400 hover:text-ink disabled:opacity-60"
+          >
+            {uploadingBill ? (
+              <>
+                <Loader2 className="size-4 animate-spin text-saffron-600" />
+                <span>Compressing to &le;400 KB & uploading…</span>
+              </>
+            ) : (
+              <>
+                <Camera className="size-4 text-faint" />
+                <span>Attach bill photo (&le;400 KB · Supabase Storage)</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {(localError || error) && (

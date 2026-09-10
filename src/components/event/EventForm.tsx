@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import {
-  CalendarDays, Camera, ImagePlus, Link2, MapPin, Type, X,
+  CalendarDays, Camera, ImagePlus, Link2, Loader2, MapPin, Type, X,
 } from "lucide-react";
 import type { Event, EventInput, EventStatus, EventType } from "@/lib/data/types";
 import { EVENT_STATUSES, EVENT_TYPES } from "@/lib/data/types";
@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { todayISO, resolveEventStatus } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
+import { uploadImage } from "@/lib/client/upload";
 
 interface Props {
   initial?: Event | null;
@@ -21,8 +22,6 @@ interface Props {
   onSubmit: (input: EventInput) => void;
   onCancel: () => void;
 }
-
-const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
 
 export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
@@ -39,6 +38,8 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
   const [location, setLocation] = useState(initial?.location ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [cover, setCover] = useState<string | null>(initial?.cover ?? null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
   const [photoMode, setPhotoMode] = useState<"file" | "url">("file");
   const [urlInput, setUrlInput] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
@@ -60,25 +61,30 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
 
   const meta = EVENT_TYPES.find((t) => t.value === type);
 
-  const onPickFile = (file: File | undefined) => {
+  const onPickFile = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       return setLocalError("Please choose an image file (PNG, JPG, WEBP)");
     }
-    if (file.size > MAX_IMAGE_SIZE) {
-      return setLocalError("Image is too large (max 3 MB). Please choose a smaller photo.");
-    }
     setLocalError(null);
-    const reader = new FileReader();
-    reader.onload = () => setCover(String(reader.result));
-    reader.onerror = () => setLocalError("Could not read image file");
-    reader.readAsDataURL(file);
+    setUploadingCover(true);
+    setUploadInfo("Compressing to <400KB & uploading…");
+    try {
+      const result = await uploadImage(file, "events");
+      setCover(result.url);
+      setUploadInfo(`Compressed (${result.formattedSize}) · ${result.storage === "supabase" ? "Supabase Storage" : "Ready"}`);
+    } catch (err) {
+      setLocalError((err as Error).message || "Could not process cover image");
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const applyUrl = () => {
     if (!urlInput.trim()) return;
     setCover(urlInput.trim());
     setUrlInput("");
+    setUploadInfo(null);
     setLocalError(null);
   };
 
@@ -173,16 +179,23 @@ export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Pr
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="group flex h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface-2/50 p-4 text-center transition-all hover:border-saffron-500 hover:bg-saffron-50/40 dark:hover:bg-saffron-500/5"
+                disabled={uploadingCover}
+                className="group flex h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface-2/50 p-4 text-center transition-all hover:border-saffron-500 hover:bg-saffron-50/40 disabled:opacity-60 dark:hover:bg-saffron-500/5"
               >
                 <span className="flex size-10 items-center justify-center rounded-xl bg-saffron-100 text-saffron-600 transition-transform group-hover:scale-110 dark:bg-saffron-500/15 dark:text-saffron-400">
-                  <ImagePlus className="size-5" />
+                  {uploadingCover ? (
+                    <Loader2 className="size-5 animate-spin text-saffron-600 dark:text-saffron-400" />
+                  ) : (
+                    <ImagePlus className="size-5" />
+                  )}
                 </span>
                 <div>
                   <p className="text-[13px] font-bold text-ink group-hover:text-saffron-600 dark:group-hover:text-saffron-400">
-                    Upload event photo · படம் பதிவேற்றவும்
+                    {uploadingCover ? "Compressing & uploading to Supabase Storage…" : "Upload event photo · படம் பதிவேற்றவும்"}
                   </p>
-                  <p className="text-[11px] text-faint">PNG, JPG, WEBP up to 3 MB · Displays on cards & banner</p>
+                  <p className="text-[11px] text-faint">
+                    Auto-compressed to &le;400 KB · Stored on Supabase Storage
+                  </p>
                 </div>
               </button>
             ) : (
