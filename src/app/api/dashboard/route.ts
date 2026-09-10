@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadDB } from "@/lib/data/supabase-store";
+import { loadDashboardDB } from "@/lib/data/supabase-store";
 import { buildSeries, listUpcoming, recentActivity, totals, type Period } from "@/lib/data/repository";
 import { handleApiError } from "@/lib/api-helpers";
 
@@ -13,9 +13,9 @@ export async function GET(req: Request) {
     const periodParam = searchParams.get("period") as Period | null;
     const period: Period = periodParam && PERIODS.includes(periodParam) ? periodParam : "year";
 
-    const db = await loadDB();
+    const db = await loadDashboardDB();
     const t = totals(db);
-    return NextResponse.json({
+    const res = NextResponse.json({
       totals: {
         varavu: t.varavu,
         selavu: t.selavu,
@@ -30,6 +30,9 @@ export async function GET(req: Request) {
       events: listUpcoming(db, 4),
       activity: recentActivity(db, 8),
     });
+
+    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { LogoMark } from "@/components/ui/Logo";
 import { usePermissions, useSession } from "./session";
 import { useLang } from "@/lib/i18n";
+import { useBodyScrollLock } from "@/lib/client/hooks";
 
 function Row({ item, onClose, suffix }: { item: NavItem; onClose: () => void; suffix?: React.ReactNode }) {
   const { lang } = useLang();
@@ -19,7 +20,7 @@ function Row({ item, onClose, suffix }: { item: NavItem; onClose: () => void; su
       href={item.href}
       onClick={onClose}
       aria-label={item.en}
-      className="flex items-center gap-3.5 rounded-xl px-3 py-3 transition-colors hover:bg-surface-2"
+      className="flex items-center gap-3.5 rounded-xl px-3 py-3 transition-colors active:scale-[0.99] hover:bg-surface-2"
     >
       <span className="flex size-10 items-center justify-center rounded-xl bg-surface-2 text-navy-700 dark:bg-navy-500/15 dark:text-navy-200">
         <Icon className="size-5" />
@@ -39,6 +40,9 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const { role } = usePermissions();
   const { lang, t } = useLang();
 
+  // Prevent background page scrolling & touch contention on mobile while sheet is open
+  useBodyScrollLock(open);
+
   const roleLabel =
     role === "admin" ? t("Administrator", "நிர்வாகி") : role === "treasurer" ? t("Treasurer", "பொருளாளர்") : t("Member", "உறுப்பினர்");
 
@@ -46,22 +50,34 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[60] lg:hidden">
+          {/* Smooth hardware-accelerated dark scrim without heavy backdrop-filter blur that lags on mobile */}
           <motion.div
-            className="absolute inset-0 bg-navy-950/50 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
           />
+          {/* Hardware-accelerated GPU slide-up sheet with native swipe-to-dismiss */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 350 }}
-            className="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-surface pb-[calc(2rem+env(safe-area-inset-bottom))] text-ink shadow-modal"
+            transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.15}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 65 || info.velocity.y > 350) {
+                onClose();
+              }
+            }}
+            className="absolute inset-x-0 bottom-0 max-h-[85dvh] touch-pan-y overflow-y-auto rounded-t-3xl border-t border-line bg-surface pb-[calc(2rem+env(safe-area-inset-bottom))] text-ink shadow-modal transform-gpu will-change-transform"
           >
-            <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-line" />
-            <div className="px-5 pt-4">
+            {/* Grab handle indicator */}
+            <div className="mx-auto mt-2.5 h-1.5 w-11 rounded-full bg-line/80" />
+            <div className="px-5 pt-3.5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   {user && <Avatar name={user.name} size="lg" />}
@@ -74,7 +90,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <button
                   onClick={() => void signOut()}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[12px] font-semibold text-muted"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[12px] font-semibold text-muted active:scale-95"
                 >
                   <LogOut className="size-3.5" /> {t("Exit", "வெளியேறு")}
                 </button>

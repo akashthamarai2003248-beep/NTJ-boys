@@ -69,32 +69,94 @@ export interface AsyncState<T> {
 
 const clientCache = new Map<string, { data: unknown; timestamp: number }>();
 const CLIENT_CACHE_TTL = 30_000; // 30 seconds
+const PERSIST_PREFIX = "nbm_cache_";
+const PERSIST_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours max persistent stale cache
+
+function readPersistentCache<T>(url: string): { data: T; timestamp: number } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PERSIST_PREFIX + url);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.timestamp === "number" && Date.now() - parsed.timestamp < PERSIST_MAX_AGE_MS) {
+      return parsed as { data: T; timestamp: number };
+    }
+  } catch {
+    /* ignore storage read error */
+  }
+  return null;
+}
+
+function writePersistentCache(url: string, data: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PERSIST_PREFIX + url, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {
+    /* ignore storage quota error */
+  }
+}
+
+function removePersistentCache(prefix?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(PERSIST_PREFIX)) {
+        if (!prefix || key.startsWith(PERSIST_PREFIX + prefix)) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Clear client cache, optionally matching a URL prefix (or all if omitted). */
 export function clearClientCache(prefix?: string) {
   if (!prefix) {
     clientCache.clear();
+    removePersistentCache();
     return;
   }
   for (const key of clientCache.keys()) {
     if (key.startsWith(prefix)) clientCache.delete(key);
   }
+  removePersistentCache(prefix);
 }
 
 /**
  * Fetch a JSON endpoint on mount / whenever `url` changes.
- * Uses in-memory SWR (Stale-While-Revalidate) so navigating back to previously
- * visited pages renders instantly (0ms) with zero flicker or blank loading screens.
+ * Uses persistent Stale-While-Revalidate (SWR) so the Home page and previously
+ * visited pages render instantly (0ms) from local cache with zero flicker or blank
+ * loading screens, while keeping data fresh via background revalidation.
  */
 export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncState<T> & { reload: () => void } {
-  const cached = url ? clientCache.get(url) : null;
-  const hasFreshCache = Boolean(cached && Date.now() - cached.timestamp < CLIENT_CACHE_TTL);
+  const getCachedEntry = useCallback((): { data: T; timestamp: number } | null => {
+    if (!url) return null;
+    const mem = clientCache.get(url);
+    if (mem) return mem as { data: T; timestamp: number };
+    const pers = readPersistentCache<T>(url);
+    if (pers) {
+      clientCache.set(url, pers);
+      return pers;
+    }
+    return null;
+  }, [url]);
 
-  const [state, setState] = useState<AsyncState<T>>(() => ({
-    data: (cached?.data as T) ?? null,
-    error: null,
-    loading: !!url && !hasFreshCache,
-  }));
+  const [state, setState] = useState<AsyncState<T>>(() => {
+    if (!url) return { data: null, error: null, loading: false };
+    const cached = getCachedEntry();
+    return {
+      data: cached ? cached.data : null,
+      error: null,
+      loading: !cached,
+    };
+  });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -103,12 +165,12 @@ export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncStat
       return;
     }
 
-    const currentCached = clientCache.get(url);
+    const currentCached = getCachedEntry();
 
-    // If cached data is present, immediately serve it
+    // If cached data is present, immediately serve it without blocking render
     if (currentCached) {
-      setState((s) => ({ ...s, data: currentCached.data as T, error: null, loading: false }));
-      // If the cache was fetched very recently (< 5s) and not an explicit reload, avoid redundant re-fetch
+      setState((s) => ({ ...s, data: currentCached.data, error: null, loading: false }));
+      // If the cache was fetched very recently (< 5s) and not an explicit reload, avoid redundant network traffic
       if (tick === 0 && Date.now() - currentCached.timestamp < 5_000) {
         return;
       }
@@ -124,7 +186,9 @@ export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncStat
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load");
         if (active) {
-          clientCache.set(url, { data: body, timestamp: Date.now() });
+          const entry = { data: body, timestamp: Date.now() };
+          clientCache.set(url, entry);
+          writePersistentCache(url, body);
           setState({ data: body as T, error: null, loading: false });
         }
       })
@@ -144,10 +208,19 @@ export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncStat
       ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, tick, ...deps]);
+  }, [url, tick, getCachedEntry, ...deps]);
 
   const reload = useCallback(() => {
-    if (url) clientCache.delete(url);
+    if (url) {
+      clientCache.delete(url);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem(PERSIST_PREFIX + url);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     setTick((t) => t + 1);
   }, [url]);
 
