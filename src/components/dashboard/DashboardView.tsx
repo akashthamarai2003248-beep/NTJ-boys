@@ -71,20 +71,17 @@ export function DashboardView() {
         transition={{ duration: 0.35 }}
         className="relative overflow-hidden rounded-2xl px-4 py-5 text-white shadow-card sm:px-6 sm:py-6"
       >
-        {/* Tricolor Netaji banner background */}
+        {/* Tricolor Netaji banner background - vibrant and fully visible */}
         <img
           src="/netaji-banner.png"
-          alt=""
-          aria-hidden
+          alt="Nethaji Boys Mandram"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
         />
-        {/* Dark navy overlay: high contrast on mobile so text never clashes with the background graphic, gentle fade on desktop */}
-        <div className="pointer-events-none absolute inset-0 bg-navy-950/85 sm:bg-gradient-to-r sm:from-navy-950/95 sm:via-navy-950/70 sm:to-transparent" aria-hidden />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy-950/90 via-transparent to-navy-950/30" aria-hidden />
-        <div className="pointer-events-none absolute -right-8 -top-12 opacity-[0.10]" aria-hidden>
-          <LogoMark className="size-40" />
-        </div>
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Subtle vignette: keeps the banner artwork, Netaji portrait, and colors bright and visible */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-navy-950/50 via-navy-950/15 to-transparent sm:from-navy-950/60 sm:via-navy-950/15" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-navy-950/50 to-transparent" aria-hidden />
+
+        <div className="relative flex flex-col gap-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-saffron-300 sm:text-[11.5px]">
               {t(g.en, g.ta)}
@@ -92,10 +89,10 @@ export function DashboardView() {
             <h1 className="mt-1 flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight sm:text-[24px]">
               {t(`${g.en}, ${user?.name.split(" ")[0]} 👋`, `${g.ta}, ${user?.name.split(" ")[0]} 👋`)}
             </h1>
-            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] font-medium text-navy-100/90 sm:text-[12.5px]">
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] font-medium text-white/95 sm:text-[12.5px]">
               <Sparkles className="size-3.5 shrink-0 text-saffron-300" />
               <span>{t("Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றம்")}</span>
-              <span className="text-navy-100/50">·</span>
+              <span className="text-white/60">·</span>
               <span>{today}</span>
             </p>
           </div>
@@ -115,7 +112,7 @@ export function DashboardView() {
               <Button
                 size="md"
                 variant="secondary"
-                className="border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/40 hover:bg-white/15 hover:text-white dark:border-white/20"
+                className="border-white/35 bg-black/40 font-bold text-white shadow-md backdrop-blur-md hover:border-white/55 hover:bg-black/55 hover:text-white"
               >
                 {t("Events", "நிகழ்வுகள்")} <ArrowRight className="size-4" />
               </Button>
