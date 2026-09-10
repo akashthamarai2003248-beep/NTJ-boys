@@ -4,14 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  CalendarRange, Eraser, Eye, Plus, SearchX, SlidersHorizontal, TrendingDown,
+  CalendarRange, Eraser, Eye, Plus, Search, SearchX, SlidersHorizontal, TrendingDown, X,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Expense, ExpenseInput, Event } from "@/lib/data/types";
 import { EXPENSE_CATEGORIES, PAYMENT_CHOICES } from "@/lib/data/types";
 import type { ExpensePage } from "@/lib/data/repository";
 import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
+import { useLang } from "@/lib/i18n";
+import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -36,6 +39,7 @@ interface EventsPayload { events: Event[] }
 export function ExpensesView() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLang();
   const { can } = usePermissions();
   const writable = can.finances;
 
@@ -48,6 +52,7 @@ export function ExpensesView() {
   const [to, setTo] = useState("");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [formOpen, setFormOpen] = useState(() => searchParams.get("add") === "1");
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -139,74 +144,168 @@ export function ExpensesView() {
         }
       />
 
-      <div className="card-surface overflow-hidden rounded-2xl">
-        <div className="relative flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-[#3a1a30] via-[#57223f] to-[#7a2d40] px-5 py-4 text-white sm:px-6">
+      {/* total banner */}
+      <div className="card-surface overflow-hidden rounded-2xl border border-line/80 bg-gradient-to-br from-[#2a1222] via-[#431932] to-[#5a2132] p-4 text-white shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-gold-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-gold-300">
               Total Expenses · மொத்த செலவு
-            </p>
-            <p className="mt-1 text-[26px] font-black leading-none tracking-tight tabular-nums">
+            </span>
+            <p className="mt-1 text-[24px] font-black leading-tight tracking-tight sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
-            <p className="mt-1 text-[11.5px] text-white/75">
+            <p className="text-[11.5px] text-white/75">
               {hasFilters ? `filtered from ${formatINR(data?.allSum ?? 0)} overall` : "spent across all events & general"}
             </p>
           </div>
-          <div className="flex gap-5 text-center">
-            <div>
-              <p className="text-lg font-extrabold tabular-nums">{data?.total ?? "–"}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70">Entries</p>
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-center">
+              <p className="text-base font-extrabold tabular-nums leading-none sm:text-lg">{data?.total ?? "–"}</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white/70">Entries</p>
             </div>
-            <div className="hidden sm:block">
-              <p className="text-lg font-extrabold tabular-nums">{data && data.total > 0 ? formatINR(Math.round(filteredSum / data.total)) : "–"}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70">Avg expense</p>
-            </div>
+            {data && data.total > 0 && (
+              <div className="hidden rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-center sm:block">
+                <p className="text-base font-extrabold tabular-nums leading-none sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white/70">Average</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="card-surface rounded-2xl p-3 sm:p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
-            placeholder="Search title, paid by…"
-            className="min-w-44 flex-1"
-          />
-          <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="min-w-36">
-            <option value="">All events</option>
-            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
-          </Select>
-          <Select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} className="min-w-36">
-            <option value="">All categories</option>
-            {EXPENSE_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-          </Select>
-          <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="min-w-32">
-            <option value="">All payments</option>
-            {PAYMENT_CHOICES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </Select>
-          <div className="flex items-center gap-1.5 text-faint">
-            <CalendarRange className="size-4" />
-            <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="w-36" aria-label="From date" />
-            <span>–</span>
-            <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className="w-36" aria-label="To date" />
+      {/* filters */}
+      <div className="card-surface rounded-2xl p-3 sm:p-4 space-y-2.5">
+        {/* Search Bar + Filter Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-faint" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              placeholder={t("Search title, paid by…", "தலைப்பு, செலுத்தியவர் தேடுங்கள்…")}
+              className="h-10 w-full rounded-xl border border-line bg-surface-2/60 pl-9 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => { setQ(""); setPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
-          <Select value={sort} onChange={(e) => setSort(e.target.value)} className="min-w-36">
-            <option value="newest">Newest first</option>
-            <option value="amount_desc">Highest amount</option>
-            <option value="amount_asc">Lowest amount</option>
-            <option value="title">Title A–Z</option>
-          </Select>
-          {hasFilters ? (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
+
+          <button
+            type="button"
+            onClick={() => setShowFilters((v) => !v)}
+            className={cn(
+              "flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[12px] font-bold transition-all shrink-0",
+              showFilters || (eventId || category || payment || from || to || sort !== "newest")
+                ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
+                : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
+            )}
+          >
+            <SlidersHorizontal className="size-3.5" />
+            <span className="hidden sm:inline">{t("Filters", "வடிகட்டி")}</span>
+            {(eventId ? 1 : 0) + (category ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0) > 0 && (
+              <span className="flex size-4.5 items-center justify-center rounded-full bg-saffron-500 text-[10px] font-black text-white">
+                {(eventId ? 1 : 0) + (category ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Quick Category Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => { setCategory(""); setPage(1); }}
+            className={cn(
+              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              category === ""
+                ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
+                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+            )}
+          >
+            All
+          </button>
+          {EXPENSE_CATEGORIES.map((cat) => {
+            const active = category === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => { setCategory(active ? "" : cat); setPage(1); }}
+                className={cn(
+                  "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+                  active
+                    ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
+                    : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+                )}
+              >
+                {cat}
+              </button>
+            );
+          })}
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="ml-auto shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+            >
               <Eraser className="size-3.5" /> Clear
-            </Button>
-          ) : (
-            <span className="hidden items-center gap-1.5 px-1 text-[11.5px] font-medium text-faint md:inline-flex">
-              <SlidersHorizontal className="size-3.5" /> Filter & sort
-            </span>
+            </button>
           )}
         </div>
+
+        {/* Expandable Advanced Filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
+                <div>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Event</label>
+                  <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                    <option value="">All events</option>
+                    {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Payment Method</label>
+                  <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                    <option value="">All payments</option>
+                    {PAYMENT_CHOICES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Sort</label>
+                  <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-full text-[12.5px] h-9">
+                    <option value="newest">Newest first</option>
+                    <option value="amount_desc">Highest amount</option>
+                    <option value="amount_asc">Lowest amount</option>
+                    <option value="title">Title A–Z</option>
+                  </Select>
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Date Range</label>
+                  <div className="flex items-center gap-1 max-w-sm">
+                    <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
+                    <span className="text-faint">–</span>
+                    <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className="flex-1 text-[11.5px] h-9 px-2" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="card-surface overflow-hidden rounded-2xl">

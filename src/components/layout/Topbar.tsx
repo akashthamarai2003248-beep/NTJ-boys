@@ -39,12 +39,15 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
           </div>
         </div>
 
+        <div className="flex-1 sm:hidden" />
+
         <button
           onClick={onOpenSearch}
-          className="group flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-line-strong bg-surface px-3.5 text-left text-[13px] text-faint shadow-[0_1px_0_rgba(10,16,30,0.02)] transition-all duration-150 hover:border-navy-300 hover:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-500/30 sm:max-w-md lg:max-w-lg dark:hover:border-navy-500"
+          aria-label={t("Search", "தேடு")}
+          className="group flex h-10 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:text-ink max-sm:size-10 max-sm:shrink-0 sm:min-w-0 sm:flex-1 sm:justify-start sm:gap-2.5 sm:px-3.5 sm:text-[13px] sm:text-faint sm:hover:border-navy-300 sm:max-w-md lg:max-w-lg"
         >
           <Search className="size-4 shrink-0" />
-          <span className="truncate">
+          <span className="hidden truncate sm:inline">
             {t("Search members, receipts, events…", "உறுப்பினர்கள், ரசீதுகள், நிகழ்வுகள் தேடுங்கள்…")}
           </span>
           <kbd className="ml-auto hidden shrink-0 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-faint sm:block">
