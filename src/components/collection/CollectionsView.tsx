@@ -49,6 +49,7 @@ export function CollectionsView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
+  const [category, setCategory] = useState("");
   const [payment, setPayment] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -68,9 +69,9 @@ export function CollectionsView() {
   const url = useMemo(
     () =>
       `/api/collections${qs({
-        q: debouncedQ, eventId, payment, from, to, sort, page, perPage: PER_PAGE,
+        q: debouncedQ, eventId, category, payment, from, to, sort, page, perPage: PER_PAGE,
       })}`,
-    [debouncedQ, eventId, payment, from, to, sort, page],
+    [debouncedQ, eventId, category, payment, from, to, sort, page],
   );
   const { data, loading, reload } = useFetch<CollectionPage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
@@ -80,7 +81,7 @@ export function CollectionsView() {
     (id?: string | null) => events.find((e) => e.id === id)?.name,
     [events],
   );
-  const hasFilters = Boolean(q || eventId || payment || from || to);
+  const hasFilters = Boolean(q || eventId || category || payment || from || to);
 
   // deep-link ?add=1 / ?eventId=x — state is initialised from the URL once
   useEffect(() => {
@@ -95,7 +96,7 @@ export function CollectionsView() {
   }, [celebrate]);
 
   const clearFilters = () => {
-    setQ(""); setEventId(""); setPayment(""); setFrom(""); setTo(""); setPage(1);
+    setQ(""); setEventId(""); setCategory(""); setPayment(""); setFrom(""); setTo(""); setPage(1);
   };
 
   const openAdd = () => {
@@ -253,20 +254,47 @@ export function CollectionsView() {
           </button>
         </div>
 
-        {/* Quick Payment Chips */}
+        {/* Quick Category & Payment Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
-            onClick={() => { setPayment(""); setPage(1); }}
+            onClick={() => { setCategory(""); setPage(1); }}
             className={cn(
               "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
-              payment === ""
+              category === ""
                 ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
             All
           </button>
+          <button
+            type="button"
+            onClick={() => { setCategory(category === "ஊர் வசூல்" ? "" : "ஊர் வசூல்"); setPage(1); }}
+            className={cn(
+              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              category === "ஊர் வசூல்"
+                ? "bg-amber-600 text-white dark:bg-amber-500 dark:text-ink shadow-sm"
+                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+            )}
+          >
+            🏘️ ஊர் வசூல்
+          </button>
+          <button
+            type="button"
+            onClick={() => { setCategory(category === "மன்றம் வசூல்" ? "" : "மன்றம் வசூல்"); setPage(1); }}
+            className={cn(
+              "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+              category === "மன்றம் வசூல்"
+                ? "bg-purple-700 text-white dark:bg-purple-600 dark:text-white shadow-sm"
+                : "border border-line bg-surface-2/50 text-muted hover:text-ink"
+            )}
+          >
+            👥 மன்றம் வசூல்
+          </button>
+
+          <span className="h-4 w-px bg-line shrink-0 mx-0.5" />
+
           {PAYMENT_CHOICES.map((m) => {
             const active = payment === m.value;
             return (
@@ -275,9 +303,9 @@ export function CollectionsView() {
                 type="button"
                 onClick={() => { setPayment(active ? "" : m.value); setPage(1); }}
                 className={cn(
-                  "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
+                  "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-medium transition-colors",
                   active
-                    ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
+                    ? "bg-navy-800 text-white dark:bg-saffron-500 dark:text-ink"
                     : "border border-line bg-surface-2/50 text-muted hover:text-ink"
                 )}
               >
@@ -391,11 +419,15 @@ export function CollectionsView() {
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                           <p className="font-bold">{c.personName}</p>
+                          <CategoryBadge category={c.category} street={c.street} />
                           <TypeBadge type={c.contributionType} />
                         </div>
-                        {c.contributionType === "namePhone" && c.phone && (
-                          <p className="mt-0.5 text-[11px] text-faint">{c.phone}</p>
-                        )}
+                        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-faint">
+                          {c.street && c.street !== c.category && <span>{c.street}</span>}
+                          {c.contributionType === "namePhone" && c.phone && (
+                            <span>{c.phone}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right font-bold tabular-nums">{formatINR(c.amount)}</td>
                       <td className="px-4 py-3"><PaymentLabel method={c.paymentMethod} /></td>
@@ -422,11 +454,15 @@ export function CollectionsView() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                       <p className="truncate text-[14px] font-bold">{c.personName}</p>
+                      <CategoryBadge category={c.category} street={c.street} />
                       <TypeBadge type={c.contributionType} />
                     </div>
-                    {c.contributionType === "namePhone" && c.phone && (
-                      <p className="mt-0.5 text-[11px] text-faint">{c.phone}</p>
-                    )}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-faint">
+                      {c.street && c.street !== c.category && <span>{c.street}</span>}
+                      {c.contributionType === "namePhone" && c.phone && (
+                        <span>{c.phone}</span>
+                      )}
+                    </div>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-muted">
                       <PaymentLabel method={c.paymentMethod} />
                       <span className="text-faint">·</span>
@@ -513,3 +549,25 @@ function TypeBadge({ type }: { type: ContributionType }) {
   }
   return null;
 }
+
+function CategoryBadge({ category, street }: { category?: string | null; street?: string | null }) {
+  const cat = category || (street?.includes("வசூல்") ? street : "ஊர் வசூல்");
+  const isMandram = cat.includes("மன்றம்");
+  const isOor = cat.includes("ஊர்");
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-tight",
+        isMandram
+          ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/40"
+          : isOor
+          ? "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/40"
+          : "bg-surface-2 text-muted border border-line"
+      )}
+    >
+      {isMandram ? "👥" : isOor ? "🏘️" : "🏷️"} {cat}
+    </span>
+  );
+}
+

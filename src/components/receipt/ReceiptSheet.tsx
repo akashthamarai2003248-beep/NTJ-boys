@@ -54,8 +54,8 @@ export function ReceiptSheet({
         {/* event line */}
         <div className="flex items-center justify-between gap-3 border-b border-dashed border-[#dfe3ec] pb-3">
           <p className="min-w-0 truncate text-[13px] font-bold text-[#101f42]">{eventLabel}</p>
-          <span className="shrink-0 rounded-md bg-[#f2f4fa] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#5f6c88]">
-            Contribution
+          <span className="shrink-0 rounded-full bg-[#ff9933]/15 px-2.5 py-0.5 text-[10.5px] font-bold text-[#b06a1a]">
+            {collection.category || collection.street || "ஊர் வசூல்"}
           </span>
         </div>
 
@@ -65,8 +65,10 @@ export function ReceiptSheet({
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8e98af]">Received from · பெற்றுக்கொண்டவர்</p>
             <p className="mt-1 truncate text-[16px] font-extrabold text-[#141d33]">{collection.personName}</p>
             <p className="mt-0.5 text-[11.5px] font-medium text-[#5f6c88]">
-              {collection.street || "—"}
-              {collection.phone ? ` · +91 ${collection.phone}` : ""}
+              {collection.street && collection.street !== collection.category
+                ? `${collection.street} · `
+                : ""}
+              {collection.phone ? `+91 ${collection.phone}` : (collection.street && collection.street !== collection.category ? "" : "—")}
             </p>
           </div>
         </div>

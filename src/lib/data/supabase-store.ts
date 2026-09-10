@@ -49,7 +49,9 @@ export const mapCollection = (r: CollectionRow): Collection => {
   const dbType = r.contribution_type ?? "name_phone";
   return {
     id: r.id, receiptNumber: r.receipt_number, personName: r.person_name,
-    phone: r.phone, street: r.street, amount: r.amount, paymentMethod: r.payment_method,
+    phone: r.phone, street: r.street,
+    category: r.street || "ஊர் வசூல்",
+    amount: r.amount, paymentMethod: r.payment_method,
     contributionType: dbType === "name" ? "name" : dbType === "voice" ? "voice" : "namePhone",
     date: r.date, eventId: r.event_id, notes: r.notes,
     createdBy: r.created_by_name ?? r.created_by ?? "",

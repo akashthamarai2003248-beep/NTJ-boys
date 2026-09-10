@@ -284,6 +284,7 @@ export function recentActivity(db: DB, limit = 10): ActivityLog[] {
 export interface CollectionFilters {
   q?: string;
   eventId?: string | null;
+  category?: string | null;
   payment?: PaymentMethod | null;
   from?: string | null;
   to?: string | null;
@@ -310,10 +311,16 @@ export function queryCollections(db: DB, f: CollectionFilters): CollectionPage {
         c.personName.toLowerCase().includes(q) ||
         c.receiptNumber.toLowerCase().includes(q) ||
         (c.street ?? "").toLowerCase().includes(q) ||
+        (c.category ?? "").toLowerCase().includes(q) ||
         (c.notes ?? "").toLowerCase().includes(q),
     );
   }
   if (f.eventId) items = items.filter((c) => c.eventId === f.eventId);
+  if (f.category) {
+    items = items.filter(
+      (c) => (c.category ?? c.street ?? "ஊர் வசூல்") === f.category,
+    );
+  }
   if (f.payment) items = items.filter((c) => c.paymentMethod === f.payment);
   if (f.from) items = items.filter((c) => c.date >= (f.from ?? ""));
   if (f.to) items = items.filter((c) => c.date <= (f.to ?? ""));
@@ -376,7 +383,8 @@ export async function createCollection(actor: DemoUser, raw: CollectionInput): P
       receiptNumber: nextReceiptNumber(db, input.date),
       personName: input.personName,
       phone: input.phone?.trim() || null,
-      street: input.street?.trim() || null,
+      street: (input.category || input.street)?.trim() || "ஊர் வசூல்",
+      category: (input.category || input.street)?.trim() || "ஊர் வசூல்",
       amount: input.amount,
       paymentMethod: input.paymentMethod,
       contributionType: input.contributionType,
@@ -406,7 +414,8 @@ export async function updateCollection(actor: DemoUser, id: string, raw: Collect
     const yearChanged = new Date(rec.date).getFullYear() !== new Date(input.date).getFullYear();
     rec.personName = input.personName;
     rec.phone = input.phone?.trim() || null;
-    rec.street = input.street?.trim() || null;
+    rec.street = (input.category || input.street)?.trim() || "ஊர் வசூல்";
+    rec.category = (input.category || input.street)?.trim() || "ஊர் வசூல்";
     rec.amount = input.amount;
     rec.paymentMethod = input.paymentMethod;
     rec.contributionType = input.contributionType;

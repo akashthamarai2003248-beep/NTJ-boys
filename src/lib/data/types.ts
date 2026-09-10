@@ -94,7 +94,8 @@ export interface Collection {
   receiptNumber: string; // NBM-2026-0001
   personName: string;
   phone?: string | null;
-  street?: string | null; // Street / Area
+  street?: string | null; // Street / Area / Category
+  category?: string | null; // e.g. "ஊர் வசூல்" | "மன்றம் வசூல்" | "பிற வசூல்"
   amount: number; // whole rupees
   paymentMethod: PaymentMethod;
   contributionType: ContributionType; // how the contributor was recorded
@@ -245,6 +246,7 @@ export interface CollectionInput {
   personName: string;
   phone?: string;
   street?: string;
+  category?: string;
   amount: number;
   paymentMethod: PaymentMethod;
   contributionType: ContributionType;
@@ -365,6 +367,14 @@ export const PAYMENT_CHOICES: { value: PaymentMethod; label: string; ta: string 
   { value: "cash", label: "Cash", ta: "ரொக்கம்" },
   { value: "upi", label: "GPay (UPI)", ta: "ஜிபே (யுபிஐ)" },
 ];
+
+export const COLLECTION_CATEGORIES = [
+  { value: "ஊர் வசூல்", label: "ஊர் வசூல்", sub: "Oor Vasul" },
+  { value: "மன்றம் வசூல்", label: "மன்றம் வசூல்", sub: "Mandram Vasul" },
+  { value: "பிற வசூல்", label: "பிற வசூல்", sub: "Special / Other" },
+] as const;
+
+export type CollectionCategory = (typeof COLLECTION_CATEGORIES)[number]["value"];
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Decoration",

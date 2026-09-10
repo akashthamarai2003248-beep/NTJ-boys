@@ -3,7 +3,7 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { CalendarDays, ReceiptText, Undo2, UserRound } from "lucide-react";
 import type { Collection, CollectionInput, Event, PaymentMethod } from "@/lib/data/types";
-import { PAYMENT_CHOICES, PAYMENT_METHODS } from "@/lib/data/types";
+import { COLLECTION_CATEGORIES, PAYMENT_CHOICES, PAYMENT_METHODS } from "@/lib/data/types";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
@@ -22,6 +22,7 @@ interface VoiceSnapshot {
   eventId: string;
   phone: string;
   street: string;
+  category: string;
 }
 
 interface Props {
@@ -35,6 +36,7 @@ interface Props {
 
 export function CollectionForm({ events, initial, submitting, error, onSubmit, onCancel }: Props) {
   const [personName, setPersonName] = useState(initial?.personName ?? "");
+  const [category, setCategory] = useState<string>(initial?.category || initial?.street || "ஊர் வசூல்");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initial?.paymentMethod ?? "cash");
   const [date, setDate] = useState(initial?.date ?? todayISO());
@@ -42,14 +44,14 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
   const [localError, setLocalError] = useState<string | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [voiceSnapshot, setVoiceSnapshot] = useState<VoiceSnapshot | null>(null);
-  // phone / street have no dedicated input — captured from dictation only
+  // phone / street captured from dictation or kept from initial
   const [dictatedPhone, setDictatedPhone] = useState("");
   const [dictatedStreet, setDictatedStreet] = useState("");
 
   const handleVoiceTranscript = useCallback(
     (text: string) => {
       const parsed = parseVoiceTranscript(text, events);
-      setVoiceSnapshot({ personName, amount, paymentMethod, eventId, phone: dictatedPhone, street: dictatedStreet });
+      setVoiceSnapshot({ personName, amount, paymentMethod, eventId, phone: dictatedPhone, street: dictatedStreet, category });
       setVoiceTranscript(text);
       if (parsed.name) setPersonName(parsed.name);
       if (parsed.amount && parsed.amount > 0) setAmount(String(parsed.amount));
@@ -57,8 +59,10 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
       if (parsed.eventId !== undefined) setEventId(parsed.eventId ?? "");
       if (parsed.phone) setDictatedPhone(parsed.phone);
       if (parsed.street) setDictatedStreet(parsed.street);
+      if (/ஊர்|oor|village/i.test(text)) setCategory("ஊர் வசூல்");
+      else if (/மன்றம்|mandram|member/i.test(text)) setCategory("மன்றம் வசூல்");
     },
-    [events, personName, amount, paymentMethod, eventId, dictatedPhone, dictatedStreet],
+    [events, personName, amount, paymentMethod, eventId, dictatedPhone, dictatedStreet, category],
   );
 
   const undoVoice = () => {
@@ -69,6 +73,7 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
     setEventId(voiceSnapshot.eventId);
     setDictatedPhone(voiceSnapshot.phone);
     setDictatedStreet(voiceSnapshot.street);
+    setCategory(voiceSnapshot.category);
     setVoiceTranscript(null);
     setVoiceSnapshot(null);
   };
@@ -84,10 +89,9 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
     setVoiceSnapshot(null);
     onSubmit({
       personName: personName.trim(),
-      // hidden fields keep their stored values when editing, so they aren't wiped;
-      // otherwise they fall back to what the voice dictation captured
       phone: initial?.phone ?? (dictatedPhone || undefined),
-      street: initial?.street ?? (dictatedStreet || undefined),
+      street: category,
+      category,
       amount: rupees,
       paymentMethod,
       contributionType: initial?.contributionType ?? "namePhone",
@@ -105,17 +109,17 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
     : PAYMENT_CHOICES;
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} className="space-y-4 sm:space-y-5">
       <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-saffron-600 dark:text-saffron-400">
         Contributor details · நன்கொடையாளர்
       </p>
 
       <VoiceToText
         onTranscript={handleVoiceTranscript}
-        example="Listening… say the name, payment and amount, e.g. “Ravi Kumar, cash, 750”."
-        exampleTa="கேட்கிறது… பெயர், கட்டண முறை, தொகையைச் சொல்லுங்கள், எ.கா. “ரவி குமார், ரொக்கம், 750”."
-        prompt="Dictate the contribution — the name field fills itself."
-        promptTa="பங்களிப்பைப் பேசுங்கள் — பெயர் புலம் தானாக நிரம்பும்."
+        example="Listening… say the name, category, payment and amount, e.g. “Ravi Kumar, Oor Vasul, cash, 500”."
+        exampleTa="கேட்கிறது… பெயர், வசூல் வகை, கட்டண முறை, தொகையைச் சொல்லுங்கள்."
+        prompt="Dictate the contribution — the name and details fill themselves."
+        promptTa="பங்களிப்பைப் பேசுங்கள் — விவரங்கள் தானாக நிரம்பும்."
       />
 
       {voiceTranscript && (
@@ -130,7 +134,37 @@ export function CollectionForm({ events, initial, submitting, error, onSubmit, o
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-4">
+        {/* Category selector */}
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-[12.5px] font-bold text-ink">
+            Category <span className="font-medium text-faint">வசூல் வகை *</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {COLLECTION_CATEGORIES.map((cat) => {
+              const active = category === cat.value;
+              return (
+                <button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => setCategory(cat.value)}
+                  className={cn(
+                    "flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all",
+                    active
+                      ? "border-saffron-500 bg-saffron-50/80 text-saffron-950 shadow-sm dark:border-saffron-500 dark:bg-saffron-500/15 dark:text-saffron-300"
+                      : "border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
+                  )}
+                >
+                  <span className="text-[13px] font-extrabold">{cat.label}</span>
+                  <span className={cn("text-[10px] font-medium", active ? "text-saffron-700 dark:text-saffron-400" : "text-faint")}>
+                    {cat.sub}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <Field label="Person name" ta="பெயர்" required className="sm:col-span-2">
           <Input
             value={personName}

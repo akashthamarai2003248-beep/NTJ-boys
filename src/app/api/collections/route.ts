@@ -11,10 +11,12 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId");
+    const category = searchParams.get("category");
     const payment = searchParams.get("payment") as PaymentMethod | null;
     const page = queryCollections(await loadDB(), {
       q: searchParams.get("q") ?? undefined,
       eventId: eventId || undefined,
+      category: category || null,
       payment: payment || null,
       from: searchParams.get("from"),
       to: searchParams.get("to"),
