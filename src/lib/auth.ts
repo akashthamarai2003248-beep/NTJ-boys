@@ -29,8 +29,12 @@ export async function getSessionUser(): Promise<DemoUser | null> {
   const id = jar.get(SESSION_COOKIE)?.value;
 
   if (isSupabaseMode()) {
-    // Fast-path: If user has persistent session cookie, query profile directly by primary key (~15ms vs 2000ms)
+    // Fast-path: If user has persistent session cookie
     if (id) {
+      if (id.startsWith("usr-")) {
+        const local = getUserById(id);
+        if (local) return local;
+      }
       try {
         const sb = await getSupabaseServer();
         const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
@@ -56,6 +60,13 @@ export async function getSessionUser(): Promise<DemoUser | null> {
     } catch {
       /* ignore */
     }
+
+    // Final fallback: check local store in case demo session
+    if (id) {
+      const local = getUserById(id);
+      if (local) return local;
+    }
+
     return null;
   }
 
