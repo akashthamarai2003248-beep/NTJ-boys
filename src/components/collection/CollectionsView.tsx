@@ -464,10 +464,10 @@ export function CollectionsView() {
                     <p className="truncate text-[15px] font-bold tracking-tight text-ink dark:text-white">
                       {translatePersonName(c.personName, lang)}
                     </p>
-                    <p className="mt-0.5 truncate text-[12px] font-medium text-muted dark:text-navy-200/70">
-                      {c.street || eventName(c.eventId) || translateCategory(c.category, lang)}
-                    </p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint">
+                    <div className="mt-1 flex items-center">
+                      <CategoryBadge category={c.category} street={c.street} />
+                    </div>
+                    <p className="mt-1 flex items-center gap-1.5 text-[11px] text-faint">
                       <span>{translatePaymentMethod(c.paymentMethod, lang)}</span>
                       <span>•</span>
                       <span>{formatShort(c.date)}</span>
@@ -577,24 +577,29 @@ function TypeBadge({ type }: { type: ContributionType }) {
 }
 
 function CategoryBadge({ category, street }: { category?: string | null; street?: string | null }) {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const rawCat = category || (street?.includes("வசூல்") ? street : "ஊர் வசூல்");
-  const cat = translateCategory(rawCat, lang);
   const isMandram = rawCat.includes("மன்றம்") || rawCat.toLowerCase().includes("mandram");
   const isOor = rawCat.includes("ஊர்") || rawCat.toLowerCase().includes("oor") || rawCat.toLowerCase().includes("village");
+
+  const label = isMandram
+    ? t("Mandram Vasul", "மன்றம் வசூல்")
+    : isOor
+    ? t("Oor Vasul", "ஊர் வசூல்")
+    : translateCategory(rawCat, lang);
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-tight",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-tight shadow-sm",
         isMandram
-          ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/40"
+          ? "bg-purple-100 text-purple-900 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/40"
           : isOor
-          ? "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/40"
+          ? "bg-amber-100 text-amber-950 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/40"
           : "bg-surface-2 text-muted border border-line"
       )}
     >
-      {isMandram ? "👥" : isOor ? "🏘️" : "🏷️"} {cat}
+      {isMandram ? "👥" : isOor ? "🏘️" : "🏷️"} {label}
     </span>
   );
 }
