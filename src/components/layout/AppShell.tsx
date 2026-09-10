@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [loading, user, router]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <motion.div
@@ -50,8 +50,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  if (!user) return null;
 
   return (
     <div className="flex min-h-dvh">

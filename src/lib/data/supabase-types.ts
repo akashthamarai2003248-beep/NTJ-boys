@@ -411,6 +411,15 @@ export type Database = {
         Args: { p_phone: string };
         Returns: string;
       };
+      create_user_profile: {
+        Args: {
+          p_email: string;
+          p_id: string;
+          p_name: string;
+          p_phone: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

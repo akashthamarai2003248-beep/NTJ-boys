@@ -57,15 +57,33 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Couldn't create the account — try again" }, { status: 400 });
       }
 
-      const { error: insertError } = await sb
-        .from("users")
-        .insert({ id: data.user.id, name, phone, email, role: "member", position: "Member" });
-      if (insertError) {
-        const msg =
-          insertError.code === "23505"
-            ? "This email or phone is already registered — try logging in"
-            : "Account created, but the profile couldn't be saved — contact the Mandram admin.";
-        return NextResponse.json({ error: msg }, { status: 409 });
+      // Save profile to public.users:
+      // 1. Try the security definer RPC helper (bypasses RLS safely)
+      const { error: rpcError } = await sb.rpc("create_user_profile", {
+        p_id: data.user.id,
+        p_name: name,
+        p_phone: phone,
+        p_email: email,
+      });
+
+      // 2. If RPC is not available yet, fall back to direct insert
+      if (rpcError) {
+        const { error: insertError } = await sb
+          .from("users")
+          .insert({ id: data.user.id, name, phone, email, role: "member", position: "Member" });
+
+        // Error code 23505 (unique_violation) means the database trigger already inserted the profile
+        if (insertError && insertError.code !== "23505") {
+          // If session is absent, email confirmation is active in Supabase and the client is anon.
+          // In this case, the database trigger on_auth_user_created handles the profile,
+          // and resolveSupabaseUser self-heals upon first login.
+          if (data.session) {
+            return NextResponse.json(
+              { error: "Account created, but the profile couldn't be saved — contact the Mandram admin." },
+              { status: 409 },
+            );
+          }
+        }
       }
 
       if (!data.session) {

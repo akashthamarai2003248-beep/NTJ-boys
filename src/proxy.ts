@@ -12,7 +12,9 @@ import { SESSION_COOKIE } from "@/lib/constants";
 export function proxy(req: NextRequest) {
   const { pathname, origin } = req.nextUrl;
   const cookies = req.cookies;
-  const hasSession = cookies.has(SESSION_COOKIE) || cookies.getAll().some((c) => c.name.startsWith("sb-"));
+  const hasSession =
+    Boolean(cookies.get(SESSION_COOKIE)?.value) ||
+    cookies.getAll().some((c) => c.name.startsWith("sb-") && Boolean(c.value) && c.value !== '""' && c.value !== "[]");
 
   const isLogin = pathname === "/login";
   const isPublicView = pathname === "/public" || pathname.startsWith("/public");
@@ -23,9 +25,6 @@ export function proxy(req: NextRequest) {
     const url = new URL("/login", origin);
     if (pathname !== "/") url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
-  }
-  if (hasSession && isLogin) {
-    return NextResponse.redirect(new URL("/", origin));
   }
   return NextResponse.next();
 }

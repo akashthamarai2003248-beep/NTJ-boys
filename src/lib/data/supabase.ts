@@ -13,8 +13,8 @@ import type { DemoUser } from "./types";
  * To move to production Supabase (PostgreSQL + RLS):
  *   1. Copy .env.example → .env.local and fill
  *      NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY
- *   2. Run supabase/migrations (0001 → 0002 → 0003) against the
- *      project, then supabase/seed_users.sql for the demo logins
+ *   2. Run supabase/migrations (0001 → 0002 → 0003 → 0004) or
+ *      paste supabase/_apply_all.sql in Supabase SQL Editor
  *   3. NEXT_PUBLIC_DATA_MODE switches to "supabase" automatically
  *      once the two keys above are present.
  *
@@ -105,18 +105,31 @@ export async function resolveSupabaseUser(
   const { data } = await sb.from("users").select("*").eq("id", user.id).maybeSingle();
   if (!data) {
     // Auth user without a public.users profile (e.g. invited but not
-    // provisioned) — fall back to app_metadata.role so the shell can
-    // still render instead of hard-failing every request.
+    // provisioned, or registered before trigger) — fall back to app_metadata.role
+    // and attempt a best-effort self-heal insert.
     const metaRole = appRole ?? "member";
     const role = metaRole === "admin" || metaRole === "treasurer" ? metaRole : "member";
-    return {
+    const fallbackProfile: SupabaseActor = {
       id: user.id,
-      name: metaName ?? user.email ?? "Member",
+      name: metaName ?? (user.email ? user.email.split("@")[0] : "Member"),
       email: user.email ?? null,
       phone: metaPhone ?? null,
       role,
       position: "Member",
     };
+    try {
+      await sb.from("users").upsert({
+        id: fallbackProfile.id,
+        name: fallbackProfile.name,
+        email: fallbackProfile.email,
+        phone: fallbackProfile.phone,
+        role: fallbackProfile.role,
+        position: fallbackProfile.position,
+      });
+    } catch {
+      /* ignore if self-healing fails */
+    }
+    return fallbackProfile;
   }
   return {
     id: data.id,

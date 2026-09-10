@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
-  Copy, Database, Eye, EyeOff, Info, Languages, Link2, LogOut, Moon, Monitor, Palette, ShieldCheck, Sun, UserRound,
+  Copy, Eye, EyeOff, Languages, Link2, LogOut, Moon, Monitor, Palette, ShieldCheck, Sun, UserRound,
 } from "lucide-react";
 import { api } from "@/lib/client/api";
 import { useFetch } from "@/lib/client/hooks";
@@ -14,7 +14,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils/cn";
 
 interface SettingsPayload { settings: { publicView: boolean } }
@@ -32,8 +31,6 @@ export function SettingsView() {
   const { t, lang, setLang } = useLang();
   const { data, reload } = useFetch<SettingsPayload>("/api/settings");
   const [savingView, setSavingView] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [resetting, setResetting] = useState(false);
 
   const publicView = data?.settings.publicView ?? true;
 
@@ -57,21 +54,6 @@ export function SettingsView() {
       toast.error((e as Error).message);
     } finally {
       setSavingView(false);
-    }
-  };
-
-  const resetDemo = async () => {
-    setResetting(true);
-    try {
-      await api.post("/api/demo/reset");
-      toast.success(t("Demo data reset to defaults", "மாதிரித் தரவு மீட்டமைக்கப்பட்டது"));
-      setConfirmReset(false);
-      reload();
-      window.location.reload();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -215,32 +197,6 @@ export function SettingsView() {
         </div>
       </section>
 
-      {/* data */}
-      <section className="card-surface rounded-2xl p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-gold-100 text-gold-700 dark:bg-gold-400/15 dark:text-gold-300">
-            <Database className="size-4.5" />
-          </span>
-          <div className="flex-1">
-            <h2 className="text-[14.5px] font-extrabold">{t("Demo data", "மாதிரித் தரவு")}</h2>
-            <p className="text-[12px] text-muted">{t("This development build runs on a local sample store", "இந்த மேம்பாட்டு பதிப்பு உள்ளூர் மாதிரி சேமிப்பில் இயங்குகிறது")}</p>
-          </div>
-          <Badge tone="gold">DEMO</Badge>
-        </div>
-        <div className="mt-3.5 grid gap-3 text-[12.5px] leading-relaxed text-muted sm:grid-cols-2">
-          <p className="flex items-start gap-2"><Info className="mt-0.5 size-3.5 shrink-0 text-faint" /> {t("Seeded with 28 members, realistic Tamil Nadu collections & expenses (totals exactly ₹85,500 / ₹42,750) and the Vinayagar, Pongal and Sports events. Data is clearly sample — nothing real is stored.", "28 உறுப்பினர்கள், தமிழ்நாட்டின் யதார்த்தமான வரவு & செலவுகள் (மொத்தம் ₹85,500 / ₹42,750) மற்றும் விநாயகர், பொங்கல், விளையாட்டு நிகழ்வுகளுடன் மாதிரி தரவு. இது மாதிரி தரவு மட்டுமே — உண்மையான எதுவும் சேமிக்கப்படவில்லை.")}</p>
-          <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-faint" /> {t("Production path: PostgreSQL + RLS via Supabase. Set the Supabase keys to switch — no service-role keys ever reach the browser.", "உற்பத்தி பாதை: Supabase வழியாக PostgreSQL + RLS. மாற்ற Supabase விசைகளை அமைக்கவும் — service-role விசைகள் உலாவியை ஒருபோதும் அடையாது.")}</p>
-        </div>
-        {can.settings ? (
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
-            <p className="text-[12px] font-medium text-muted">{t("Re-seed the demo store with fresh sample records.", "புதிய மாதிரி பதிவுகளுடன் மாதிரி சேமிப்பை மீண்டும் நிரப்புங்கள்.")}</p>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmReset(true)}>
-              <Database className="size-3.5" /> {t("Reset demo data", "மாதிரித் தரவை மீட்டமை")}
-            </Button>
-          </div>
-        ) : null}
-      </section>
-
       <section className="flex items-center justify-between rounded-2xl border border-line bg-surface-2/60 px-5 py-4">
         <div className="flex items-center gap-2.5">
           <UserRound className="size-4 text-faint" />
@@ -251,16 +207,6 @@ export function SettingsView() {
         </div>
         <p className="hidden text-[11px] font-semibold text-faint sm:block">{t("Unity · Community · Transparency · Celebration", "ஒற்றுமை · சமூகம் · வெளிப்படைத்தன்மை · கொண்டாட்டம்")}</p>
       </section>
-
-      <ConfirmDialog
-        open={confirmReset}
-        onClose={() => setConfirmReset(false)}
-        onConfirm={resetDemo}
-        loading={resetting}
-        title={t("Reset demo data?", "மாதிரித் தரவை மீட்டமைக்கவா?")}
-        body={t("All current demo records will be replaced with the original sample set. This cannot be undone.", "தற்போதைய அனைத்து மாதிரி பதிவுகளும் அசல் மாதிரி தொகுப்புடன் மாற்றப்படும். இதை மீட்டெடுக்க முடியாது.")}
-        confirmLabel={t("Reset", "மீட்டமை")}
-      />
     </div>
   );
 }

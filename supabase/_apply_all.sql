@@ -3,8 +3,8 @@
 -- Supabase SQL Editor and press Run).
 --
 -- Combines: 0001_init.sql + 0002_games_and_gallery.sql +
--- 0003_app_runtime.sql + seed_users.sql  →  full schema + RLS +
--- runtime helpers + the three demo logins.
+-- 0003_app_runtime.sql + 0004_auth_triggers.sql  →  full schema + RLS +
+-- runtime helpers + auth triggers (no seed logins, removes demo data).
 --
 -- Run it in the project shown in your Dashboard URL — it must match
 -- the ref in .env.local (currently: ykdzuafvhxtuugrlvvhl).
@@ -29,13 +29,13 @@ language sql stable security definer set search_path = public
 as $$
   select coalesce(
     (auth.jwt() -> 'app_metadata' ->> 'role'),
-    (auth.jwt() -> 'role'),
+    (auth.jwt() ->> 'role'),
     'member'
   ) = required
 $$;
 
 -- ── users ────────────────────────────────────────────────────────
-create table public.users (
+create table if not exists public.users (
   id uuid primary key references auth.users (id) on delete cascade,
   name text not null,
   phone text unique,
@@ -46,7 +46,7 @@ create table public.users (
 );
 
 -- ── members ──────────────────────────────────────────────────────
-create table public.members (
+create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   phone text not null,
@@ -60,7 +60,7 @@ create table public.members (
 );
 
 -- ── events ───────────────────────────────────────────────────────
-create table public.events (
+create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   tamil_name text not null default '',
@@ -77,7 +77,7 @@ create table public.events (
 );
 
 -- ── collections (வரவு) ──────────────────────────────────────────
-create table public.collections (
+create table if not exists public.collections (
   id uuid primary key default gen_random_uuid(),
   receipt_number text unique not null,
   person_name text not null,
@@ -92,11 +92,11 @@ create table public.collections (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index collections_event_idx on public.collections (event_id);
-create index collections_date_idx on public.collections (date desc);
+create index if not exists collections_event_idx on public.collections (event_id);
+create index if not exists collections_date_idx on public.collections (date desc);
 
 -- ── expenses (செலவு) ────────────────────────────────────────────
-create table public.expenses (
+create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   category text not null
@@ -113,11 +113,11 @@ create table public.expenses (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index expenses_event_idx on public.expenses (event_id);
-create index expenses_date_idx on public.expenses (date desc);
+create index if not exists expenses_event_idx on public.expenses (event_id);
+create index if not exists expenses_date_idx on public.expenses (date desc);
 
 -- ── receipts (mirrors each collection's printable receipt) ──────
-create table public.receipts (
+create table if not exists public.receipts (
   id uuid primary key default gen_random_uuid(),
   collection_id uuid not null unique references public.collections (id) on delete cascade,
   event_id uuid references public.events (id) on delete set null,
@@ -126,7 +126,7 @@ create table public.receipts (
 );
 
 -- ── activity_logs (audit — who did what, when) ──────────────────
-create table public.activity_logs (
+create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),
   actor_id uuid references public.users (id) on delete set null,
   actor_name text not null,
@@ -137,10 +137,10 @@ create table public.activity_logs (
   event_name text,
   at timestamptz not null default now()
 );
-create index activity_logs_at_idx on public.activity_logs (at desc);
+create index if not exists activity_logs_at_idx on public.activity_logs (at desc);
 
 -- ── games / teams / participants / results (Phase 2 module) ─────
-create table public.games (
+create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
   event_id uuid references public.events (id) on delete set null,
   name text not null,
@@ -150,7 +150,7 @@ create table public.games (
   created_at timestamptz not null default now()
 );
 
-create table public.teams (
+create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games (id) on delete cascade,
   name text not null,
@@ -158,7 +158,7 @@ create table public.teams (
   created_at timestamptz not null default now()
 );
 
-create table public.participants (
+create table if not exists public.participants (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games (id) on delete cascade,
   team_id uuid references public.teams (id) on delete set null,
@@ -168,7 +168,7 @@ create table public.participants (
   created_at timestamptz not null default now()
 );
 
-create table public.game_results (
+create table if not exists public.game_results (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games (id) on delete cascade,
   team_id uuid not null references public.teams (id) on delete cascade,
@@ -179,7 +179,7 @@ create table public.game_results (
 );
 
 -- ── gallery ──────────────────────────────────────────────────────
-create table public.gallery (
+create table if not exists public.gallery (
   id uuid primary key default gen_random_uuid(),
   event_id uuid references public.events (id) on delete set null,
   url text not null,
@@ -189,7 +189,7 @@ create table public.gallery (
 );
 
 -- ── settings (singleton) ─────────────────────────────────────────
-create table public.settings (
+create table if not exists public.settings (
   id boolean primary key default true check (id),
   public_view boolean not null default true,
   updated_at timestamptz not null default now()
@@ -215,40 +215,62 @@ alter table public.gallery enable row level security;
 alter table public.settings enable row level security;
 
 -- Any signed-in user may read records (finance is community-transparent)
+drop policy if exists "read own user" on public.users;
 create policy "read own user" on public.users for select using (auth.uid() = id or public.has_role('admin'));
+drop policy if exists "read members" on public.members;
 create policy "read members" on public.members for select to authenticated using (true);
+drop policy if exists "read events" on public.events;
 create policy "read events" on public.events for select to authenticated using (true);
+drop policy if exists "read collections" on public.collections;
 create policy "read collections" on public.collections for select to authenticated using (true);
+drop policy if exists "read expenses" on public.expenses;
 create policy "read expenses" on public.expenses for select to authenticated using (true);
+drop policy if exists "read receipts" on public.receipts;
 create policy "read receipts" on public.receipts for select to authenticated using (true);
+drop policy if exists "read activity" on public.activity_logs;
 create policy "read activity" on public.activity_logs for select to authenticated using (true);
+drop policy if exists "read games" on public.games;
 create policy "read games" on public.games for select to authenticated using (true);
+drop policy if exists "read teams" on public.teams;
 create policy "read teams" on public.teams for select to authenticated using (true);
+drop policy if exists "read participants" on public.participants;
 create policy "read participants" on public.participants for select to authenticated using (true);
+drop policy if exists "read results" on public.game_results;
 create policy "read results" on public.game_results for select to authenticated using (true);
+drop policy if exists "read gallery" on public.gallery;
 create policy "read gallery" on public.gallery for select to authenticated using (true);
+drop policy if exists "read settings" on public.settings;
 create policy "read settings" on public.settings for select to authenticated using (true);
 
 -- Writes — admin everywhere; treasurer additionally owns finances
+drop policy if exists "admin write members" on public.members;
 create policy "admin write members" on public.members for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
+drop policy if exists "admin write events" on public.events;
 create policy "admin write events" on public.events for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
+drop policy if exists "finance write collections" on public.collections;
 create policy "finance write collections" on public.collections for all to authenticated
   using (public.has_role('admin') or public.has_role('treasurer'))
   with check (public.has_role('admin') or public.has_role('treasurer'));
+drop policy if exists "finance write expenses" on public.expenses;
 create policy "finance write expenses" on public.expenses for all to authenticated
   using (public.has_role('admin') or public.has_role('treasurer'))
   with check (public.has_role('admin') or public.has_role('treasurer'));
+drop policy if exists "finance write receipts" on public.receipts;
 create policy "finance write receipts" on public.receipts for all to authenticated
   using (public.has_role('admin') or public.has_role('treasurer'))
   with check (public.has_role('admin') or public.has_role('treasurer'));
+drop policy if exists "admin write activity" on public.activity_logs;
 create policy "admin write activity" on public.activity_logs for insert to authenticated
   with check (public.has_role('admin') or public.has_role('treasurer'));
+drop policy if exists "admin write games" on public.games;
 create policy "admin write games" on public.games for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
+drop policy if exists "admin write gallery" on public.gallery;
 create policy "admin write gallery" on public.gallery for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
+drop policy if exists "admin settings" on public.settings;
 create policy "admin settings" on public.settings for update to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
 
@@ -265,7 +287,7 @@ create or replace view public.transparency_overview as
         'selavu', (select coalesce(sum(amount),0) from public.expenses x where x.event_id = e.id)
       ) order by e.start_date)
      from public.events e) as events;
-create policy "public transparency" on public.transparency_overview for select using (true);
+grant select on public.transparency_overview to anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════
 -- NETHAJI BOYS MANDRAM — Phase 2 migration
@@ -316,10 +338,14 @@ alter table public.gallery
 alter table public.matches enable row level security;
 alter table public.game_results enable row level security;
 
+drop policy if exists "read matches" on public.matches;
 create policy "read matches" on public.matches for select to authenticated using (true);
+drop policy if exists "admin write matches" on public.matches;
 create policy "admin write matches" on public.matches for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
+drop policy if exists "read game results" on public.game_results;
 create policy "read game results" on public.game_results for select to authenticated using (true);
+drop policy if exists "admin write game results" on public.game_results;
 create policy "admin write game results" on public.game_results for all to authenticated
   using (public.has_role('admin')) with check (public.has_role('admin'));
 
@@ -494,87 +520,10 @@ revoke all on function public.user_email_by_phone(text) from public;
 grant execute on function public.user_email_by_phone(text) to anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════
--- NETHAJI BOYS MANDRAM — seed accounts (run in the SQL Editor)
---
--- Creates the three demo logins in Supabase Auth + public.users so
--- the role-aware RLS policies work. Run this AFTER 0001, 0002 and
--- 0003. Safe to re-run (idempotent).
---
---   admin     admin@nbm.demo     admin123      (President)
---   treasurer treasurer@nbm.demo treasurer123  (Treasurer)
---   member    member@nbm.demo    member123     (Member)
---
--- The app_metadata.role is what the public.has_role() RLS helper
--- reads from the JWT, so it is kept in sync on every run.
+-- NETHAJI BOYS MANDRAM — Clean up demo accounts (if present)
 -- ════════════════════════════════════════════════════════════════
-
-create extension if not exists pgcrypto;
-
-do $$
-declare
-  v_email text;
-  v_pw text;
-  v_uid uuid;
-  v_role text;
-  v_name text;
-  v_phone text;
-  v_position text;
-  v_row record;
-begin
-  for v_row in
-    select *
-    from (values
-      ('admin@nbm.demo',     'admin123',     'admin',     'Sundaravel Rajan', '9840010001', 'President'),
-      ('treasurer@nbm.demo', 'treasurer123', 'treasurer', 'Muthu Kannan',     '9840010002', 'Treasurer'),
-      ('member@nbm.demo',    'member123',    'member',    'Karthik Raja',     '9840010003', 'Member')
-    ) as t(email, pw, role, name, phone, position)
-  loop
-    v_email := v_row.email;
-    v_pw := v_row.pw;
-    v_role := v_row.role;
-    v_name := v_row.name;
-    v_phone := v_row.phone;
-    v_position := v_row.position;
-
-    insert into auth.users (
-      instance_id, aud, role, email,
-      encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at
-    ) values (
-      '00000000-0000-0000-0000-000000000000',
-      'authenticated', 'authenticated', v_email,
-      crypt(v_pw, gen_salt('bf')),
-      now(),
-      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email'), 'role', v_role),
-      jsonb_build_object('name', v_name),
-      now(), now()
-    )
-    on conflict (email) do update
-      set raw_app_meta_data = jsonb_build_object(
-            'provider', 'email',
-            'providers', jsonb_build_array('email'),
-            'role', excluded.raw_app_meta_data->>'role'
-          ),
-          encrypted_password = case
-            when auth.users.encrypted_password is null then excluded.encrypted_password
-            else auth.users.encrypted_password
-          end,
-          email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
-          updated_at = now();
-
-    select id into v_uid from auth.users where email = v_email;
-
-    insert into public.users (id, name, phone, email, role, position, created_at)
-    values (v_uid, v_name, v_phone, v_email, v_role, v_position, now())
-    on conflict (email) do update
-      set name = excluded.name,
-          phone = excluded.phone,
-          role = excluded.role,
-          position = excluded.position;
-  end loop;
-end;
-$$;
+delete from auth.users where email like '%@nbm.demo';
+delete from public.users where email like '%@nbm.demo';
 
 -- ── contribution_type column (safe re-run) ──────────────────────────
 alter table public.collections
@@ -589,3 +538,112 @@ alter table public.collections
 drop policy if exists "self insert user" on public.users;
 create policy "self insert user" on public.users for insert to authenticated
   with check (auth.uid() = id);
+
+-- ════════════════════════════════════════════════════════════════
+-- migration 0004 · auth triggers & profile helper
+-- ════════════════════════════════════════════════════════════════
+
+-- ── 1. Auto-create user profile on auth.users insert ────────────
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_role text;
+  v_name text;
+  v_phone text;
+begin
+  v_role := case
+    when new.raw_app_meta_data->>'role' in ('admin', 'treasurer', 'member')
+    then new.raw_app_meta_data->>'role'
+    else 'member'
+  end;
+
+  v_name := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'name'), ''),
+    split_part(new.email, '@', 1),
+    'Member'
+  );
+
+  v_phone := nullif(trim(coalesce(new.raw_user_meta_data->>'phone', new.phone)), '');
+
+  insert into public.users (id, name, phone, email, role, position, created_at)
+  values (
+    new.id,
+    v_name,
+    v_phone,
+    new.email,
+    v_role,
+    coalesce(nullif(trim(new.raw_user_meta_data->>'position'), ''), 'Member'),
+    now()
+  )
+  on conflict (id) do update set
+    name = excluded.name,
+    phone = coalesce(excluded.phone, public.users.phone),
+    email = coalesce(excluded.email, public.users.email);
+
+  return new;
+exception
+  when others then
+    raise warning 'handle_new_user failed for user %: %', new.id, sqlerrm;
+    return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- ── 2. Security-definer RPC for registration route ──────────────
+create or replace function public.create_user_profile(
+  p_id uuid,
+  p_name text,
+  p_phone text,
+  p_email text
+)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.users (id, name, phone, email, role, position, created_at)
+  values (
+    p_id,
+    p_name,
+    nullif(trim(p_phone), ''),
+    p_email,
+    'member',
+    'Member',
+    now()
+  )
+  on conflict (id) do update set
+    name = excluded.name,
+    phone = coalesce(excluded.phone, public.users.phone),
+    email = coalesce(excluded.email, public.users.email);
+end;
+$$;
+
+revoke all on function public.create_user_profile(uuid, text, text, text) from public;
+grant execute on function public.create_user_profile(uuid, text, text, text) to anon, authenticated;
+
+-- ── 3. Backfill existing auth.users missing in public.users ───────
+insert into public.users (id, name, phone, email, role, position, created_at)
+select
+  au.id,
+  coalesce(nullif(trim(au.raw_user_meta_data->>'name'), ''), split_part(au.email, '@', 1), 'Member'),
+  nullif(trim(coalesce(au.raw_user_meta_data->>'phone', au.phone)), ''),
+  au.email,
+  case
+    when au.raw_app_meta_data->>'role' in ('admin', 'treasurer', 'member')
+    then au.raw_app_meta_data->>'role'
+    else 'member'
+  end,
+  'Member',
+  au.created_at
+from auth.users au
+where not exists (
+  select 1 from public.users pu where pu.id = au.id
+)
+on conflict (id) do nothing;

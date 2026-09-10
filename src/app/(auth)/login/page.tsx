@@ -12,11 +12,6 @@ import { LogoMark } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import type { SessionUser } from "@/components/layout/session";
 
-const DEMO_ACCOUNTS = [
-  { role: "Admin", email: "admin@nbm.demo", password: "admin123", desc: "Full access" },
-  { role: "Treasurer", email: "treasurer@nbm.demo", password: "treasurer123", desc: "Finance access" },
-  { role: "Member", email: "member@nbm.demo", password: "member123", desc: "View only" },
-] as const;
 
 export default function LoginPage() {
   return (
@@ -382,42 +377,9 @@ function LoginInner() {
             </div>
           </motion.div>
 
-          {/* ── demo accounts ── */}
-          {mode === "login" ? <div className="mt-7">
-            <div className="mb-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400/60">
-              <span className="h-px flex-1 bg-white/10" />
-              {tr("Demo accounts", "மாதிரி கணக்குகள்")}
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_ACCOUNTS.map((a) => (
-                <button
-                  key={a.role}
-                  onClick={() => void login(a.email, a.password)}
-                  disabled={loading}
-                  className="group flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-2.5 transition-all hover:-translate-y-0.5 hover:border-amber-300/40 hover:bg-amber-400/10 disabled:opacity-50"
-                >
-                  <UserRound className="size-4 text-sky-300 transition-colors group-hover:text-amber-300" />
-                  <span className="text-[12px] font-bold text-white/90">
-                    {tr(
-                      a.role,
-                      a.role === "Admin" ? "நிர்வாகி" : a.role === "Treasurer" ? "பொருளாளர்" : "உறுப்பினர்",
-                    )}
-                  </span>
-                  <span className="text-[9px] font-medium leading-tight text-slate-400">
-                    {tr(
-                      a.desc,
-                      a.desc === "Full access" ? "முழு அணுகல்" : a.desc === "Finance access" ? "நிதி அணுகல்" : "பார்வை மட்டும்",
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div> : null}
-
           <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400/80">
             <ShieldCheck className="size-3.5 text-emerald-400" />
-            {tr("Demo build — data is local sample data, secure sign-in arrives with Supabase", "மாதிரி பதிப்பு — தரவு உள்ளூர் மாதிரித் தரவு, பாதுகாப்பான உள்நுழைவு Supabase-உடன் வருகிறது")}
+            {tr("Secure sign-in · Nethaji Boys Mandram", "பாதுகாப்பான உள்நுழைவு · நேதாஜி பாய்ஸ் மன்றம்")}
           </p>
         </div>
       </div>

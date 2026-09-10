@@ -15,7 +15,7 @@ language sql stable security definer set search_path = public
 as $$
   select coalesce(
     (auth.jwt() -> 'app_metadata' ->> 'role'),
-    (auth.jwt() -> 'role'),
+    (auth.jwt() ->> 'role'),
     'member'
   ) = required
 $$;
@@ -253,4 +253,4 @@ create or replace view public.transparency_overview as
         'selavu', (select coalesce(sum(amount),0) from public.expenses x where x.event_id = e.id)
       ) order by e.start_date)
      from public.events e) as events;
-create policy "public transparency" on public.transparency_overview for select using (true);
+grant select on public.transparency_overview to anon, authenticated;
