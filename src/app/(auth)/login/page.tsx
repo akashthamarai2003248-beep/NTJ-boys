@@ -123,6 +123,7 @@ function LoginInner() {
   const afterAuth = (user: SessionUser) => {
     const next = params.get("next");
     try {
+      localStorage.setItem("nbm_user", JSON.stringify(user));
       if (remember) localStorage.setItem("nbm.remember", identifier);
       else localStorage.removeItem("nbm.remember");
     } catch {

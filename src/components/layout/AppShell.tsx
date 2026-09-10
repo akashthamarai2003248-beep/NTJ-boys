@@ -36,6 +36,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [loading, user, router]);
 
+  // Safety fallback: Never leave user stuck on "Loading Mandram..." if session check hangs
+  useEffect(() => {
+    if (loading && !user) {
+      const timer = setTimeout(() => {
+        router.replace("/login");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, user, router]);
+
   if (loading || !user) {
     return (
       <div className="flex min-h-dvh items-center justify-center">

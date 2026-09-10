@@ -15,6 +15,18 @@ export interface SessionUser {
   position: string;
 }
 
+const SESSION_USER_KEY = "nbm_user";
+
+function getStoredUser(): SessionUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SESSION_USER_KEY);
+    return raw ? (JSON.parse(raw) as SessionUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 interface SessionState {
   user: SessionUser | null;
   loading: boolean;
@@ -30,16 +42,31 @@ const SessionContext = createContext<SessionState>({
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Hydrate user immediately from localStorage so AppShell renders in 0ms without splash lag
+  const [user, setUser] = useState<SessionUser | null>(() => getStoredUser());
+  const [loading, setLoading] = useState<boolean>(() => !getStoredUser());
   const router = useRouter();
 
   const load = useCallback(async () => {
     try {
       const res = await api.get<{ user: SessionUser | null }>("/api/session");
-      setUser(res.user);
+      if (res.user) {
+        setUser(res.user);
+        try {
+          localStorage.setItem(SESSION_USER_KEY, JSON.stringify(res.user));
+        } catch {
+          /* ignore storage error */
+        }
+      } else {
+        setUser(null);
+        try {
+          localStorage.removeItem(SESSION_USER_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
     } catch {
-      setUser(null);
+      // If network fails or is slow, retain cached user to prevent unnecessary logouts
     } finally {
       setLoading(false);
     }
@@ -50,6 +77,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   const signOut = useCallback(async () => {
+    try {
+      localStorage.removeItem(SESSION_USER_KEY);
+    } catch {
+      /* ignore */
+    }
     await api.post("/api/auth/logout");
     setUser(null);
     router.replace("/login");

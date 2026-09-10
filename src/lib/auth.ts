@@ -29,10 +29,7 @@ export async function getSessionUser(): Promise<DemoUser | null> {
   const id = jar.get(SESSION_COOKIE)?.value;
 
   if (isSupabaseMode()) {
-    const actor = await getSupabaseUser();
-    if (actor) return actorToDemoUser(actor);
-
-    // Fallback: If Supabase auth session token expired or wasn't renewed, check SESSION_COOKIE
+    // Fast-path: If user has persistent session cookie, query profile directly by primary key (~15ms vs 2000ms)
     if (id) {
       try {
         const sb = await getSupabaseServer();
@@ -49,8 +46,15 @@ export async function getSessionUser(): Promise<DemoUser | null> {
           };
         }
       } catch {
-        /* ignore fallback fetch error */
+        /* ignore and fallback to Supabase auth check */
       }
+    }
+
+    try {
+      const actor = await getSupabaseUser();
+      if (actor) return actorToDemoUser(actor);
+    } catch {
+      /* ignore */
     }
     return null;
   }
