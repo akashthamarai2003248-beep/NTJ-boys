@@ -374,12 +374,12 @@ function TabContent({
           <div className="divide-y divide-line">
             {expenses.slice(0, 12).map((e) => (
               <div key={e.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold", "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400")}>
-                  {e.category.slice(0, 2).toUpperCase()}
+                <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400")}>
+                  <TrendingDown className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-bold">{e.title}</p>
-                  <p className="text-[11px] text-faint">{e.category} · paid by {e.paidBy} · {formatShort(e.date)}</p>
+                  <p className="text-[11px] text-faint">{formatShort(e.date)} · {e.paymentMethod.toUpperCase()}</p>
                 </div>
                 <p className="w-24 text-right text-[14px] font-extrabold tabular-nums text-red-600 dark:text-red-400">− {formatINR(e.amount)}</p>
               </div>

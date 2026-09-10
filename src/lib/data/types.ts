@@ -255,12 +255,12 @@ export interface CollectionInput {
 
 export interface ExpenseInput {
   title: string;
-  category: ExpenseCategory;
+  category?: ExpenseCategory;
   amount: number;
   paymentMethod: PaymentMethod;
   date: string;
   eventId?: string | null;
-  paidBy: string;
+  paidBy?: string;
   description?: string;
   billUrl?: string | null;
 }

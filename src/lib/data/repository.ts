@@ -500,15 +500,15 @@ export function queryExpenses(db: DB, f: ExpenseFilters): ExpensePage {
   };
 }
 
-function validateExpense(input: ExpenseInput): ExpenseInput {
+function validateExpense(input: ExpenseInput): ExpenseInput & { category: ExpenseCategory; paidBy: string } {
   const title = input.title?.trim();
   const amount = Math.round(Number(input.amount));
-  const paidBy = input.paidBy?.trim();
+  const paidBy = input.paidBy?.trim() || "Mandram";
+  const category = input.category || "Other";
   if (!title) throw new HttpError(400, "Expense title is required");
-  if (!paidBy) throw new HttpError(400, "Paid by is required");
   if (!Number.isFinite(amount) || amount <= 0) throw new HttpError(400, "Amount must be a positive number");
   if (!input.date) throw new HttpError(400, "Date is required");
-  return { ...input, title, paidBy, amount };
+  return { ...input, title, paidBy, category, amount };
 }
 
 export async function createExpense(actor: DemoUser, raw: ExpenseInput): Promise<Expense> {

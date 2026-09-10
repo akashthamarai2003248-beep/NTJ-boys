@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  CalendarRange, Eraser, Eye, Plus, Search, SearchX, SlidersHorizontal, TrendingDown, X,
+  Eraser, Eye, Plus, Search, SearchX, SlidersHorizontal, TrendingDown, X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Expense, ExpenseInput, Event } from "@/lib/data/types";
-import { EXPENSE_CATEGORIES, PAYMENT_CHOICES } from "@/lib/data/types";
+import { PAYMENT_CHOICES } from "@/lib/data/types";
 import type { ExpensePage } from "@/lib/data/repository";
 import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
@@ -24,10 +24,9 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessOverlay } from "@/components/ui/SuccessOverlay";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
-import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions } from "@/components/shared/RowActions";
-import { categoryTone } from "@/components/shared/meta";
+import { PaymentLabel } from "@/components/shared/meta";
 import { formatINR } from "@/lib/utils/money";
 import { formatShort } from "@/lib/utils/date";
 import { ExpenseForm } from "./ExpenseForm";
@@ -46,7 +45,6 @@ export function ExpensesView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
-  const [category, setCategory] = useState("");
   const [payment, setPayment] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -64,14 +62,14 @@ export function ExpensesView() {
   const [celebrate, setCelebrate] = useState<{ title: string; subtitle?: string; amount?: string } | null>(null);
 
   const url = useMemo(
-    () => `/api/expenses${qs({ q: debouncedQ, eventId, category, payment, from, to, sort, page, perPage: PER_PAGE })}`,
-    [debouncedQ, eventId, category, payment, from, to, sort, page],
+    () => `/api/expenses${qs({ q: debouncedQ, eventId, payment, from, to, sort, page, perPage: PER_PAGE })}`,
+    [debouncedQ, eventId, payment, from, to, sort, page],
   );
   const { data, loading, reload } = useFetch<ExpensePage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
   const eventName = useCallback((id?: string | null) => events.find((e) => e.id === id)?.name, [events]);
-  const hasFilters = Boolean(q || eventId || category || payment || from || to);
+  const hasFilters = Boolean(q || eventId || payment || from || to);
 
   useEffect(() => {
     if (searchParams.get("add") === "1") router.replace("/expenses", { scroll: false });
@@ -83,7 +81,7 @@ export function ExpensesView() {
     return () => clearTimeout(t);
   }, [celebrate]);
 
-  const clearFilters = () => { setQ(""); setEventId(""); setCategory(""); setPayment(""); setFrom(""); setTo(""); setPage(1); };
+  const clearFilters = () => { setQ(""); setEventId(""); setPayment(""); setFrom(""); setTo(""); setPage(1); };
 
   const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
   const openEdit = (rec: Expense) => { setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
@@ -183,7 +181,7 @@ export function ExpensesView() {
               type="text"
               value={q}
               onChange={(e) => { setQ(e.target.value); setPage(1); }}
-              placeholder={t("Search title, paid by…", "தலைப்பு, செலுத்தியவர் தேடுங்கள்…")}
+              placeholder={t("Search expense title…", "செலவுத் தலைப்பைத் தேடுங்கள்…")}
               className="h-10 w-full rounded-xl border border-line bg-surface-2/60 pl-9 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
             />
             {q && (
@@ -202,42 +200,42 @@ export function ExpensesView() {
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
               "flex h-10 items-center gap-1.5 rounded-xl border px-3 text-[12px] font-bold transition-all shrink-0",
-              showFilters || (eventId || category || payment || from || to || sort !== "newest")
+              showFilters || (eventId || payment || from || to || sort !== "newest")
                 ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
             )}
           >
             <SlidersHorizontal className="size-3.5" />
             <span className="hidden sm:inline">{t("Filters", "வடிகட்டி")}</span>
-            {(eventId ? 1 : 0) + (category ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0) > 0 && (
+            {(eventId ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0) > 0 && (
               <span className="flex size-4.5 items-center justify-center rounded-full bg-saffron-500 text-[10px] font-black text-white">
-                {(eventId ? 1 : 0) + (category ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0)}
+                {(eventId ? 1 : 0) + (payment ? 1 : 0) + (from || to ? 1 : 0) + (sort !== "newest" ? 1 : 0)}
               </span>
             )}
           </button>
         </div>
 
-        {/* Quick Category Chips */}
+        {/* Quick Payment Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
-            onClick={() => { setCategory(""); setPage(1); }}
+            onClick={() => { setPayment(""); setPage(1); }}
             className={cn(
               "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
-              category === ""
+              payment === ""
                 ? "bg-navy-900 text-white dark:bg-saffron-500 dark:text-ink"
                 : "border border-line bg-surface-2/50 text-muted hover:text-ink"
             )}
           >
             All
           </button>
-          {EXPENSE_CATEGORIES.map((cat) => {
-            const active = category === cat;
+          {PAYMENT_CHOICES.map((m) => {
+            const active = payment === m.value;
             return (
               <button
-                key={cat}
+                key={m.value}
                 type="button"
-                onClick={() => { setCategory(active ? "" : cat); setPage(1); }}
+                onClick={() => { setPayment(active ? "" : m.value); setPage(1); }}
                 className={cn(
                   "shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] font-bold transition-colors",
                   active
@@ -245,7 +243,7 @@ export function ExpensesView() {
                     : "border border-line bg-surface-2/50 text-muted hover:text-ink"
                 )}
               >
-                {cat}
+                {m.label}
               </button>
             );
           })}
@@ -343,9 +341,8 @@ export function ExpensesView() {
                 <thead>
                   <tr className="border-b border-line bg-surface-2/70 text-[10.5px] font-bold uppercase tracking-[0.1em] text-faint">
                     <th className="px-5 py-3">Expense</th>
-                    <th className="px-4 py-3">Category</th>
                     <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Paid by</th>
+                    <th className="px-4 py-3">Payment</th>
                     <th className="px-4 py-3">Event</th>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-2 py-3" />
@@ -354,13 +351,11 @@ export function ExpensesView() {
                 <tbody>
                   {items.map((e) => (
                     <tr key={e.id} className="group border-b border-line/70 text-[13px] transition-colors last:border-0 hover:bg-surface-2/50">
-                      <td className="max-w-52 px-5 py-3">
+                      <td className="max-w-64 px-5 py-3">
                         <p className="truncate font-bold">{e.title}</p>
-                        <p className="mt-0.5 text-[11px] text-faint">{e.billUrl ? "has bill photo" : "no bill attached"}</p>
                       </td>
-                      <td className="px-4 py-3"><Badge tone={categoryTone(e.category)}>{e.category}</Badge></td>
                       <td className="px-4 py-3 text-right font-bold tabular-nums text-red-600 dark:text-red-400">− {formatINR(e.amount)}</td>
-                      <td className="px-4 py-3 text-muted">{e.paidBy}</td>
+                      <td className="px-4 py-3"><PaymentLabel method={e.paymentMethod} /></td>
                       <td className="max-w-36 px-4 py-3"><p className="truncate text-muted">{eventName(e.eventId) ?? <span className="text-faint">General</span>}</p></td>
                       <td className="px-4 py-3 text-muted">{formatShort(e.date)}</td>
                       <td className="px-2 py-3 opacity-0 transition-opacity group-hover:opacity-100">
@@ -385,7 +380,7 @@ export function ExpensesView() {
                   <button className="min-w-0 flex-1 text-left" onClick={() => setViewing(e)}>
                     <p className="truncate text-[14px] font-bold">{e.title}</p>
                     <p className="mt-0.5 truncate text-[11.5px] text-muted">
-                      {e.category} · {e.paidBy} · {eventName(e.eventId) ?? "General"}
+                      {eventName(e.eventId) ?? "General · பொது"} · {e.paymentMethod.toUpperCase()}
                     </p>
                   </button>
                   <div className="text-right">
@@ -410,8 +405,8 @@ export function ExpensesView() {
         open={formOpen}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
         title={editing ? "Edit Expense" : "Add Expense"}
-        description="செலவு பதிவு · record what the Mandram spent and on what"
-        maxWidth="max-w-xl"
+        description="செலவு பதிவு · record what the Mandram spent"
+        maxWidth="max-w-md"
       >
         <ExpenseForm
           events={events}

@@ -1,20 +1,20 @@
 "use client";
 
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import {
-  CalendarDays, ImagePlus, ReceiptText, Tag, Undo2, UserRound, X,
+  CalendarDays, ReceiptText, Tag, Undo2,
 } from "lucide-react";
-import type { Event, Expense, ExpenseCategory, ExpenseInput, PaymentMethod } from "@/lib/data/types";
-import { EXPENSE_CATEGORIES, PAYMENT_CHOICES, PAYMENT_METHODS } from "@/lib/data/types";
+import type { Event, Expense, ExpenseInput, PaymentMethod } from "@/lib/data/types";
+import { PAYMENT_CHOICES, PAYMENT_METHODS } from "@/lib/data/types";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
 import { todayISO } from "@/lib/utils/date";
 import { parseRupees, formatINR } from "@/lib/utils/money";
 import { parseVoiceExpenseTranscript } from "@/lib/utils/voice";
 import { VoiceToText } from "@/components/shared/VoiceToText";
+import { useSession } from "@/components/layout/session";
 
 /** Field values just before voice dictation, so Undo can restore them. */
 interface VoiceSnapshot {
@@ -34,22 +34,16 @@ interface Props {
   onCancel: () => void;
 }
 
-const MAX_BILL = 2.5 * 1024 * 1024;
-
 export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCancel }: Props) {
+  const { user } = useSession();
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? "Decoration");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [eventId, setEventId] = useState(initial?.eventId ?? "");
-  const [paidBy, setPaidBy] = useState(initial?.paidBy ?? "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [method, setMethod] = useState<PaymentMethod>(initial?.paymentMethod ?? "cash");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [billUrl, setBillUrl] = useState<string | null>(initial?.billUrl ?? null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [voiceSnapshot, setVoiceSnapshot] = useState<VoiceSnapshot | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleVoiceTranscript = useCallback(
     (text: string) => {
@@ -61,8 +55,6 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
       if (parsed.date) setDate(parsed.date);
       if (parsed.paymentMethod) setMethod(parsed.paymentMethod);
       if (parsed.eventId !== undefined) setEventId(parsed.eventId ?? "");
-      // paid-by and category are intentionally NOT voice-filled —
-      // dictation targets only title, amount, date, method and event
     },
     [events, title, amount, date, method, eventId],
   );
@@ -78,20 +70,10 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
     setVoiceSnapshot(null);
   };
 
-  const onPickFile = (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return setLocalError("Please attach an image of the bill");
-    if (file.size > MAX_BILL) return setLocalError("Bill image is too large (max 2.5 MB)");
-    const reader = new FileReader();
-    reader.onload = () => setBillUrl(String(reader.result));
-    reader.readAsDataURL(file);
-  };
-
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
     if (!title.trim()) return setLocalError("Expense title is required");
-    if (!paidBy.trim()) return setLocalError("Please enter who paid");
     if (!rupees || rupees <= 0) return setLocalError("Amount must be a positive number");
     if (!date) return setLocalError("Please choose a date");
     setLocalError(null);
@@ -99,14 +81,14 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
     setVoiceSnapshot(null);
     onSubmit({
       title: title.trim(),
-      category,
+      category: initial?.category ?? "Other",
       amount: rupees,
       paymentMethod: method,
       date,
       eventId: eventId || null,
-      paidBy: paidBy.trim(),
-      description: description.trim() || undefined,
-      billUrl,
+      paidBy: initial?.paidBy || user?.name || "Mandram",
+      description: initial?.description ?? undefined,
+      billUrl: initial?.billUrl ?? null,
     });
   };
 
@@ -150,13 +132,6 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             leading={<Tag className="size-4" />}
           />
         </Field>
-        <Field label="Category" ta="வகை" required>
-          <Select value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
-            {EXPENSE_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </Select>
-        </Field>
         <Field label="Amount" ta="தொகை" required hint={live && live > 0 ? formatINR(live) : undefined}>
           <Input
             value={amount}
@@ -165,14 +140,6 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             inputMode="numeric"
             className="tabular-nums"
             leading={<span className="text-sm font-bold">₹</span>}
-          />
-        </Field>
-        <Field label="Paid by" ta="செலுத்தியவர்" required>
-          <Input
-            value={paidBy}
-            onChange={(e) => setPaidBy(e.target.value)}
-            placeholder="e.g. Muthu Kannan"
-            leading={<UserRound className="size-4" />}
           />
         </Field>
         <Field label="Date" ta="தேதி" required>
@@ -198,50 +165,6 @@ export function ExpenseForm({ events, initial, submitting, error, onSubmit, onCa
             ))}
           </Select>
         </Field>
-        <Field label="Description" ta="விளக்கம்" className="sm:col-span-2">
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Optional details about this expense…"
-          />
-        </Field>
-
-        {/* bill photo */}
-        <div className="sm:col-span-2">
-          <p className="mb-1.5 text-[13px] font-semibold text-ink">
-            Bill / receipt photo <span className="ml-1 font-medium text-faint">ரசீது புகைப்படம்</span>
-          </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onPickFile(e.target.files?.[0])}
-          />
-          {billUrl ? (
-            <div className="relative w-fit overflow-hidden rounded-xl border border-line">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={billUrl} alt="Bill preview" className="h-24 w-40 object-cover" />
-              <button
-                type="button"
-                onClick={() => setBillUrl(null)}
-                aria-label="Remove bill photo"
-                className="absolute right-1.5 top-1.5 rounded-md bg-navy-950/70 p-1 text-white backdrop-blur transition-colors hover:bg-red-600"
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface-2/60 px-4 py-5 text-[13px] font-semibold text-muted transition-colors hover:border-navy-400 hover:text-navy-700 dark:hover:text-navy-200"
-            >
-              <ImagePlus className="size-4.5" /> Upload bill photo (optional)
-            </button>
-          )}
-        </div>
       </div>
 
       {(localError || error) && (
