@@ -89,12 +89,12 @@ export function buildSeed(now: Date = new Date()): DB {
   /* ── Events (anchored to next festival seasons) ── */
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // Next Vinayagar Chathurthi: approx 19 Sep
+  // Next Vinayagar Chathurthi: Tue 8 Sep
   let viniYear = today.getFullYear();
-  let viniStart = new Date(viniYear, 8, 19);
+  let viniStart = new Date(viniYear, 8, 8);
   if (viniStart.getTime() < today.getTime() - 8 * 86400000) {
     viniYear += 1;
-    viniStart = new Date(viniYear, 8, 19);
+    viniStart = new Date(viniYear, 8, 8);
   }
   const viniStartISO = toISO(viniStart);
   const e1Active = viniStart.getTime() <= today.getTime() + 21 * 86400000;

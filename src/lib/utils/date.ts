@@ -100,23 +100,26 @@ export function resolveEventStatus(
   endDate?: string | null,
   refDate: string = todayISO()
 ): EventStatus {
+  // If explicitly completed, always stay completed
   if (status === "completed") return "completed";
   if (!startDate) return status;
 
-  if (startDate > refDate) {
-    return status === "registration" ? "registration" : "upcoming";
-  }
-
-  // Event has started (startDate <= refDate)
-  if (!endDate || refDate <= endDate) {
+  // If already marked active, keep active (e.g. advance festival preparation/collections)
+  if (status === "active") {
+    if (endDate && diffDays(endDate, refDate) > 7) {
+      return "completed";
+    }
     return "active";
   }
 
-  // endDate is in the past
-  const daysPastEnd = diffDays(endDate, refDate);
-  if (daysPastEnd <= 7) {
+  // If start date has arrived or passed (startDate <= refDate), it has started -> ACTIVE!
+  if (startDate <= refDate) {
+    if (endDate && diffDays(endDate, refDate) > 7) {
+      return "completed";
+    }
     return "active";
   }
 
-  return "completed";
+  // Future events (startDate > refDate)
+  return status === "registration" ? "registration" : "upcoming";
 }

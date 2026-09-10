@@ -1,5 +1,7 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { resolveEventStatus, friendlyDateRange } from "../utils/date";
+import { buildSeed } from "../data/seed";
+import { listEvents } from "../data/repository";
 
 describe("resolveEventStatus", () => {
   const TODAY = "2026-09-10";
@@ -48,6 +50,10 @@ describe("resolveEventStatus", () => {
     const status = resolveEventStatus("upcoming", "2026-09-05", "2026-09-07", TODAY);
     expect(status).toBe("active");
   });
+  it("never downgrades an already active event to upcoming even if startDate is in the future", () => {
+    const status = resolveEventStatus("active", "2026-09-19", "2026-09-23", TODAY);
+    expect(status).toBe("active");
+  });
 });
 
 describe("friendlyDateRange", () => {
@@ -59,5 +65,17 @@ describe("friendlyDateRange", () => {
   it("formats multi-day date range correctly", () => {
     const range = friendlyDateRange("2026-09-08", "2026-09-12");
     expect(range).toBe("Tue 8 Sept – Sat 12 Sept");
+  });
+});
+
+describe("buildSeed events", () => {
+  it("produces Vinayagar Chathurthi 2026 with Tue 8 Sep and active status", () => {
+    const seed = buildSeed();
+    const vini = seed.events.find((e) => e.id === "evt_vini");
+    expect(vini).toBeDefined();
+    expect(vini?.startDate).toBe("2026-09-08");
+    const listed = listEvents(seed);
+    const listedVini = listed.find((e) => e.id === "evt_vini");
+    expect(listedVini?.status).toBe("active");
   });
 });
