@@ -102,6 +102,8 @@ html {
   /* iOS Safari inflates text when rotating to landscape — pin it. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 html.dark {
   color-scheme: dark;
@@ -112,6 +114,9 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
 }
 ::selection {
   background: rgb(255 153 51 / 0.28);

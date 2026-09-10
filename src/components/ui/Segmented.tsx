@@ -23,7 +23,7 @@ export function Segmented<T extends string>({
             key={o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative rounded-[10px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors duration-150",
+              "relative flex-1 sm:flex-initial text-center rounded-[10px] px-2.5 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold transition-colors duration-150",
               active ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
                 transition={{ type: "spring", damping: 30, stiffness: 400 }}
               />
             )}
-            <span className="relative z-10">{o.label}</span>
+            <span className="relative z-10 whitespace-nowrap">{o.label}</span>
           </button>
         );
       })}

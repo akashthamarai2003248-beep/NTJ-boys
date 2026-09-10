@@ -33,20 +33,20 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="card-surface group rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
+      className="card-surface group rounded-2xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
     >
-      <div className="flex items-start gap-3">
-        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11", tones[stat.tone])}>
-          <stat.icon className="size-5" strokeWidth={2.1} />
+      <div className="flex items-center gap-2.5 sm:items-start sm:gap-3">
+        <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", tones[stat.tone])}>
+          <stat.icon className="size-4.5 sm:size-5" strokeWidth={2.1} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="flex items-baseline justify-between gap-2 leading-none">
-            <span className="truncate text-[12.5px] font-bold sm:text-[13px]">{primary}</span>
+          <p className="flex items-baseline justify-between gap-1 leading-none">
+            <span className="truncate text-[12px] font-bold text-muted sm:text-[13px]">{primary}</span>
             {secondary ? (
-              <span className="hidden truncate text-[10.5px] font-medium text-faint sm:block">{secondary}</span>
+              <span className="hidden truncate text-[10px] font-medium text-faint sm:block">{secondary}</span>
             ) : null}
           </p>
-          <p className="mt-2 truncate text-[20px] font-black leading-none tracking-tight tabular-nums sm:text-[24px]">
+          <p className="mt-1.5 truncate text-[18px] font-black leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[24px]">
             {stat.prefix}
             <span ref={ref}>{display}</span>
           </p>
@@ -68,8 +68,8 @@ export function StatCards({ data }: { data: Stat[] }) {
 
 export function makeStats(t: { varavu: number; selavu: number; balance: number; members: number }): Stat[] {
   return [
-    { key: "varavu", ta: "மொத்த வரவு", en: "Total Collection", icon: HandCoins, value: t.varavu, prefix: "₹", tone: "saffron" },
-    { key: "selavu", ta: "மொத்த செலவு", en: "Total Expenses", icon: TrendingDown, value: t.selavu, prefix: "₹", tone: "navy" },
+    { key: "varavu", ta: "வரவு", en: "Collections", icon: HandCoins, value: t.varavu, prefix: "₹", tone: "saffron" },
+    { key: "selavu", ta: "செலவு", en: "Expenses", icon: TrendingDown, value: t.selavu, prefix: "₹", tone: "navy" },
     { key: "balance", ta: "கையிருப்பு", en: "Balance", icon: Wallet, value: t.balance, prefix: "₹", tone: "leaf" },
     { key: "members", ta: "உறுப்பினர்கள்", en: "Members", icon: Users, value: t.members, tone: "gold" },
   ];

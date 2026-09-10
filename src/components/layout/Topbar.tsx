@@ -29,7 +29,7 @@ export function Topbar({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/85 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-2.5 px-4 sm:gap-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex shrink-0 items-center gap-2 lg:hidden">
           <Logo markOnly compact />
           <div className="leading-none">
             <p className="text-[12.5px] font-extrabold tracking-[0.02em]">NETHAJI&nbsp;BOYS</p>

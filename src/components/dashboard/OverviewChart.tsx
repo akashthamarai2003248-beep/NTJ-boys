@@ -13,10 +13,10 @@ import { useLang } from "@/lib/i18n";
 export type PeriodKey = "week" | "month" | "year" | "all";
 
 const PERIOD_OPTIONS: { value: PeriodKey; label: string; ta: string }[] = [
-  { value: "week", label: "This week", ta: "இந்த வாரம்" },
-  { value: "month", label: "This month", ta: "இந்த மாதம்" },
-  { value: "year", label: "This year", ta: "இந்த ஆண்டு" },
-  { value: "all", label: "All time", ta: "அனைத்து காலம்" },
+  { value: "week", label: "Week", ta: "வாரம்" },
+  { value: "month", label: "Month", ta: "மாதம்" },
+  { value: "year", label: "Year", ta: "ஆண்டு" },
+  { value: "all", label: "All", ta: "அனைத்தும்" },
 ];
 
 const compact = (n: number) => {
@@ -78,16 +78,17 @@ export function OverviewChart({
       transition={{ duration: 0.35, delay: 0.12 }}
       className="card-surface rounded-2xl p-4 sm:p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-[15px] font-extrabold tracking-tight">{t("Varavu vs Selavu", "வரவு vs செலவு")}</h2>
           <p className="truncate text-[12px] font-medium text-muted">{t("income vs spending", "வருமானம் vs செலவு")}</p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="w-full sm:w-auto">
           <Segmented
             value={period}
             onChange={onPeriodChange}
             options={PERIOD_OPTIONS.map((o) => ({ value: o.value, label: t(o.label, o.ta) }))}
+            className="w-full sm:w-auto justify-between"
           />
         </div>
       </div>
@@ -101,7 +102,7 @@ export function OverviewChart({
         </span>
       </div>
 
-      <div className="mt-3 h-56 w-full sm:h-60">
+      <div className="mt-3 h-56 w-full min-w-0 overflow-hidden sm:h-60">
         {loading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-40 w-full animate-pulse rounded-xl bg-surface-2" />

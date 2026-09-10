@@ -60,7 +60,7 @@ export function DashboardView() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="relative overflow-hidden rounded-2xl px-5 py-5 text-white shadow-card sm:px-6 sm:py-6"
+        className="relative overflow-hidden rounded-2xl px-4 py-5 text-white shadow-card sm:px-6 sm:py-6"
       >
         {/* Tricolor Netaji banner background */}
         <img
@@ -69,28 +69,28 @@ export function DashboardView() {
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
         />
-        {/* Dark navy fade (left) so the text stays readable; warm art shows through on the right */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-navy-950/90 via-navy-900/40 to-transparent" aria-hidden />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-navy-950/60 to-transparent" aria-hidden />
+        {/* Dark navy overlay: high contrast on mobile so text never clashes with the background graphic, gentle fade on desktop */}
+        <div className="pointer-events-none absolute inset-0 bg-navy-950/85 sm:bg-gradient-to-r sm:from-navy-950/95 sm:via-navy-950/70 sm:to-transparent" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy-950/90 via-transparent to-navy-950/30" aria-hidden />
         <div className="pointer-events-none absolute -right-8 -top-12 opacity-[0.10]" aria-hidden>
           <LogoMark className="size-40" />
         </div>
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-[11.5px] font-bold uppercase tracking-[0.22em] text-saffron-300">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-saffron-300 sm:text-[11.5px]">
               {t(g.en, g.ta)}
             </p>
             <h1 className="mt-1 flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight sm:text-[24px]">
               {t(`${g.en}, ${user?.name.split(" ")[0]} 👋`, `${g.ta}, ${user?.name.split(" ")[0]} 👋`)}
             </h1>
-            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12.5px] font-medium text-navy-100/90">
-              <Sparkles className="size-3.5 text-saffron-300" />
-              {t("Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றம்")}
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] font-medium text-navy-100/90 sm:text-[12.5px]">
+              <Sparkles className="size-3.5 shrink-0 text-saffron-300" />
+              <span>{t("Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றம்")}</span>
               <span className="text-navy-100/50">·</span>
-              {today}
+              <span>{today}</span>
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 pt-1 sm:pt-0">
             {can.finances ? (
               <Link href="/collections?add=1">
                 <Button
