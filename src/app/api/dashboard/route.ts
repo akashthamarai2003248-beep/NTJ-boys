@@ -21,6 +21,8 @@ export async function GET(req: Request) {
         selavu: t.selavu,
         balance: t.balance,
         members: t.members,
+        paidMembers: t.paidMembers,
+        paidCount: t.paidCount,
         collectionCount: db.collections.length,
         expenseCount: db.expenses.length,
       },

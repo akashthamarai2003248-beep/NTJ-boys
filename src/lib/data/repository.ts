@@ -223,13 +223,27 @@ export function buildSeries(db: DB, period: Period): SeriesBucket[] {
   }
 
   if (period === "year") {
-    const start = new Date(today.getFullYear(), 0, 1);
-    const end = new Date(today.getFullYear(), 11, 31);
-    const map = bucketByDate(db, start, end, (d) =>
-      d.toLocaleDateString("en-GB", { month: "short" }),
-    );
-    for (const c of db.collections) addToBucket(map, c.date, c.amount, true);
-    for (const e of db.expenses) addToBucket(map, e.date, e.amount, false);
+    const y = today.getFullYear();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const map = new Map<string, SeriesBucket>();
+    for (let m = 0; m < 12; m++) {
+      const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+      map.set(key, { key, label: months[m], varavu: 0, selavu: 0 });
+    }
+    for (const c of db.collections) {
+      if (c.date.startsWith(String(y))) {
+        const k = c.date.slice(0, 7);
+        const b = map.get(k);
+        if (b) b.varavu += c.amount;
+      }
+    }
+    for (const e of db.expenses) {
+      if (e.date.startsWith(String(y))) {
+        const k = e.date.slice(0, 7);
+        const b = map.get(k);
+        if (b) b.selavu += e.amount;
+      }
+    }
     return [...map.values()];
   }
 
@@ -237,7 +251,8 @@ export function buildSeries(db: DB, period: Period): SeriesBucket[] {
   const all = new Map<string, SeriesBucket>();
   for (const c of db.collections) addToBucket(all, c.date, c.amount, true);
   for (const e of db.expenses) addToBucket(all, e.date, e.amount, false);
-  return collapseToMonths(all);
+  const collapsed = collapseToMonths(all);
+  return collapsed.length > 0 ? collapsed : buildSeries(db, "year");
 }
 
 /* ── Aggregations ────────────────────────────────────────── */
@@ -250,9 +265,23 @@ function collectionStats(db: DB, eventId?: string): EventStats {
   return { varavu, selavu, balance: varavu - selavu };
 }
 
-export function totals(db: DB): EventStats & { members: number } {
+export function totals(db: DB): EventStats & {
+  members: number;
+  paidMembers: number;
+  paidCount: number;
+} {
   const s = collectionStats(db);
-  return { ...s, members: db.members.length };
+  const paidSet = new Set(
+    db.collections
+      .map((c) => (c.phone?.trim() ? c.phone.trim() : c.personName.trim().toLowerCase()))
+      .filter(Boolean),
+  );
+  return {
+    ...s,
+    members: db.members.length,
+    paidMembers: paidSet.size,
+    paidCount: db.collections.length,
+  };
 }
 
 export function listEvents(db: DB) {

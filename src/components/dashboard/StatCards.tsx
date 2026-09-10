@@ -13,6 +13,7 @@ interface Stat {
   icon: LucideIcon;
   value: number;
   prefix?: string;
+  subtitle?: { en: string; ta: string };
   tone: "saffron" | "navy" | "leaf" | "gold";
 }
 
@@ -28,6 +29,8 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
   const { lang } = useLang();
   const primary = lang === "en" ? stat.en : stat.ta;
   const secondary = lang === "both" ? stat.en : null;
+  const subText = stat.subtitle ? (lang === "ta" ? stat.subtitle.ta : stat.subtitle.en) : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -35,7 +38,7 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
       transition={{ duration: 0.35, delay: index * 0.07 }}
       className="card-surface group rounded-2xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
     >
-      <div className="flex items-center gap-2.5 sm:items-start sm:gap-3">
+      <div className="flex items-start gap-2.5 sm:gap-3">
         <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", tones[stat.tone])}>
           <stat.icon className="size-4.5 sm:size-5" strokeWidth={2.1} />
         </div>
@@ -50,6 +53,11 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
             {stat.prefix}
             <span ref={ref}>{display}</span>
           </p>
+          {subText ? (
+            <p className="mt-1 truncate text-[10.5px] font-semibold text-faint sm:text-[11px]">
+              {subText}
+            </p>
+          ) : null}
         </div>
       </div>
     </motion.div>
@@ -66,11 +74,62 @@ export function StatCards({ data }: { data: Stat[] }) {
   );
 }
 
-export function makeStats(t: { varavu: number; selavu: number; balance: number; members: number }): Stat[] {
+export function makeStats(t: {
+  varavu: number;
+  selavu: number;
+  balance: number;
+  members: number;
+  paidMembers?: number;
+  paidCount?: number;
+}): Stat[] {
+  const paid = t.paidMembers ?? (t.varavu > 0 ? 1 : 0);
+  const paidSub =
+    paid === 1
+      ? { en: "1 member paid", ta: "1 நபர் செலுத்தினார்" }
+      : { en: `${paid} members paid`, ta: `${paid} நபர்கள் செலுத்தினர்` };
+
   return [
-    { key: "varavu", ta: "வரவு", en: "Collections", icon: HandCoins, value: t.varavu, prefix: "₹", tone: "saffron" },
-    { key: "selavu", ta: "செலவு", en: "Expenses", icon: TrendingDown, value: t.selavu, prefix: "₹", tone: "navy" },
-    { key: "balance", ta: "கையிருப்பு", en: "Balance", icon: Wallet, value: t.balance, prefix: "₹", tone: "leaf" },
-    { key: "members", ta: "உறுப்பினர்கள்", en: "Members", icon: Users, value: t.members, tone: "gold" },
+    {
+      key: "varavu",
+      ta: "வரவு",
+      en: "Collections",
+      icon: HandCoins,
+      value: t.varavu,
+      prefix: "₹",
+      subtitle: paidSub,
+      tone: "saffron",
+    },
+    {
+      key: "selavu",
+      ta: "செலவு",
+      en: "Expenses",
+      icon: TrendingDown,
+      value: t.selavu,
+      prefix: "₹",
+      subtitle: { en: "Total spent", ta: "செலவு தொகை" },
+      tone: "navy",
+    },
+    {
+      key: "balance",
+      ta: "கையிருப்பு",
+      en: "Balance",
+      icon: Wallet,
+      value: t.balance,
+      prefix: "₹",
+      subtitle: { en: "Available fund", ta: "கையிருப்பு நிதி" },
+      tone: "leaf",
+    },
+    {
+      key: "members",
+      ta: "செலுத்தியவர்கள்",
+      en: "Paid Members",
+      icon: Users,
+      value: paid,
+      subtitle:
+        t.members > 0
+          ? { en: `of ${t.members} total`, ta: `${t.members} மொத்தத்தில்` }
+          : { en: "Contributors", ta: "நன்கொடையாளர்" },
+      tone: "gold",
+    },
   ];
 }

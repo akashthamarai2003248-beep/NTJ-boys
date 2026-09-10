@@ -19,7 +19,14 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { LogoMark } from "@/components/ui/Logo";
 
 interface DashboardPayload {
-  totals: { varavu: number; selavu: number; balance: number; members: number };
+  totals: {
+    varavu: number;
+    selavu: number;
+    balance: number;
+    members: number;
+    paidMembers?: number;
+    paidCount?: number;
+  };
   series: SeriesBucket[];
   events: (EventWithStats & { role?: MemberPosition })[];
   activity: ActivityLog[];
@@ -46,6 +53,8 @@ export function DashboardView() {
         selavu: data?.totals.selavu ?? 0,
         balance: data?.totals.balance ?? 0,
         members: data?.totals.members ?? 0,
+        paidMembers: data?.totals.paidMembers ?? (data?.totals.varavu ? 1 : 0),
+        paidCount: data?.totals.paidCount ?? (data?.totals.varavu ? 1 : 0),
       }),
     [data],
   );
