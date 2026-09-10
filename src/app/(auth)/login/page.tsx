@@ -201,11 +201,7 @@ function LoginInner() {
               MANDRAM
             </p>
             <p className="mt-2 text-[14px] font-semibold text-white/90">நேதாஜி பாய்ஸ் மன்றம்</p>
-            <p className="mt-1.5 text-[11.5px] font-medium leading-relaxed text-sky-300/90">
-              {tr("Stronger Community", "வலுவான சமூகம்")}
-              <br />
-              {tr("Brighter Tomorrow", "பிரகாசமான நாளை")}
-            </p>
+           
           </div>
 
           {/* ── card ── */}
@@ -268,7 +264,10 @@ function LoginInner() {
                 </div>
                 {forgotHint ? (
                   <p className="rounded-lg border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[11.5px] font-medium text-sky-200/90">
-                    {tr("Ask the Mandram admin to reset your password.", "மன்ற நிர்வாகியிடம் கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்.")}
+                    {tr(
+                      "Ask the Mandram admin (Akash) to reset your password.",
+                      "மன்ற நிர்வாகி ஆகாஷிடம் (Akash) கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்."
+                    )}
                   </p>
                 ) : null}
 
