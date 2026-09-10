@@ -26,7 +26,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "active", label: "Active" },
   { value: "registration", label: "Registration" },
-  { value: "upcoming", label: "Coming soon" },
+  { value: "upcoming", label: "Upcoming" },
   { value: "completed", label: "Completed" },
 ];
 
@@ -76,7 +76,7 @@ export function EventsView() {
         eyebrow="Celebrations"
         title="Events"
         ta="நிகழ்வுகள்"
-        subtitle="Festivals, sports, meetings and community moments — past, present and next"
+        subtitle="Festivals, sports, meetings and community moments"
         actions={
           admin ? (
             <Button variant="primary" onClick={() => { setFormError(null); setFormOpen(true); }}>
@@ -86,22 +86,24 @@ export function EventsView() {
         }
       />
 
-      <div className="hide-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      {/* Filter chips with sleek unified styling */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
         {FILTERS.map((f) => {
           const active = filter === f.value;
           return (
             <button
               key={f.value}
+              type="button"
               onClick={() => setFilter(f.value)}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-all",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold transition-all",
                 active
-                  ? "bg-navy-900 text-white shadow-card dark:bg-navy-600"
-                  : "border border-line bg-surface text-muted hover:border-line-strong hover:text-ink",
+                  ? "bg-navy-900 text-white shadow-sm dark:bg-saffron-500 dark:text-ink"
+                  : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink",
               )}
             >
               {f.label}
-              <span className={cn("rounded-full px-1.5 text-[10.5px] tabular-nums", active ? "bg-white/20" : "bg-surface-2 text-faint")}>
+              <span className={cn("rounded px-1.5 py-0.2 text-[10px] font-extrabold tabular-nums", active ? "bg-white/20 dark:bg-navy-950/20" : "bg-surface text-faint")}>
                 {counts[f.value] ?? 0}
               </span>
             </button>

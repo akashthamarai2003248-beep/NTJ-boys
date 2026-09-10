@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 import type { Event } from "@/lib/data/types";
 import { eventTypeMeta } from "@/components/shared/meta";
@@ -20,8 +19,8 @@ function hashId(s: string) {
 }
 
 /**
- * Event artwork: a rich gradient + type emoji, layered with a soft
- * saffron glow. Falls back to an uploaded cover image when present.
+ * Event artwork: renders cover photo if set with subtle gradient overlay,
+ * or falls back to a rich geometric gradient with the event's type emoji.
  */
 export function EventCover({
   event,
@@ -38,9 +37,15 @@ export function EventCover({
   const grad = GRADIENTS[hashId(event.id) % GRADIENTS.length];
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div className={cn("relative overflow-hidden bg-navy-950", className)}>
       {event.cover ? (
-        <Image src={event.cover} alt={event.name} fill sizes="600px" className="object-cover" unoptimized />
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={event.cover}
+          alt={event.name}
+          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
       ) : (
         <>
           <div className="absolute inset-0" style={{ background: grad }} />
@@ -60,9 +65,7 @@ export function EventCover({
           )}
         </>
       )}
-      {event.cover ? (
-        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent" />
-      ) : null}
+      <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent pointer-events-none" />
     </div>
   );
 }

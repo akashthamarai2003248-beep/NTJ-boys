@@ -161,9 +161,24 @@ export function EventDetailView({ id }: { id: string }) {
                     நேதாஜி பாய்ஸ் மன்றம் · {event.tamilName || "—"}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {admin && (
-                    <Button size="sm" variant="secondary" className="border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white" onClick={() => { setFormError(null); setEditing(true); }}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="border-white/25 bg-white/15 text-white backdrop-blur hover:bg-white/25 hover:text-white"
+                      onClick={() => { setFormError(null); setEditing(true); }}
+                    >
+                      <Camera className="size-3.5" /> {event.cover ? "Photo" : "Add Photo"}
+                    </Button>
+                  )}
+                  {admin && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white"
+                      onClick={() => { setFormError(null); setEditing(true); }}
+                    >
                       <Pencil className="size-3.5" /> Edit
                     </Button>
                   )}
