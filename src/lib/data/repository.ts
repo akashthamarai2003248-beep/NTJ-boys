@@ -377,8 +377,12 @@ export function queryCollections(db: DB, f: CollectionFilters): CollectionPage {
   items.sort((a, b) => {
     if (sort === "amount_desc") return b.amount - a.amount;
     if (sort === "amount_asc") return a.amount - b.amount;
-    if (sort === "name") return a.personName.localeCompare(b.personName);
-    return b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
+    if (sort === "name") return (a.personName || "").localeCompare(b.personName || "");
+    const dateDiff = (b.date || "").localeCompare(a.date || "");
+    if (dateDiff !== 0) return dateDiff;
+    const createdDiff = (b.createdAt || "").localeCompare(a.createdAt || "");
+    if (createdDiff !== 0) return createdDiff;
+    return (b.receiptNumber || "").localeCompare(a.receiptNumber || "");
   });
 
   const perPage = Math.max(1, f.perPage ?? 10);
@@ -540,8 +544,10 @@ export function queryExpenses(db: DB, f: ExpenseFilters): ExpensePage {
   items.sort((a, b) => {
     if (sort === "amount_desc") return b.amount - a.amount;
     if (sort === "amount_asc") return a.amount - b.amount;
-    if (sort === "title") return a.title.localeCompare(b.title);
-    return b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
+    if (sort === "title") return (a.title || "").localeCompare(b.title || "");
+    const dateDiff = (b.date || "").localeCompare(a.date || "");
+    if (dateDiff !== 0) return dateDiff;
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
   });
 
   const perPage = Math.max(1, f.perPage ?? 10);
