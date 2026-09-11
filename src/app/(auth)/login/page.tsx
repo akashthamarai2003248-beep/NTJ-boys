@@ -119,11 +119,7 @@ function LoginInner() {
     const m = params.get("mode");
     if (m === "admin") return "admin";
     if (m === "register") return "register";
-    if (m === "login") return "login";
-    if (typeof window !== "undefined" && (localStorage.getItem("nbm.remember") || localStorage.getItem("nbm_user"))) {
-      return "login";
-    }
-    return "register";
+    return "login";
   });
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -184,6 +180,9 @@ function LoginInner() {
       localStorage.setItem("nbm_user", JSON.stringify(finalUser));
       if (remember) localStorage.setItem("nbm.remember", identifier);
       else localStorage.removeItem("nbm.remember");
+      if (typeof document !== "undefined") {
+        document.cookie = `nbm_session=${encodeURIComponent(finalUser.id)}; path=/; max-age=31536000; SameSite=Lax`;
+      }
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("nbm_session_update"));
       }
@@ -193,7 +192,7 @@ function LoginInner() {
     prefetchCoreRoutes();
     console.info(`[demo] signed in as ${finalUser.name} (${finalUser.role})`);
     const destination = next && next.startsWith("/") ? next : "/";
-    router.push(destination);
+    router.replace(destination);
   };
 
   const login = async (identifierArg: string, passwordArg: string) => {
@@ -268,6 +267,37 @@ function LoginInner() {
 
   return (
     <>
+      {/* Zero-flash client guard: If already logged in, hide body and redirect in 0ms before paint */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                var u = localStorage.getItem("nbm_user");
+                if (u && JSON.parse(u).id) {
+                  document.documentElement.classList.add("nbm-auth-redirect");
+                  var p = new URLSearchParams(window.location.search);
+                  var n = p.get("next");
+                  var dest = (n && n.startsWith("/")) ? n : "/";
+                  document.cookie = "nbm_session=" + encodeURIComponent(JSON.parse(u).id) + "; path=/; max-age=31536000; SameSite=Lax";
+                  window.location.replace(dest);
+                }
+              } catch (e) {}
+            })();
+          `,
+        }}
+      />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            html.nbm-auth-redirect body {
+              visibility: hidden !important;
+              background-color: #0b192c !important;
+            }
+          `,
+        }}
+      />
+
       <AnimatePresence>
         {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
       </AnimatePresence>

@@ -78,15 +78,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setUser(res.user);
         try {
           localStorage.setItem(SESSION_USER_KEY, JSON.stringify(res.user));
+          if (typeof document !== "undefined") {
+            document.cookie = `nbm_session=${encodeURIComponent(res.user.id)}; path=/; max-age=31536000; SameSite=Lax`;
+          }
         } catch {
           /* ignore storage error */
         }
       } else {
-        setUser(null);
-        try {
-          localStorage.removeItem(SESSION_USER_KEY);
-        } catch {
-          /* ignore */
+        const cached = getStoredUser();
+        if (!cached) {
+          setUser(null);
+          try {
+            localStorage.removeItem(SESSION_USER_KEY);
+            if (typeof document !== "undefined") {
+              document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+            }
+          } catch {
+            /* ignore */
+          }
         }
       }
     } catch {
@@ -119,6 +128,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       localStorage.removeItem(SESSION_USER_KEY);
+      localStorage.removeItem("nbm.remember");
+      if (typeof document !== "undefined") {
+        document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+      }
     } catch {
       /* ignore */
     }

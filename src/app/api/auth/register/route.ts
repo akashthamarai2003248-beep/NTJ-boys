@@ -114,7 +114,12 @@ export async function POST(req: Request) {
       const res = NextResponse.json({ user: toSessionUser(user) });
       const cookieStore = await cookies();
       for (const c of cookieStore.getAll()) {
-        res.cookies.set(c.name, c.value);
+        res.cookies.set(c.name, c.value, {
+          path: "/",
+          sameSite: "lax",
+          secure: cookieOptions.secure,
+          maxAge: cookieOptions.maxAge,
+        });
       }
       res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
       return res;
