@@ -128,7 +128,7 @@ const CACHE_TTL_MS = 15_000;
 let cachedDashboardDB: DB | null = null;
 let dashboardCacheTime = 0;
 let inFlightDashboardLoad: Promise<DB> | null = null;
-const DASHBOARD_CACHE_TTL_MS = 20_000;
+const DASHBOARD_CACHE_TTL_MS = 60_000;
 
 /** Invalidate the cached database snapshot so the next loadDB() or loadDashboardDB() fetches fresh data. */
 export function invalidateDBCache() {

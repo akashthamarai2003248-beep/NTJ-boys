@@ -135,7 +135,11 @@ export function clearClientCache(prefix?: string) {
  * visited pages render instantly (0ms) from local cache with zero flicker or blank
  * loading screens, while keeping data fresh via background revalidation.
  */
-export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncState<T> & { reload: () => void } {
+export function useFetch<T>(
+  url: string | null,
+  deps: unknown[] = [],
+  initialData?: T,
+): AsyncState<T> & { reload: () => void } {
   const getCachedEntry = useCallback((): { data: T; timestamp: number } | null => {
     if (!url) return null;
     const mem = clientCache.get(url);
@@ -149,6 +153,13 @@ export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncStat
   }, [url]);
 
   const [state, setState] = useState<AsyncState<T>>(() => {
+    if (initialData) {
+      if (url) {
+        clientCache.set(url, { data: initialData, timestamp: Date.now() });
+        writePersistentCache(url, initialData);
+      }
+      return { data: initialData, error: null, loading: false };
+    }
     if (!url) return { data: null, error: null, loading: false };
     const cached = getCachedEntry();
     return {
@@ -170,10 +181,12 @@ export function useFetch<T>(url: string | null, deps: unknown[] = []): AsyncStat
     // If cached data is present, immediately serve it without blocking render
     if (currentCached) {
       setState((s) => ({ ...s, data: currentCached.data, error: null, loading: false }));
-      // If the cache was fetched very recently (< 5s) and not an explicit reload, avoid redundant network traffic
-      if (tick === 0 && Date.now() - currentCached.timestamp < 5_000) {
+      // If the cache was fetched very recently (< 15s) and not an explicit reload, avoid redundant network traffic
+      if (tick === 0 && Date.now() - currentCached.timestamp < 15_000) {
         return;
       }
+    } else if (initialData && tick === 0) {
+      return;
     } else {
       setState((s) => ({ ...s, loading: true, error: null }));
     }

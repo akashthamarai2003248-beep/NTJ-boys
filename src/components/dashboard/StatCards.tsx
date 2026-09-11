@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { HandCoins, TrendingDown, Users, Wallet, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { useCountUp } from "@/components/shared/count-up";
 import { useLang } from "@/lib/i18n";
 
 interface Stat {
@@ -24,18 +23,18 @@ const tones = {
   gold: "bg-gold-100 text-gold-700 dark:bg-gold-400/15 dark:text-gold-300",
 };
 
-function StatCard({ stat, index }: { stat: Stat; index: number }) {
-  const { ref, display } = useCountUp(stat.value, 1.05 + index * 0.08);
+function StatCard({ stat }: { stat: Stat; index: number }) {
   const { lang } = useLang();
   const primary = lang === "en" ? stat.en : stat.ta;
   const secondary = lang === "both" ? stat.en : null;
   const subText = stat.subtitle ? (lang === "ta" ? stat.subtitle.ta : stat.subtitle.en) : null;
+  const formatted = stat.value.toLocaleString("en-IN");
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.07 }}
+      transition={{ duration: 0.18 }}
       className="card-surface group rounded-2xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
     >
       <div className="flex items-start gap-2.5 sm:gap-3">
@@ -51,7 +50,7 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
           </p>
           <p className="mt-1.5 truncate text-[18px] font-black leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[24px]">
             {stat.prefix}
-            <span ref={ref}>{display}</span>
+            <span>{formatted}</span>
           </p>
           {subText ? (
             <p className="mt-1 truncate text-[10.5px] font-semibold text-faint sm:text-[11px]">
@@ -126,9 +125,9 @@ export function makeStats(t: {
       icon: Users,
       value: paid,
       subtitle:
-        t.members > 0
-          ? { en: `of ${t.members} total`, ta: `${t.members} மொத்தத்தில்` }
-          : { en: "Contributors", ta: "நன்கொடையாளர்" },
+        t.members >= paid
+          ? { en: `of ${t.members} members`, ta: `${t.members} உறுப்பினர்களில்` }
+          : { en: `${t.paidCount ?? paid} contributions`, ta: `${t.paidCount ?? paid} வரவுகள்` },
       tone: "gold",
     },
   ];

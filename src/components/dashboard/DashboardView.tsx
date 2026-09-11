@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import type { ActivityLog, EventWithStats, MemberPosition } from "@/lib/data/types";
 import type { SeriesBucket } from "@/lib/data/repository";
+import type { DashboardPayload } from "@/lib/data/dashboard";
 import { useFetch } from "@/lib/client/hooks";
 import { qs } from "@/lib/client/api";
 import { useSession, usePermissions } from "@/components/layout/session";
@@ -18,20 +19,6 @@ import { EventCard, EventCardSkeleton } from "@/components/event/EventCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LogoMark } from "@/components/ui/Logo";
 
-interface DashboardPayload {
-  totals: {
-    varavu: number;
-    selavu: number;
-    balance: number;
-    members: number;
-    paidMembers?: number;
-    paidCount?: number;
-  };
-  series: SeriesBucket[];
-  events: (EventWithStats & { role?: MemberPosition })[];
-  activity: ActivityLog[];
-}
-
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return { en: "Good morning", ta: "காலை வணக்கம்" };
@@ -39,12 +26,16 @@ function greeting() {
   return { en: "Good evening", ta: "மாலை வணக்கம்" };
 }
 
-export function DashboardView() {
+export function DashboardView({ initialData }: { initialData?: DashboardPayload }) {
   const { user } = useSession();
   const { can } = usePermissions();
   const { t } = useLang();
   const [period, setPeriod] = useState<PeriodKey>("year");
-  const { data, loading } = useFetch<DashboardPayload>(`/api/dashboard${qs({ period })}`, [period]);
+  const { data, loading } = useFetch<DashboardPayload>(
+    `/api/dashboard${qs({ period })}`,
+    [period],
+    initialData && period === "year" ? initialData : undefined,
+  );
 
   const stats = useMemo(
     () =>
