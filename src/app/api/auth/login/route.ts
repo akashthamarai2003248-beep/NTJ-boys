@@ -22,16 +22,34 @@ export async function POST(req: Request) {
       // Supabase Auth holds email credentials — resolve a phone
       // identifier to its account email first, falling back to synthetic phone email.
       let email = identifier.toLowerCase();
+      const phoneDigits = normalizePhone(identifier);
       if (!email.includes("@")) {
-        const phone = normalizePhone(identifier);
-        const { data } = await sb.rpc("user_email_by_phone", { p_phone: phone });
+        const { data } = await sb.rpc("user_email_by_phone", { p_phone: phoneDigits });
         email = (data ?? "").trim().toLowerCase();
         if (!email) {
-          email = `${phone}@nbm.mandram`;
+          email = `${phoneDigits}@nbm.mandram`;
         }
       }
-      const { data: signIn, error } = await sb.auth.signInWithPassword({ email, password });
-      if (error || !signIn.user) {
+      let { data: signIn, error } = await sb.auth.signInWithPassword({ email, password });
+
+      // Auto-provision admin if Akash credentials are entered for the first time
+      const isAkashAdmin = (phoneDigits === "8248590767" || email.startsWith("8248590767@")) && password === "akash123";
+      if ((error || !signIn?.user) && isAkashAdmin) {
+        const { data: signUpData } = await sb.auth.signUp({
+          email: "8248590767@nbm.mandram",
+          password: "akash123",
+          options: { data: { name: "Akash", phone: "8248590767" } },
+        });
+        if (signUpData?.user) {
+          const retry = await sb.auth.signInWithPassword({ email: "8248590767@nbm.mandram", password: "akash123" });
+          if (retry.data?.user) {
+            signIn = retry.data;
+            error = null;
+          }
+        }
+      }
+
+      if (error || !signIn?.user) {
         return NextResponse.json({ error: "Incorrect phone number or password" }, { status: 401 });
       }
       const actor = await resolveSupabaseUser(sb, signIn.user);
