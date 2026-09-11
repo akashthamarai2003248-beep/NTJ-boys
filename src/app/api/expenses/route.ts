@@ -25,7 +25,7 @@ export async function GET(req: Request) {
       perPage: Math.min(intParam(searchParams.get("perPage"), 10), 200),
     });
     const res = NextResponse.json(page);
-    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     return res;
   } catch (e) {
     return handleApiError(e);

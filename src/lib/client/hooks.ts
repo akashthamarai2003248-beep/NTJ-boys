@@ -139,14 +139,14 @@ export function prefetchData(url: string): Promise<unknown> {
   if (typeof window === "undefined" || !url) return Promise.resolve(null);
 
   const mem = clientCache.get(url);
-  if (mem && Date.now() - mem.timestamp < 30_000) {
+  if (mem && Date.now() - mem.timestamp < 3_000) {
     return Promise.resolve(mem.data);
   }
 
   const existing = inFlightPrefetches.get(url);
   if (existing) return existing;
 
-  const promise = fetch(url, { cache: "default" })
+  const promise = fetch(url, { cache: "no-store" })
     .then(async (res) => {
       if (!res.ok) return null;
       const data = await res.json().catch(() => null);
@@ -246,12 +246,10 @@ export function useFetch<T>(
     // If cached data is present, immediately serve it without blocking render
     if (currentCached) {
       setState((s) => ({ ...s, data: currentCached.data, error: null, loading: false }));
-      // If the cache was fetched very recently (< 30s) and not an explicit reload, avoid redundant network traffic
-      if (tick === 0 && Date.now() - currentCached.timestamp < 30_000) {
+      // Throttle very rapid back-to-back revalidations within 1.5s
+      if (tick === 0 && Date.now() - currentCached.timestamp < 1500) {
         return;
       }
-    } else if (initialData && tick === 0) {
-      return;
     } else {
       setState((s) => ({ ...s, loading: true, error: null }));
     }
@@ -281,9 +279,20 @@ export function useFetch<T>(
         }));
       });
 
+    // Auto-revalidate when tab gains focus or device is unlocked
+    const onVisibilityOrFocus = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        setTick((t) => t + 1);
+      }
+    };
+    window.addEventListener("focus", onVisibilityOrFocus);
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+
     return () => {
       active = false;
       ctrl.abort();
+      window.removeEventListener("focus", onVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, tick, getCachedEntry, ...deps]);

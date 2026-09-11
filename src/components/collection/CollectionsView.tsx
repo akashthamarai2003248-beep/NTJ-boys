@@ -11,7 +11,7 @@ import type { Collection, CollectionInput, ContributionType, Event } from "@/lib
 import { PAYMENT_CHOICES } from "@/lib/data/types";
 import type { CollectionPage } from "@/lib/data/repository";
 import { api, qs } from "@/lib/client/api";
-import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
+import { useDebouncedValue, useFetch, clearClientCache } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
 import {
@@ -135,6 +135,10 @@ export function CollectionsView() {
         });
         toast.success(`${t("Receipt", "ரசீது")} ${res.collection.receiptNumber} ${t("issued", "வழங்கப்பட்டது")}`);
       }
+      clearClientCache("/api/collections");
+      clearClientCache("/api/dashboard");
+      clearClientCache("/api/reports");
+      clearClientCache("/api/events");
       setFormOpen(false);
       reload();
     } catch (e) {
@@ -150,6 +154,10 @@ export function CollectionsView() {
     try {
       await api.del(`/api/collections/${deleting.id}`);
       toast.success(t("Collection removed", "வரவு நீக்கப்பட்டது"));
+      clearClientCache("/api/collections");
+      clearClientCache("/api/dashboard");
+      clearClientCache("/api/reports");
+      clearClientCache("/api/events");
       setDeleting(null);
       reload();
     } catch (e) {

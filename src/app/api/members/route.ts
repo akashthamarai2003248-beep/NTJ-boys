@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       role: role || null,
     });
     const res = NextResponse.json({ members, total: members.length });
-    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     return res;
   } catch (e) {
     return handleApiError(e);

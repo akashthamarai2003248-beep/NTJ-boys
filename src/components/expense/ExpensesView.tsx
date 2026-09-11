@@ -11,7 +11,7 @@ import type { Expense, ExpenseInput, Event } from "@/lib/data/types";
 import { PAYMENT_CHOICES } from "@/lib/data/types";
 import type { ExpensePage } from "@/lib/data/repository";
 import { api, qs } from "@/lib/client/api";
-import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
+import { useDebouncedValue, useFetch, clearClientCache } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
 import {
@@ -108,6 +108,10 @@ export function ExpensesView() {
         });
         toast.success(t("Expense recorded", "செலவு பதிவு செய்யப்பட்டது"));
       }
+      clearClientCache("/api/expenses");
+      clearClientCache("/api/dashboard");
+      clearClientCache("/api/reports");
+      clearClientCache("/api/events");
       setFormOpen(false);
       reload();
     } catch (e) {
@@ -123,6 +127,10 @@ export function ExpensesView() {
     try {
       await api.del(`/api/expenses/${deleting.id}`);
       toast.success(t("Expense removed", "செலவு நீக்கப்பட்டது"));
+      clearClientCache("/api/expenses");
+      clearClientCache("/api/dashboard");
+      clearClientCache("/api/reports");
+      clearClientCache("/api/events");
       setDeleting(null);
       setViewing(null);
       reload();

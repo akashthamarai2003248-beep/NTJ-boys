@@ -113,6 +113,7 @@ export async function createCollection(actor: DemoUser, raw: CollectionInput): P
     .select("*")
     .single();
   if (error || !data) throw dbError(error, "Could not save collection");
+  invalidateDBCache();
   const rec = mapCollection(data);
   await log(sb, actor, {
     action: "added", entity: "collection", label: rec.personName,
@@ -153,6 +154,7 @@ export async function updateCollection(actor: DemoUser, id: string, raw: Collect
     .select("*")
     .single();
   if (error || !data) throw dbError(error, "Could not update collection");
+  invalidateDBCache();
   const rec = mapCollection(data);
   await log(sb, actor, {
     action: "edited", entity: "collection", label: rec.personName,
@@ -169,6 +171,7 @@ export async function deleteCollection(actor: DemoUser, id: string): Promise<voi
   if (fetchErr || !rec) throw dbError(fetchErr, "Collection not found");
   const { error } = await sb.from("collections").delete().eq("id", id);
   if (error) throw dbError(error, "Could not delete collection");
+  invalidateDBCache();
   await log(sb, actor, {
     action: "deleted", entity: "collection", label: rec.person_name,
     amount: rec.amount, eventName: await eventNameFor(sb, rec.event_id),
@@ -210,6 +213,7 @@ export async function createExpense(actor: DemoUser, raw: ExpenseInput): Promise
     .select("*")
     .single();
   if (error || !data) throw dbError(error, "Could not save expense");
+  invalidateDBCache();
   const rec = mapExpense(data);
   await log(sb, actor, {
     action: "added", entity: "expense", label: rec.title,
@@ -239,6 +243,7 @@ export async function updateExpense(actor: DemoUser, id: string, raw: ExpenseInp
     .select("*")
     .single();
   if (error || !data) throw dbError(error, "Could not update expense");
+  invalidateDBCache();
   const rec = mapExpense(data);
   await log(sb, actor, {
     action: "edited", entity: "expense", label: rec.title,
@@ -255,6 +260,7 @@ export async function deleteExpense(actor: DemoUser, id: string): Promise<void> 
   if (fetchErr || !rec) throw dbError(fetchErr, "Expense not found");
   const { error } = await sb.from("expenses").delete().eq("id", id);
   if (error) throw dbError(error, "Could not delete expense");
+  invalidateDBCache();
   await log(sb, actor, {
     action: "deleted", entity: "expense", label: rec.title,
     amount: rec.amount, eventName: await eventNameFor(sb, rec.event_id),

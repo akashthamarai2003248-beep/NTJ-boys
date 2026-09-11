@@ -12,7 +12,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const year = searchParams.get("year");
     const data = buildReports(await loadDB(), year && /^\d{4}$/.test(year) ? year : "all");
-    return NextResponse.json(data);
+    const res = NextResponse.json(data);
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

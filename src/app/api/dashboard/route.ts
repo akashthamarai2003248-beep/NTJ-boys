@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     const payload = await getDashboardPayload(period);
     const res = NextResponse.json(payload);
-    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     return res;
   } catch (e) {
     return handleApiError(e);

@@ -9,7 +9,9 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const db = await loadDB();
-    return NextResponse.json({ activity: recentActivity(db, intParam(searchParams.get("limit"), 10)) });
+    const res = NextResponse.json({ activity: recentActivity(db, intParam(searchParams.get("limit"), 10)) });
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

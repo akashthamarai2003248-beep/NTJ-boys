@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const res = NextResponse.json({ events: listEvents(await loadDB()) });
-    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     return res;
   } catch (e) {
     return handleApiError(e);
