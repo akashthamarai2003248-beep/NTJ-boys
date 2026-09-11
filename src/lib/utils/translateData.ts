@@ -38,6 +38,8 @@ export const PERSON_NAMES_EN_TO_TA: Record<string, string> = {
   "Chelladurai Bose": "செல்லத்துரை போஸ்",
   "Lakshmanan Iyer": "லட்சுமணன் ஐயர்",
   "Mukesh": "முகேஷ்",
+  "Prabha": "பிரபா",
+  "prabha": "பிரபா",
   "Ravi": "ரவி",
   "Muthu": "முத்து",
   "Suresh": "சுரேஷ்",
