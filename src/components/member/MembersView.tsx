@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  HandCoins, Phone, Plus, Search, Trophy, Users,
+  HandCoins, Pencil, Phone, Plus, Search, Trash2, Trophy, Users,
 } from "lucide-react";
 import type { Member, MemberInput, MemberWithStats } from "@/lib/data/types";
 import { api, qs } from "@/lib/client/api";
 import { useDebouncedValue, useFetch } from "@/lib/client/hooks";
 import { usePermissions } from "@/components/layout/session";
+import { useLang } from "@/lib/i18n";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -19,6 +20,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions } from "@/components/shared/RowActions";
 import { formatINR } from "@/lib/utils/money";
+import { cn } from "@/lib/utils/cn";
 import { MemberForm } from "./MemberForm";
 
 interface MembersPayload {
@@ -28,6 +30,7 @@ interface MembersPayload {
 
 export function MembersView() {
   const { can } = usePermissions();
+  const { t } = useLang();
   const writable = can.members;
 
   const [q, setQ] = useState("");
@@ -53,10 +56,10 @@ export function MembersView() {
     try {
       if (editing) {
         await api.patch(`/api/members/${editing.id}`, input);
-        toast.success("Member updated");
+        toast.success(t("Member updated", "உறுப்பினர் விவரங்கள் புதுப்பிக்கப்பட்டன"));
       } else {
         await api.post<{ member: Member }>("/api/members", input);
-        toast.success("Member added to the Mandram");
+        toast.success(t("Member added to the Mandram", "உறுப்பினர் மன்றத்தில் சேர்க்கப்பட்டார்"));
       }
       setFormOpen(false);
       reload();
@@ -72,7 +75,7 @@ export function MembersView() {
     setDeleteBusy(true);
     try {
       await api.del(`/api/members/${deleting.id}`);
-      toast.success("Member removed");
+      toast.success(t("Member removed", "உறுப்பினர் நீக்கப்பட்டார்"));
       setDeleting(null);
       reload();
     } catch (e) {
@@ -94,7 +97,7 @@ export function MembersView() {
         actions={
           writable ? (
             <Button variant="primary" onClick={openAdd}>
-              <Plus className="size-4" /> Add Member
+              <Plus className="size-4" /> {t("Add Member", "உறுப்பினரைச் சேர்")}
             </Button>
           ) : undefined
         }
@@ -111,7 +114,7 @@ export function MembersView() {
           />
           {hasFilters ? (
             <Button variant="ghost" size="sm" onClick={() => setQ("")}>
-              Clear
+              {t("Clear", "நீக்கு")}
             </Button>
           ) : null}
         </div>
@@ -141,7 +144,7 @@ export function MembersView() {
           title={hasFilters ? "No members match" : "No members yet"}
           message={hasFilters ? "Try searching with a different name or phone number." : "Add the people who make the Mandram what it is."}
           action={writable && !hasFilters ? (
-            <Button variant="primary" onClick={openAdd}><Plus className="size-4" /> Add Member</Button>
+            <Button variant="primary" onClick={openAdd}><Plus className="size-4" /> {t("Add Member", "உறுப்பினரைச் சேர்")}</Button>
           ) : undefined}
         />
       ) : (
@@ -155,7 +158,7 @@ export function MembersView() {
       <Modal
         open={formOpen}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
-        title={editing ? "Edit Member" : "Add Member"}
+        title={editing ? t("Edit Member", "உறுப்பினரைத் திருத்து") : t("Add Member", "உறுப்பினரைச் சேர்")}
         description="உறுப்பினர் விவரங்கள் · Member details"
         maxWidth="max-w-md"
       >
@@ -167,9 +170,9 @@ export function MembersView() {
         onClose={() => setDeleting(null)}
         onConfirm={handleDelete}
         loading={deleteBusy}
-        title="Remove this member?"
-        body={<>This removes <b>{deleting?.name}</b> from the member register. Contribution history is kept in the ledger.</>}
-        confirmLabel="Remove"
+        title={t("Remove this member?", "இந்த உறுப்பினரை நீக்கவா?")}
+        body={<>{t("This removes", "இது")} <b>{deleting?.name}</b> {t("from the member register. Contribution history is kept in the ledger.", "உறுப்பினர் பதிவேட்டில் இருந்து நீக்கும். பங்களிப்பு வரலாறு கணக்கேட்டில் பாதுகாக்கப்படும்.")}</>}
+        confirmLabel={t("Remove", "நீக்கு")}
       />
     </div>
   );
@@ -188,26 +191,35 @@ function MemberCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useLang();
   return (
     <div
-      className="card-surface group relative rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
+      className={cn(
+        "card-surface group relative rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover",
+        writable && "cursor-pointer"
+      )}
       style={{ animationDelay: `${index * 40}ms` }}
+      onClick={() => {
+        if (writable) onEdit();
+      }}
     >
-      <div className="absolute right-2.5 top-2.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <RowActions canEdit={writable} canDelete={writable} onEdit={onEdit} onDelete={onDelete} />
-      </div>
       <div className="flex items-center gap-3">
         <Avatar name={member.name} photo={member.photo} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-extrabold tracking-tight">{member.name}</p>
           <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted">
             <Phone className="size-3.5 shrink-0 text-faint" />
-            <a href={`tel:${member.phone}`} className="tabular-nums hover:text-navy-700 hover:underline dark:hover:text-navy-200">
+            <a
+              href={`tel:${member.phone}`}
+              onClick={(e) => e.stopPropagation()}
+              className="tabular-nums hover:text-navy-700 hover:underline dark:hover:text-navy-200"
+            >
               +91 {member.phone.replace(/(\d{5})(\d{5})/, "$1 $2")}
             </a>
           </p>
         </div>
       </div>
+
       <div className="mt-3.5 grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-leaf-50 px-3 py-2 dark:bg-leaf-500/10">
           <p className="flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wide text-leaf-700 dark:text-leaf-400">
@@ -231,6 +243,38 @@ function MemberCard({
           </p>
         </div>
       </div>
+
+      {writable && (
+        <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3">
+          <span className="text-[11.5px] font-semibold text-faint">
+            {member.role || "Member"}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[12px] font-bold text-ink transition hover:border-line-strong hover:bg-surface-2 active:scale-95 shadow-sm"
+            >
+              <Pencil className="size-3.5 text-navy-600 dark:text-saffron-400" />
+              <span>{t("Edit", "திருத்து")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200/70 bg-red-50/60 px-3 py-1.5 text-[12px] font-bold text-red-600 transition hover:bg-red-100 active:scale-95 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/70 shadow-sm"
+            >
+              <Trash2 className="size-3.5" />
+              <span>{t("Delete", "நீக்கு")}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
