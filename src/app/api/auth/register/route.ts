@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { registerUser } from "@/lib/data/repository";
 import { toSessionUser, cookieOptions } from "@/lib/auth";
 import {
@@ -111,6 +112,10 @@ export async function POST(req: Request) {
       }
       const user = actorToDemoUser(actor);
       const res = NextResponse.json({ user: toSessionUser(user) });
+      const cookieStore = await cookies();
+      for (const c of cookieStore.getAll()) {
+        res.cookies.set(c.name, c.value);
+      }
       res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
       return res;
     }

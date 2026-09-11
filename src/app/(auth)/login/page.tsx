@@ -99,10 +99,31 @@ function LoginInner() {
     }
   };
 
-  // For new users, default to 'register' (Signup page) instead of login
+  // Synchronously check if user is already signed in in localStorage
+  const [alreadyLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const stored = localStorage.getItem("nbm_user");
+      if (stored) {
+        const u = JSON.parse(stored);
+        return Boolean(u && u.id);
+      }
+    } catch {
+      /* ignore */
+    }
+    return false;
+  });
+
+  // Mode selection: default to member login for returning users, registration for new visitors
   const [mode, setMode] = useState<"login" | "register" | "admin">(() => {
     const m = params.get("mode");
-    return m === "admin" ? "admin" : m === "login" ? "login" : "register";
+    if (m === "admin") return "admin";
+    if (m === "register") return "register";
+    if (m === "login") return "login";
+    if (typeof window !== "undefined" && (localStorage.getItem("nbm.remember") || localStorage.getItem("nbm_user"))) {
+      return "login";
+    }
+    return "register";
   });
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -117,22 +138,14 @@ function LoginInner() {
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
 
-  // Auto-redirect if already signed in in localStorage
+  // Auto-redirect if already signed in
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("nbm_user");
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u && u.id) {
-          const next = params.get("next");
-          const destination = next && next.startsWith("/") ? next : "/";
-          router.replace(destination);
-        }
-      }
-    } catch {
-      /* ignore */
+    if (alreadyLoggedIn) {
+      const next = params.get("next");
+      const destination = next && next.startsWith("/") ? next : "/";
+      router.replace(destination);
     }
-  }, [params, router]);
+  }, [alreadyLoggedIn, params, router]);
 
   // "Remember me" — prefill the identifier from a previous session
   useEffect(() => {
@@ -243,6 +256,15 @@ function LoginInner() {
       setRegLoading(false);
     }
   };
+
+  // If already logged in, do not render auth forms at all to avoid any UI flash
+  if (alreadyLoggedIn) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#0b192c]">
+        <LogoMark className="size-12 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <>
