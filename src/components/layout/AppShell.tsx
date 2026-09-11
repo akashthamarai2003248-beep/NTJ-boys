@@ -63,13 +63,13 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 max-w-full flex-col overflow-x-hidden">
         <Topbar onOpenSearch={() => setSearchOpen(true)} />
         <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden">
-          <div className="mx-auto w-full max-w-[1200px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-7">
+          <div className="mx-auto w-full min-w-0 max-w-[1200px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-7">
             <motion.div
               key={pathname}
               initial={{ opacity: 0.85 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.1, ease: "easeOut" }}
-              className="w-full min-w-0"
+              className="w-full min-w-0 max-w-full"
             >
               {children}
             </motion.div>

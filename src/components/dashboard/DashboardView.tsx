@@ -65,13 +65,13 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
     : t(`${g.en} 👋`, `${g.ta} 👋`);
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-5 sm:space-y-6">
       {/* Greeting hero */}
       <motion.section
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="relative overflow-hidden rounded-2xl px-4 py-5 text-white shadow-card sm:px-6 sm:py-6"
+        className="relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl px-4 py-5 text-white shadow-card sm:px-6 sm:py-6"
       >
         {/* Tricolor Netaji banner background - vibrant and fully visible */}
         <img
@@ -140,7 +140,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
 
       {/* Stat cards */}
       {loading && !data ? (
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4 sm:gap-4">
+        <div className="grid w-full min-w-0 max-w-full grid-cols-2 gap-3 xl:grid-cols-4 sm:gap-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="card-surface rounded-2xl p-4 sm:p-5">
               <div className="flex items-start gap-3">
@@ -158,19 +158,19 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
       )}
 
       {/* Chart + activity */}
-      <div className="grid gap-4 lg:grid-cols-5 lg:gap-5">
-        <div className="lg:col-span-3">
+      <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-4 lg:grid-cols-5 lg:gap-5">
+        <div className="w-full min-w-0 max-w-full lg:col-span-3">
           <OverviewChart period={period} onPeriodChange={setPeriod} data={activeSeries} loading={loading && (!data || !activeSeries.length)} />
         </div>
         <motion.section
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="card-surface rounded-2xl p-4 sm:p-5 lg:col-span-2"
+          className="card-surface w-full min-w-0 max-w-full rounded-2xl p-4 sm:p-5 lg:col-span-2"
         >
-          <div className="mb-2 flex items-center justify-between">
-            <div className="min-w-0">
-              <h2 className="text-[15px] font-extrabold tracking-tight">{t("Recent Activity", "சமீபத்திய செயல்பாடு")}</h2>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[15px] font-extrabold tracking-tight">{t("Recent Activity", "சமீபத்திய செயல்பாடு")}</h2>
               <p className="truncate text-[12px] font-medium text-muted">{t("Transparency log", "வெளிப்படைத்தன்மை பதிவு")}</p>
             </div>
             <Link href="/settings" className="shrink-0 text-[12px] font-bold text-saffron-600 hover:underline dark:text-saffron-400">

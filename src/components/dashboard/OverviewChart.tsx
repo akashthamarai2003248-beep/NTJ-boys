@@ -127,10 +127,10 @@ export function OverviewChart({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="card-surface rounded-2xl p-4 sm:p-5"
+      className="card-surface w-full min-w-0 max-w-full overflow-hidden rounded-2xl p-4 sm:p-5"
     >
       {/* Header with Title and Controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="text-[15px] font-extrabold tracking-tight">{t("Varavu vs Selavu", "வரவு vs செலவு")}</h2>
@@ -141,9 +141,9 @@ export function OverviewChart({
           <p className="truncate text-[12px] font-medium text-muted">{t("income vs spending", "வருமானம் vs செலவு")}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2 sm:w-auto">
           {/* Chart style toggle (Wave / Bars) */}
-          <div className="flex items-center gap-0.5 rounded-xl bg-surface-2 p-1">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-xl bg-surface-2 p-1">
             <button
               type="button"
               onClick={() => setChartType("area")}
@@ -171,7 +171,7 @@ export function OverviewChart({
           </div>
 
           {/* Period tabs */}
-          <div className="w-full sm:w-auto">
+          <div className="min-w-0 flex-1 sm:w-auto sm:flex-initial">
             <Segmented
               value={period}
               onChange={onPeriodChange}
@@ -183,21 +183,21 @@ export function OverviewChart({
       </div>
 
       {/* Summary Legend Strip with glow effects */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2.5 text-[11.5px] font-semibold">
-        <div className="flex flex-wrap items-center gap-3.5">
-          <span className="inline-flex items-center gap-1.5">
+      <div className="mt-3 flex w-full min-w-0 max-w-full flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2.5 text-[11.5px] font-semibold">
+        <div className="flex min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5">
+          <span className="inline-flex shrink-0 items-center gap-1.5">
             <span className="size-2.5 rounded-[4px] bg-saffron-500 shadow-[0_0_8px_rgba(245,158,46,0.6)]" />
             <span className="text-muted">{t("Varavu", "வரவு")}</span>
             <span className="font-extrabold tabular-nums text-ink">{formatINR(varavuSum)}</span>
           </span>
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex shrink-0 items-center gap-1.5">
             <span className="size-2.5 rounded-[4px] bg-navy-500 shadow-[0_0_8px_rgba(85,121,193,0.6)]" />
             <span className="text-muted">{t("Selavu", "செலவு")}</span>
             <span className="font-extrabold tabular-nums text-ink">{formatINR(selavuSum)}</span>
           </span>
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums",
+              "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums",
               netBalance >= 0 ? "bg-leaf-500/10 text-leaf-600 dark:text-leaf-400" : "bg-red-500/10 text-red-600 dark:text-red-400",
             )}
           >
@@ -215,7 +215,7 @@ export function OverviewChart({
       </div>
 
       {/* Chart Canvas */}
-      <div className="mt-3 h-56 w-full min-w-0 overflow-hidden sm:h-60">
+      <div className="relative mt-3 h-56 w-full min-w-0 max-w-full overflow-hidden sm:h-60">
         {loading && (!data || data.length === 0) ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-40 w-full animate-pulse rounded-xl bg-surface-2" />
@@ -228,11 +228,11 @@ export function OverviewChart({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0.6 }}
               transition={{ duration: 0.2 }}
-              className="h-full w-full"
+              className="h-full w-full min-w-0 max-w-full overflow-hidden"
             >
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === "area" ? (
-                  <AreaChart data={data} margin={{ top: 12, right: 8, left: -14, bottom: 0 }}>
+                  <AreaChart data={data} margin={{ top: 12, right: 12, left: -4, bottom: 0 }}>
                     <defs>
                       <linearGradient id="varavuGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#f59e2e" stopOpacity={0.48} />
@@ -259,7 +259,7 @@ export function OverviewChart({
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={compact}
-                      width={52}
+                      width={40}
                     />
                     <Tooltip
                       content={<ChartTooltip />}
@@ -293,7 +293,7 @@ export function OverviewChart({
                     />
                   </AreaChart>
                 ) : (
-                  <BarChart data={data} margin={{ top: 12, right: 6, left: -14, bottom: 0 }} barCategoryGap="24%">
+                  <BarChart data={data} margin={{ top: 12, right: 12, left: -4, bottom: 0 }} barCategoryGap="24%">
                     <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="var(--line)" opacity={0.65} />
                     <XAxis
                       dataKey="label"
@@ -308,7 +308,7 @@ export function OverviewChart({
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={compact}
-                      width={52}
+                      width={40}
                     />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--surface-2)", opacity: 0.6 }} />
                     <Bar
