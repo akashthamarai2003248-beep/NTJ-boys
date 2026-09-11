@@ -174,14 +174,6 @@ export function ExpensesView() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {writable && (
-        <div className="flex items-center justify-end">
-          <Button variant="primary" size="sm" onClick={openAdd}>
-            <Plus className="size-4" /> {t("Add Expense", "செலவு சேர்க்க")}
-          </Button>
-        </div>
-      )}
-
       {/* total banner */}
       <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-red-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-[#2a1222] dark:via-[#431932] dark:to-[#5a2132] dark:text-white">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -255,17 +247,6 @@ export function ExpensesView() {
               </span>
             )}
           </button>
-          {writable && (
-            <button
-              type="button"
-              onClick={openAdd}
-              aria-label={t("Add Expense", "செலவு சேர்க்க")}
-              title={t("Add Expense", "செலவு சேர்க்க")}
-              className="flex size-10.5 shrink-0 items-center justify-center rounded-full bg-saffron-500 text-white shadow-sm transition-colors hover:bg-saffron-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/40 dark:text-navy-950"
-            >
-              <Plus className="size-5" />
-            </button>
-          )}
         </div>
 
         {/* Quick Payment Chips */}
@@ -472,6 +453,18 @@ export function ExpensesView() {
           </>
         )}
       </div>
+
+      {writable && (
+        <button
+          type="button"
+          onClick={openAdd}
+          aria-label={t("Add Expense", "செலவு சேர்க்க")}
+          title={t("Add Expense", "செலவு சேர்க்க")}
+          className="fixed bottom-24 right-4 z-50 flex size-14 items-center justify-center rounded-full bg-saffron-500 text-white shadow-xl shadow-saffron-500/30 transition-all active:scale-95 hover:scale-105 hover:bg-saffron-600 focus:outline-none focus:ring-4 focus:ring-saffron-500/30 dark:text-navy-950 sm:bottom-6 sm:right-6 sm:size-12"
+        >
+          <Plus className="size-6" />
+        </button>
+      )}
 
       <Modal
         open={formOpen}

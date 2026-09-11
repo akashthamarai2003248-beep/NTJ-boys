@@ -195,6 +195,16 @@ export function CollectionsView() {
     }
   };
 
+  const items = data?.items ?? [];
+  const filteredSum = data?.sum ?? 0;
+
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      {/* total banner */}
+      <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-saffron-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-navy-950 dark:via-navy-900 dark:to-navy-800 dark:text-white">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-saffron-500/30 bg-saffron-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-saffron-700 dark:border-transparent dark:bg-saffron-500/20 dark:text-saffron-300">
               {t("Total Collection", "மொத்த வரவு")}
             </span>
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
@@ -500,6 +510,18 @@ export function CollectionsView() {
           </>
         )}
       </div>
+
+      {writable && (
+        <button
+          type="button"
+          onClick={openAdd}
+          aria-label={t("Add Collection", "வரவு சேர்க்க")}
+          title={t("Add Collection", "வரவு சேர்க்க")}
+          className="fixed bottom-24 right-4 z-50 flex size-14 items-center justify-center rounded-full bg-saffron-500 text-white shadow-xl shadow-saffron-500/30 transition-all active:scale-95 hover:scale-105 hover:bg-saffron-600 focus:outline-none focus:ring-4 focus:ring-saffron-500/30 dark:text-navy-950 sm:bottom-6 sm:right-6 sm:size-12"
+        >
+          <Plus className="size-6" />
+        </button>
+      )}
 
       {/* add/edit modal */}
       <Modal
