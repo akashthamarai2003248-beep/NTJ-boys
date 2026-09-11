@@ -73,6 +73,15 @@ describe("registration", () => {
       applyRegister(db, { name: "A", phone: "9840010999", email: "x@nbm.demo", password: "123" }),
     ).toThrow(/password/i);
   });
+
+  it("allows registration with phone and password without email", () => {
+    const db = freshDB();
+    const user = applyRegister(db, { name: "Thamarai", phone: "9840010888", password: "secretPassword" });
+    expect(user.phone).toBe("9840010888");
+    expect(user.name).toBe("Thamarai");
+    expect(user.role).toBe("member");
+    expect(user.email).toBe("9840010888@nbm.mandram");
+  });
 });
 
 describe("dates & ids", () => {

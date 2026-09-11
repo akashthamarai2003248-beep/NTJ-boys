@@ -24,11 +24,13 @@ export async function POST(req: Request) {
       password?: string;
     };
     const name = body.name?.trim() ?? "";
-    const email = (body.email?.trim() ?? "").toLowerCase();
     const phone = normalizePhone(body.phone ?? "");
+    if (body.email?.trim() && !body.email.includes("@")) {
+      return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
+    }
+    const email = (body.email?.trim() || `${phone}@nbm.mandram`).toLowerCase();
     const password = body.password ?? "";
     if (!name) return NextResponse.json({ error: "Enter your name" }, { status: 400 });
-    if (!email || !email.includes("@")) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
     if (phone.length < 10) return NextResponse.json({ error: "Enter a valid 10-digit phone number" }, { status: 400 });
     if (password.length < 6) return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
 
@@ -49,7 +51,7 @@ export async function POST(req: Request) {
       });
       if (error) {
         const msg = error.message?.toLowerCase().includes("already registered")
-          ? "This email is already registered — try logging in"
+          ? "This phone number is already registered — try logging in"
           : error.message;
         return NextResponse.json({ error: msg }, { status: 400 });
       }

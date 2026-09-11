@@ -50,11 +50,14 @@ export function getUserById(id: string | undefined | null): DemoUser | null {
 
 export function findUser(identifier: string, password: string): DemoUser | null {
   const key = identifier.trim().toLowerCase();
+  const phoneKey = normalizePhone(key);
   return (
     getDB().users.find(
       (u) =>
         u.password === password &&
-        (u.email.toLowerCase() === key || normalizePhone(u.phone) === normalizePhone(key)),
+        (u.email.toLowerCase() === key ||
+         (phoneKey && normalizePhone(u.phone) === phoneKey) ||
+         (phoneKey && u.email.toLowerCase() === `${phoneKey}@nbm.mandram`)),
     ) ?? null
   );
 }
@@ -64,18 +67,18 @@ export function findUser(identifier: string, password: string): DemoUser | null 
 export interface RegisterInput {
   name: string;
   phone: string;
-  email: string;
+  email?: string;
   password: string;
 }
 
-function validateRegister(raw: RegisterInput): RegisterInput {
+function validateRegister(raw: RegisterInput): { name: string; phone: string; email: string; password: string } {
   const name = raw.name?.trim();
-  const email = raw.email?.trim().toLowerCase();
   const phone = normalizePhone(raw.phone);
-  const password = raw.password ?? "";
   if (!name) throw new HttpError(400, "Enter your name");
-  if (!email || !email.includes("@")) throw new HttpError(400, "Enter a valid email address");
   if (phone.length < 10) throw new HttpError(400, "Enter a valid 10-digit phone number");
+  if (raw.email?.trim() && !raw.email.includes("@")) throw new HttpError(400, "Enter a valid email address");
+  const email = (raw.email?.trim() || `${phone}@nbm.mandram`).toLowerCase();
+  const password = raw.password ?? "";
   if (password.length < 6) throw new HttpError(400, "Password must be at least 6 characters");
   return { name, phone, email, password };
 }
@@ -85,7 +88,7 @@ export function applyRegister(db: DB, raw: RegisterInput): DemoUser {
   const input = validateRegister(raw);
   if (db.users.some((u) => normalizePhone(u.phone) === input.phone))
     throw new HttpError(409, "This phone number is already registered");
-  if (db.users.some((u) => u.email.toLowerCase() === input.email))
+  if (raw.email?.trim() && db.users.some((u) => u.email.toLowerCase() === input.email))
     throw new HttpError(409, "This email is already registered");
   const user: DemoUser = {
     id: uid("usr"),

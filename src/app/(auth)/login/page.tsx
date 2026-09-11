@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type FormEvent, type InputHTMLAttributes
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Eye, EyeOff, Lock, ShieldCheck, UserRound,
+  Eye, EyeOff, Lock, Phone, ShieldCheck, UserRound,
 } from "lucide-react";
 import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
@@ -110,7 +110,7 @@ function LoginInner() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(0);
-  const [reg, setReg] = useState({ name: "", phone: "", email: "", password: "" });
+  const [reg, setReg] = useState({ name: "", phone: "", password: "" });
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
@@ -182,7 +182,7 @@ function LoginInner() {
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault();
-    if (!identifier.trim() || !password) return fail(tr("Enter phone/email and password", "தொலைபேசி/மின்னஞ்சல் மற்றும் கடவுச்சொல்லை உள்ளிடவும்"));
+    if (!identifier.trim() || !password) return fail(tr("Enter phone number and password", "தொலைபேசி எண் மற்றும் கடவுச்சொல்லை உள்ளிடவும்"));
     void login(identifier, password);
   };
 
@@ -190,15 +190,28 @@ function LoginInner() {
     e.preventDefault();
     setRegError("");
     setRegDone(false);
-    if (!reg.name.trim() || !reg.phone.trim() || !reg.email.trim() || !reg.password) {
+    if (!reg.name.trim() || !reg.phone.trim() || !reg.password) {
       setRegError(tr("Fill in all the fields", "அனைத்து புலங்களையும் நிரப்பவும்"));
+      return;
+    }
+    const cleanPhone = reg.phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      setRegError(tr("Enter a valid 10-digit phone number", "சரியான 10 இலக்க தொலைபேசி எண்ணை உள்ளிடவும்"));
+      return;
+    }
+    if (reg.password.length < 6) {
+      setRegError(tr("Password must be at least 6 characters", "கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்"));
       return;
     }
     setRegLoading(true);
     try {
       const res = await api.post<{ user?: SessionUser; needsConfirmation?: boolean; email?: string }>(
         "/api/auth/register",
-        reg,
+        {
+          name: reg.name,
+          phone: reg.phone,
+          password: reg.password,
+        },
       );
       if (res.needsConfirmation) {
         setRegDone(true);
@@ -273,11 +286,11 @@ function LoginInner() {
                 <HeroInput
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={tr("Phone number / Email", "தொலைபேசி எண் / மின்னஞ்சல்")}
-                  icon={<UserRound className="size-4" />}
-                  autoComplete="username"
-                  inputMode="email"
-                  aria-label={tr("Phone number or email", "தொலைபேசி எண் அல்லது மின்னஞ்சல்")}
+                  placeholder={tr("Phone number", "தொலைபேசி எண்")}
+                  icon={<Phone className="size-4" />}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  aria-label={tr("Phone number", "தொலைபேசி எண்")}
                 />
                 <div className="relative">
                   <HeroInput
@@ -360,20 +373,10 @@ function LoginInner() {
                   value={reg.phone}
                   onChange={(e) => setReg((r) => ({ ...r, phone: e.target.value }))}
                   placeholder={tr("Phone number", "தொலைபேசி எண்")}
-                  icon={<UserRound className="size-4" />}
+                  icon={<Phone className="size-4" />}
                   autoComplete="tel"
                   inputMode="tel"
                   aria-label={tr("Phone number", "தொலைபேசி எண்")}
-                />
-                <HeroInput
-                  type="email"
-                  value={reg.email}
-                  onChange={(e) => setReg((r) => ({ ...r, email: e.target.value }))}
-                  placeholder={tr("Email", "மின்னஞ்சல்")}
-                  icon={<UserRound className="size-4" />}
-                  autoComplete="email"
-                  inputMode="email"
-                  aria-label={tr("Email", "மின்னஞ்சல்")}
                 />
                 <div className="relative">
                   <HeroInput
@@ -404,8 +407,8 @@ function LoginInner() {
                 {regDone ? (
                   <p className="rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-[12.5px] font-medium text-emerald-200">
                     {tr(
-                      "Account created! Check your email to confirm, then log in.",
-                      "கணக்கு உருவாக்கப்பட்டது! உறுதிப்படுத்த மின்னஞ்சலைப் பார்க்கவும், பிறகு உள்நுழையவும்.",
+                      "Account created! You can now log in with your phone number.",
+                      "கணக்கு உருவாக்கப்பட்டது! இப்போது உங்கள் தொலைபேசி எண்ணைப் பயன்படுத்தி உள்நுழையலாம்.",
                     )}
                   </p>
                 ) : null}
