@@ -28,13 +28,13 @@ import { addDaysISO, toISO } from "@/lib/utils/date";
 export const DEMO_TOTALS = { varavu: 85500, selavu: 42750 } as const;
 
 export const DEMO_CREDENTIALS = [
-  { role: "admin", email: "admin@nbm.demo", password: "admin123", name: "Sundaravel Rajan" },
+  { role: "admin", email: "admin@nbm.demo", password: "admin123", name: "Akash" },
   { role: "treasurer", email: "treasurer@nbm.demo", password: "treasurer123", name: "Muthu Kannan" },
   { role: "member", email: "member@nbm.demo", password: "member123", name: "Karthik Raja" },
 ] as const;
 
 const NAMES = [
-  "Sundaravel Rajan", "Muthu Kannan", "Karthik Raja", "Palanisamy Gounder",
+  "Akash", "Muthu Kannan", "Karthik Raja", "Palanisamy Gounder",
   "Murugan Selvam", "Ravi Kumar", "Vignesh Anand", "Suresh Babu",
   "Manikandan Ram", "Kathir Vel", "Dinesh Pandian", "Prakash Rao",
   "Selvam Annamalai", "Ganesh Kumar", "Boopathy Chelliah", "Arumugam Siva",
@@ -172,7 +172,7 @@ export function buildSeed(now: Date = new Date()): DB {
   // Demo sign-in users also appear as board members
   const users: DemoUser[] = [
     {
-      id: "usr_admin", name: "Sundaravel Rajan", phone: "9840010001",
+      id: "usr_admin", name: "Akash", phone: "9840010001",
       email: "admin@nbm.demo", password: "admin123", role: "admin", position: "President",
     },
     {
@@ -274,12 +274,12 @@ export function buildSeed(now: Date = new Date()): DB {
         category: e.cat,
         amount: e.amount,
         eventId: e.eventId,
-        paidBy: i % 4 === 0 ? "Sundaravel Rajan" : "Muthu Kannan",
+        paidBy: i % 4 === 0 ? "Akash" : "Muthu Kannan",
         date,
         paymentMethod: e.method,
         description: null,
         billUrl: null,
-        createdBy: i % 3 === 0 ? "Sundaravel Rajan" : "Muthu Kannan",
+        createdBy: i % 3 === 0 ? "Akash" : "Muthu Kannan",
         createdAt: ts,
         updatedAt: ts,
       };
@@ -422,9 +422,9 @@ export function buildSeed(now: Date = new Date()): DB {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
   const gallery: GalleryPhoto[] = [
-    { id: "gal_01", eventId: "evt_vini", url: svgScene("🪔", "#0a1330", "#3d5fac", "Vinayagar Chathurthi 2026"), caption: "Pandal lighting on the first evening", uploadedBy: "Sundaravel Rajan", createdAt: new Date(now.getTime() - 4 * 86400000).toISOString() },
+    { id: "gal_01", eventId: "evt_vini", url: svgScene("🪔", "#0a1330", "#3d5fac", "Vinayagar Chathurthi 2026"), caption: "Pandal lighting on the first evening", uploadedBy: "Akash", createdAt: new Date(now.getTime() - 4 * 86400000).toISOString() },
     { id: "gal_02", eventId: "evt_vini", url: svgScene("🌺", "#7e3e10", "#ed7a10", "Flower garland for the idol"), caption: "மாலை அலங்காரம் — garland decoration", uploadedBy: "Muthu Kannan", createdAt: new Date(now.getTime() - 6 * 86400000).toISOString() },
-    { id: "gal_03", eventId: "evt_pongal", url: svgScene("🌾", "#1b6c47", "#e7b942", "Pongal 2027 · கரும்பு"), caption: "Sugarcane & kolam ready for Pongal", uploadedBy: "Sundaravel Rajan", createdAt: new Date(now.getTime() - 2 * 86400000).toISOString() },
+    { id: "gal_03", eventId: "evt_pongal", url: svgScene("🌾", "#1b6c47", "#e7b942", "Pongal 2027 · கரும்பு"), caption: "Sugarcane & kolam ready for Pongal", uploadedBy: "Akash", createdAt: new Date(now.getTime() - 2 * 86400000).toISOString() },
     { id: "gal_04", eventId: "evt_sports", url: svgScene("🏏", "#0c1b3f", "#ff9933", "Summer Cricket Cup 2026"), caption: "Final over of the cricket cup final", uploadedBy: "Karthik Raja", createdAt: new Date(now.getTime() - 55 * 86400000).toISOString() },
     { id: "gal_05", eventId: null, url: svgScene("🎉", "#2d4790", "#31a76c", "Community celebration"), caption: "Prize distribution evening", uploadedBy: "Muthu Kannan", createdAt: new Date(now.getTime() - 30 * 86400000).toISOString() },
   ];
@@ -432,7 +432,7 @@ export function buildSeed(now: Date = new Date()): DB {
   /* ── Activity + settings ── */
   const activity = [
     ...collections.slice(-6).map((c) => ({
-      id: `act_c_${c.id}`, actorId: "usr_admin", actorName: "Sundaravel Rajan",
+      id: `act_c_${c.id}`, actorId: "usr_admin", actorName: "Akash",
       action: "added" as const, entity: "collection" as const, label: c.personName,
       amount: c.amount, eventName: null, at: c.createdAt,
     })),

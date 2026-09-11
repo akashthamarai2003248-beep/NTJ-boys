@@ -8,6 +8,7 @@ import type { PaymentMethod } from "@/lib/data/types";
  */
 
 export const PERSON_NAMES_EN_TO_TA: Record<string, string> = {
+  "Akash": "ஆகாஷ்",
   "Sundaravel Rajan": "சுந்தரவேல் ராஜன்",
   "Muthu Kannan": "முத்து கண்ணன்",
   "Karthik Raja": "கார்த்திக் ராஜா",
