@@ -216,7 +216,7 @@ export function OverviewChart({
 
       {/* Chart Canvas */}
       <div className="mt-3 h-56 w-full min-w-0 overflow-hidden sm:h-60">
-        {loading ? (
+        {loading && (!data || data.length === 0) ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-40 w-full animate-pulse rounded-xl bg-surface-2" />
           </div>

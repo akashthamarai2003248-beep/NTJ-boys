@@ -32,10 +32,17 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
   const { t } = useLang();
   const [period, setPeriod] = useState<PeriodKey>("year");
   const { data, loading } = useFetch<DashboardPayload>(
-    `/api/dashboard${qs({ period })}`,
-    [period],
-    initialData && period === "year" ? initialData : undefined,
+    "/api/dashboard",
+    [],
+    initialData,
   );
+
+  const activeSeries = useMemo(() => {
+    if (data?.allSeries && data.allSeries[period]) {
+      return data.allSeries[period];
+    }
+    return data?.series ?? [];
+  }, [data, period]);
 
   const stats = useMemo(
     () =>
@@ -153,7 +160,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
       {/* Chart + activity */}
       <div className="grid gap-4 lg:grid-cols-5 lg:gap-5">
         <div className="lg:col-span-3">
-          <OverviewChart period={period} onPeriodChange={setPeriod} data={data?.series ?? []} loading={loading} />
+          <OverviewChart period={period} onPeriodChange={setPeriod} data={activeSeries} loading={loading && (!data || !activeSeries.length)} />
         </div>
         <motion.section
           initial={{ opacity: 0, y: 6 }}

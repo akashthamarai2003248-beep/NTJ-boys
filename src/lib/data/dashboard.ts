@@ -1,4 +1,4 @@
-﻿import { loadDashboardDB } from "@/lib/data/supabase-store";
+import { loadDashboardDB } from "@/lib/data/supabase-store";
 import { buildSeries, listUpcoming, recentActivity, totals, type Period, type SeriesBucket } from "@/lib/data/repository";
 import type { ActivityLog, EventWithStats, MemberPosition } from "@/lib/data/types";
 
@@ -14,6 +14,7 @@ export interface DashboardPayload {
     expenseCount?: number;
   };
   series: SeriesBucket[];
+  allSeries?: Record<Period, SeriesBucket[]>;
   events: (EventWithStats & { role?: MemberPosition })[];
   activity: ActivityLog[];
 }
@@ -21,6 +22,12 @@ export interface DashboardPayload {
 export async function getDashboardPayload(period: Period = "year"): Promise<DashboardPayload> {
   const db = await loadDashboardDB();
   const t = totals(db);
+  const allSeries: Record<Period, SeriesBucket[]> = {
+    week: buildSeries(db, "week"),
+    month: buildSeries(db, "month"),
+    year: buildSeries(db, "year"),
+    all: buildSeries(db, "all"),
+  };
   return {
     totals: {
       varavu: t.varavu,
@@ -32,7 +39,8 @@ export async function getDashboardPayload(period: Period = "year"): Promise<Dash
       collectionCount: db.collections.length,
       expenseCount: db.expenses.length,
     },
-    series: buildSeries(db, period),
+    series: allSeries[period] ?? allSeries.year,
+    allSeries,
     events: listUpcoming(db, 4),
     activity: recentActivity(db, 8),
   };

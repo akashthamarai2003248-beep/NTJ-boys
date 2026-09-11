@@ -177,7 +177,7 @@ export function prefetchRoute(route: string) {
   } else if (route === "/events" || route.startsWith("/events")) {
     void prefetchData("/api/events");
   } else if (route === "/") {
-    void prefetchData("/api/dashboard?period=year");
+    void prefetchData("/api/dashboard");
   } else if (route === "/members") {
     void prefetchData("/api/members?page=1&perPage=15");
   } else if (route === "/reports") {
@@ -191,7 +191,7 @@ export function prefetchCoreRoutes() {
   void prefetchData("/api/collections?page=1&perPage=10");
   void prefetchData("/api/expenses?page=1&perPage=10");
   void prefetchData("/api/events");
-  void prefetchData("/api/dashboard?period=year");
+  void prefetchData("/api/dashboard");
 }
 
 /**
