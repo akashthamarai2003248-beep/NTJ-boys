@@ -81,7 +81,7 @@ export async function POST(req: Request) {
           // and resolveSupabaseUser self-heals upon first login.
           if (data.session) {
             return NextResponse.json(
-              { error: "Account created, but the profile couldn't be saved — contact the Mandram admin." },
+              { error: "Account created, but the profile couldn't be saved — contact the app admin (Akash)." },
               { status: 409 },
             );
           }

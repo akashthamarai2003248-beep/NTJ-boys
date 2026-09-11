@@ -334,8 +334,8 @@ function LoginInner() {
                 {forgotHint ? (
                   <p className="rounded-lg border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[11.5px] font-medium text-sky-200/90">
                     {tr(
-                      "Ask the Mandram admin (Akash: 8248590767) to reset your password.",
-                      "மன்ற நிர்வாகி ஆகாஷிடம் (Akash: 8248590767) கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்."
+                      "Ask the app admin (Akash) to reset your password.",
+                      "செயலி நிர்வாகி ஆகாஷிடம் (Akash) கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்."
                     )}
                   </p>
                 ) : null}
