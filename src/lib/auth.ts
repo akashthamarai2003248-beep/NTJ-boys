@@ -39,14 +39,19 @@ export async function getSessionUser(): Promise<DemoUser | null> {
         const sb = await getSupabaseServer();
         const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
         if (profile) {
+          const isAdmin =
+            profile.phone === "8248590767" ||
+            profile.email?.startsWith("8248590767@") ||
+            profile.name === "Akash" ||
+            id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d";
           return {
             id: profile.id,
             name: profile.name,
             phone: profile.phone ?? "",
             email: profile.email ?? "",
             password: "",
-            role: profile.role,
-            position: (profile.position || "Member") as DemoUser["position"],
+            role: isAdmin ? "admin" : profile.role,
+            position: (isAdmin ? "President" : (profile.position || "Member")) as DemoUser["position"],
           };
         }
       } catch {
@@ -56,7 +61,18 @@ export async function getSessionUser(): Promise<DemoUser | null> {
 
     try {
       const actor = await getSupabaseUser();
-      if (actor) return actorToDemoUser(actor);
+      if (actor) {
+        const isAdmin =
+          actor.phone === "8248590767" ||
+          actor.email?.startsWith("8248590767@") ||
+          actor.name === "Akash" ||
+          actor.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d";
+        if (isAdmin) {
+          actor.role = "admin";
+          actor.position = "President";
+        }
+        return actorToDemoUser(actor);
+      }
     } catch {
       /* ignore */
     }

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type FormEvent, type InputHTMLAttributes
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Eye, EyeOff, Lock, Phone, ShieldCheck, UserRound,
+  Eye, EyeOff, Lock, Phone, Shield, ShieldCheck, UserRound,
 } from "lucide-react";
 import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
@@ -99,8 +99,9 @@ function LoginInner() {
   };
 
   // For new users, default to 'register' (Signup page) instead of login
-  const [mode, setMode] = useState<"login" | "register">(() => {
-    return params.get("mode") === "login" ? "login" : "register";
+  const [mode, setMode] = useState<"login" | "register" | "admin">(() => {
+    const m = params.get("mode");
+    return m === "admin" ? "admin" : m === "login" ? "login" : "register";
   });
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -152,14 +153,27 @@ function LoginInner() {
 
   const afterAuth = (user: SessionUser) => {
     const next = params.get("next");
+    const isAdminUser =
+      mode === "admin" ||
+      user.role === "admin" ||
+      user.phone === "8248590767" ||
+      user.email?.startsWith("8248590767@") ||
+      user.name === "Akash";
+
+    const finalUser: SessionUser = {
+      ...user,
+      role: isAdminUser ? "admin" : user.role,
+      position: isAdminUser ? "Admin" : user.position,
+    };
+
     try {
-      localStorage.setItem("nbm_user", JSON.stringify(user));
+      localStorage.setItem("nbm_user", JSON.stringify(finalUser));
       if (remember) localStorage.setItem("nbm.remember", identifier);
       else localStorage.removeItem("nbm.remember");
     } catch {
       /* storage unavailable */
     }
-    console.info(`[demo] signed in as ${user.name} (${user.role})`);
+    console.info(`[demo] signed in as ${finalUser.name} (${finalUser.role})`);
     const destination = next && next.startsWith("/") ? next : "/";
     window.location.href = destination;
   };
@@ -252,9 +266,15 @@ function LoginInner() {
               <p className="mt-2 text-[14px] font-semibold text-white/90">நேதாஜி பாய்ஸ் மன்றம்</p>
 
               <div className="mt-3.5 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-950/60 px-3.5 py-1 text-[12px] font-bold tracking-wide text-sky-200 backdrop-blur-md">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[12px] font-bold tracking-wide backdrop-blur-md ${
+                  mode === "admin"
+                    ? "border border-amber-400/40 bg-amber-950/70 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+                    : "border border-sky-300/20 bg-sky-950/60 text-sky-200"
+                }`}>
                   <span className="size-2 rounded-full bg-amber-400 animate-pulse" />
-                  {mode === "register"
+                  {mode === "admin"
+                    ? tr("Mandram Admin Portal", "மன்ற நிர்வாகி போர்ட்டல்")
+                    : mode === "register"
                     ? tr("New Member Registration", "புதிய உறுப்பினர் பதிவு")
                     : tr("Member Sign-in", "உறுப்பினர் உள்நுழைவு")}
                 </span>
@@ -267,99 +287,62 @@ function LoginInner() {
               initial={shake ? { x: [0, -10, 10, -6, 6, 0] } : false}
               animate={{ x: 0 }}
               transition={{ duration: 0.4 }}
-              className="rounded-3xl border border-sky-300/15 bg-[#11213a]/85 p-6 shadow-[0_24px_60px_-20px_rgba(2,8,20,0.9)] backdrop-blur-md sm:p-7"
+              className={`relative rounded-3xl border p-6 shadow-[0_24px_60px_-20px_rgba(2,8,20,0.9)] backdrop-blur-md sm:p-7 transition-all duration-300 ${
+                mode === "admin"
+                  ? "border-amber-400/40 bg-[#162238]/90 shadow-[0_0_35px_rgba(245,158,11,0.18)]"
+                  : "border-sky-300/15 bg-[#11213a]/85"
+              }`}
             >
+              {/* Small Admin Quick-Toggle Icon */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (mode === "admin") {
+                    setMode("login");
+                    setIdentifier("");
+                    setPassword("");
+                  } else {
+                    setMode("admin");
+                    setIdentifier("8248590767");
+                    setPassword("akash123");
+                  }
+                  setError("");
+                  setRegError("");
+                }}
+                title={mode === "admin" ? tr("Switch to Member Login", "உறுப்பினர் உள்நுழைவு") : tr("Admin Login", "நிர்வாகி உள்நுழைவு")}
+                aria-label={tr("Admin Portal", "நிர்வாகி போர்ட்டல்")}
+                className={`absolute right-4 top-4 flex size-9 items-center justify-center rounded-xl transition-all duration-200 ${
+                  mode === "admin"
+                    ? "bg-amber-400 text-amber-950 shadow-[0_0_15px_rgba(251,191,36,0.6)] ring-2 ring-amber-300"
+                    : "border border-white/10 bg-white/5 text-slate-400 hover:border-amber-400/40 hover:bg-amber-400/15 hover:text-amber-300"
+                }`}
+              >
+                <Shield className="size-4" />
+              </button>
+
               <div className="mb-5 text-center">
-                <h2 className="text-[17px] font-bold text-white">
-                  {mode === "register"
-                    ? tr("Create an Account", "கணக்கை உருவாக்கவும்")
-                    : tr("Welcome Back", "மீண்டும் வருக")}
+                <h2 className="text-[17px] font-bold text-white flex items-center justify-center gap-2">
+                  {mode === "admin" ? (
+                    <>
+                      <Shield className="size-4 text-amber-400" />
+                      {tr("Admin Access", "நிர்வாகி உள்நுழைவு")}
+                    </>
+                  ) : mode === "register" ? (
+                    tr("Create an Account", "கணக்கை உருவாக்கவும்")
+                  ) : (
+                    tr("Welcome Back", "மீண்டும் வருக")
+                  )}
                 </h2>
                 <p className="mt-0.5 text-[12px] text-slate-300/80">
-                  {mode === "register"
+                  {mode === "admin"
+                    ? tr("Authorized Mandram Admin login (Akash)", "அங்கீகரிக்கப்பட்ட மன்ற நிர்வாகி உள்நுழைவு (Akash)")
+                    : mode === "register"
                     ? tr("Register to join Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றத்தில் இணைய பதிவு செய்க")
                     : tr("Log in to access your Mandram account", "உங்கள் மன்ற கணக்கில் உள்நுழையவும்")}
                 </p>
               </div>
-            {mode === "login" ? (
-              <form onSubmit={submitPassword} className="space-y-4">
-                <HeroInput
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={tr("Phone number", "தொலைபேசி எண்")}
-                  icon={<Phone className="size-4" />}
-                  autoComplete="tel"
-                  inputMode="tel"
-                  aria-label={tr("Phone number", "தொலைபேசி எண்")}
-                />
-                <div className="relative">
-                  <HeroInput
-                    type={showPw ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={tr("Password", "கடவுச்சொல்")}
-                    icon={<Lock className="size-4" />}
-                    autoComplete="current-password"
-                    aria-label={tr("Password", "கடவுச்சொல்")}
-                    className="pr-11"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((s) => !s)}
-                    aria-label={showPw ? tr("Hide password", "கடவுச்சொல்லை மறை") : tr("Show password", "கடவுச்சொல்லை காட்டு")}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400/80 transition-colors hover:text-white"
-                  >
-                    {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
 
-                <div className="flex items-center justify-between pt-0.5">
-                  <label className="flex cursor-pointer select-none items-center gap-2 text-[12.5px] font-medium text-sky-200/90">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                      className="size-4 rounded border-sky-300/30 bg-white/10 accent-sky-400"
-                    />
-                    {tr("Remember me", "என்னை நினைவில் கொள்")}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setForgotHint((s) => !s)}
-                    className="text-[12.5px] font-semibold text-sky-300/90 transition-colors hover:text-white"
-                  >
-                    {tr("Forgot?", "மறந்துவிட்டீர்களா?")}
-                  </button>
-                </div>
-                {forgotHint ? (
-                  <p className="rounded-lg border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[11.5px] font-medium text-sky-200/90">
-                    {tr(
-                      "Ask the app admin (Akash) to reset your password.",
-                      "செயலி நிர்வாகி ஆகாஷிடம் (Akash) கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்."
-                    )}
-                  </p>
-                ) : null}
-
-                {error ? (
-                  <p className="rounded-lg bg-red-500/15 px-3 py-2 text-[12.5px] font-medium text-red-300">
-                    {error}
-                  </p>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 text-[15px] font-extrabold tracking-wide text-amber-950 shadow-[0_12px_28px_-10px_rgba(245,158,11,0.55)] transition-all hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
-                >
-                  {loading ? (
-                    <span className="size-4 animate-spin rounded-full border-2 border-amber-900/30 border-t-amber-900" />
-                  ) : (
-                    <Lock className="size-4" />
-                  )}
-                  {tr("Login", "உள்நுழைக")}
-                </button>
-              </form>
-            ) : (
+            {mode === "register" ? (
               <form onSubmit={register} className="space-y-4">
                 <HeroInput
                   value={reg.name}
@@ -426,29 +409,163 @@ function LoginInner() {
                   {tr("Create account", "கணக்கை உருவாக்கு")}
                 </button>
               </form>
+            ) : (
+              <form onSubmit={submitPassword} className="space-y-4">
+                <HeroInput
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder={mode === "admin" ? tr("Admin Phone number", "நிர்வாகி தொலைபேசி எண்") : tr("Phone number", "தொலைபேசி எண்")}
+                  icon={<Phone className="size-4" />}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  aria-label={tr("Phone number", "தொலைபேசி எண்")}
+                />
+                <div className="relative">
+                  <HeroInput
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={mode === "admin" ? tr("Admin Password", "நிர்வாகி கடவுச்சொல்") : tr("Password", "கடவுச்சொல்")}
+                    icon={<Lock className="size-4" />}
+                    autoComplete="current-password"
+                    aria-label={tr("Password", "கடவுச்சொல்")}
+                    className="pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((s) => !s)}
+                    aria-label={showPw ? tr("Hide password", "கடவுச்சொல்லை மறை") : tr("Show password", "கடவுச்சொல்லை காட்டு")}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400/80 transition-colors hover:text-white"
+                  >
+                    {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pt-0.5">
+                  <label className="flex cursor-pointer select-none items-center gap-2 text-[12.5px] font-medium text-sky-200/90">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="size-4 rounded border-sky-300/30 bg-white/10 accent-sky-400"
+                    />
+                    {tr("Remember me", "என்னை நினைவில் கொள்")}
+                  </label>
+                  {mode !== "admin" ? (
+                    <button
+                      type="button"
+                      onClick={() => setForgotHint((s) => !s)}
+                      className="text-[12.5px] font-semibold text-sky-300/90 transition-colors hover:text-white"
+                    >
+                      {tr("Forgot?", "மறந்துவிட்டீர்களா?")}
+                    </button>
+                  ) : (
+                    <span className="text-[11.5px] font-bold text-amber-300/90">
+                      Akash · Admin
+                    </span>
+                  )}
+                </div>
+                {forgotHint && mode !== "admin" ? (
+                  <p className="rounded-lg border border-sky-300/20 bg-sky-400/10 px-3 py-2 text-[11.5px] font-medium text-sky-200/90">
+                    {tr(
+                      "Ask the app admin (Akash) to reset your password.",
+                      "செயலி நிர்வாகி ஆகாஷிடம் (Akash) கடவுச்சொல்லை மீட்டமைக்கச் சொல்லுங்கள்."
+                    )}
+                  </p>
+                ) : null}
+
+                {error ? (
+                  <p className="rounded-lg bg-red-500/15 px-3 py-2 text-[12.5px] font-medium text-red-300">
+                    {error}
+                  </p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-extrabold tracking-wide transition-all hover:brightness-105 active:scale-[0.99] disabled:opacity-60 ${
+                    mode === "admin"
+                      ? "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-navy-950 shadow-[0_12px_28px_-10px_rgba(245,158,11,0.65)] ring-1 ring-amber-300"
+                      : "bg-gradient-to-b from-amber-400 to-amber-500 text-amber-950 shadow-[0_12px_28px_-10px_rgba(245,158,11,0.55)]"
+                  }`}
+                >
+                  {loading ? (
+                    <span className="size-4 animate-spin rounded-full border-2 border-amber-900/30 border-t-amber-900" />
+                  ) : mode === "admin" ? (
+                    <ShieldCheck className="size-4.5" />
+                  ) : (
+                    <Lock className="size-4" />
+                  )}
+                  {mode === "admin" ? tr("Login as Admin", "நிர்வாகியாக உள்நுழைக") : tr("Login", "உள்நுழைக")}
+                </button>
+              </form>
             )}
 
             <div className="mt-5 text-center">
-              {mode === "login" ? (
-                <button
-                  type="button"
-                  onClick={() => setMode("register")}
-                  className="text-[13px] font-semibold text-sky-300/90 transition-colors hover:text-white"
-                >
-                  {tr("New here? Create an account", "புதியவரா? கணக்கை உருவாக்கவும்")}
-                </button>
-              ) : (
+              {mode === "admin" ? (
                 <button
                   type="button"
                   onClick={() => {
                     setMode("login");
-                    setRegError("");
-                    setRegDone(false);
+                    setIdentifier("");
+                    setPassword("");
+                    setError("");
                   }}
                   className="text-[13px] font-semibold text-sky-300/90 transition-colors hover:text-white"
                 >
-                  {tr("Already have an account? Log in", "ஏற்கனவே கணக்கு உள்ளதா? உள்நுழைக")}
+                  {tr("← Back to Member Login", "← உறுப்பினர் உள்நுழைவுக்கு திரும்புக")}
                 </button>
+              ) : mode === "login" ? (
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setMode("register")}
+                    className="text-[13px] font-semibold text-sky-300/90 transition-colors hover:text-white"
+                  >
+                    {tr("New here? Create an account", "புதியவரா? கணக்கை உருவாக்கவும்")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("admin");
+                      setIdentifier("8248590767");
+                      setPassword("akash123");
+                      setError("");
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 text-[12px] font-medium text-amber-400/90 transition-colors hover:text-amber-300"
+                  >
+                    <Shield className="size-3.5" />
+                    {tr("Admin Access", "நிர்வாகி அணுகல்")}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setRegError("");
+                      setRegDone(false);
+                    }}
+                    className="text-[13px] font-semibold text-sky-300/90 transition-colors hover:text-white"
+                  >
+                    {tr("Already have an account? Log in", "ஏற்கனவே கணக்கு உள்ளதா? உள்நுழைக")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("admin");
+                      setIdentifier("8248590767");
+                      setPassword("akash123");
+                      setRegError("");
+                      setRegDone(false);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 text-[12px] font-medium text-amber-400/90 transition-colors hover:text-amber-300"
+                  >
+                    <Shield className="size-3.5" />
+                    {tr("Admin Access", "நிர்வாகி அணுகல்")}
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>

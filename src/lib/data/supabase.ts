@@ -123,7 +123,7 @@ export async function resolveSupabaseUser(
       email: user.email ?? null,
       phone: metaPhone ?? null,
       role,
-      position: role === "admin" ? "Admin" : "Member",
+      position: role === "admin" ? "President" : "Member",
     };
     try {
       await sb.from("users").upsert({
@@ -143,9 +143,9 @@ export async function resolveSupabaseUser(
   const isAdminUser = data.phone === "8248590767" || metaPhone === "8248590767" || user.email?.startsWith("8248590767@");
   if (isAdminUser && data.role !== "admin") {
     try {
-      await sb.from("users").update({ role: "admin", position: "Admin" }).eq("id", user.id);
+      await sb.from("users").update({ role: "admin", position: "President" }).eq("id", user.id);
       data.role = "admin";
-      data.position = "Admin";
+      data.position = "President";
     } catch {
       /* ignore */
     }
@@ -156,8 +156,8 @@ export async function resolveSupabaseUser(
     name: data.name,
     email: data.email,
     phone: data.phone,
-    role: data.role,
-    position: data.position,
+    role: isAdminUser ? "admin" : data.role,
+    position: isAdminUser ? "President" : data.position,
   };
 }
 
