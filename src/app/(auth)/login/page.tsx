@@ -2,14 +2,14 @@
 
 import { Suspense, useEffect, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Eye, EyeOff, Lock, ShieldCheck, UserRound,
 } from "lucide-react";
 import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
-import { Button } from "@/components/ui/Button";
+import { SplashScreen } from "@/components/auth/SplashScreen";
 import type { SessionUser } from "@/components/layout/session";
 
 
@@ -70,7 +70,38 @@ function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { t: tr } = useLang();
-  const [mode, setMode] = useState<"login" | "register">("login");
+
+  // Mobile splash screen on launch / first arrival in this browser session
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return !sessionStorage.getItem("nbm_splash_seen");
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("nbm_splash_seen")) {
+        setShowSplash(false);
+      }
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    try {
+      sessionStorage.setItem("nbm_splash_seen", "1");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // For new users, default to 'register' (Signup page) instead of login
+  const [mode, setMode] = useState<"login" | "register">(() => {
+    return params.get("mode") === "login" ? "login" : "register";
+  });
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -182,36 +213,61 @@ function LoginInner() {
   };
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#0b192c] text-white">
-      {/* ── hero ── */}
-      <div className="relative h-[300px] overflow-hidden sm:h-[330px]">
-        <HeroArt />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[#0b192c]" />
-      </div>
+    <>
+      <AnimatePresence>
+        {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+      </AnimatePresence>
 
-      {/* ── content ── */}
-      <div className="relative -mt-9 px-5 pb-12">
-        <div className="mx-auto w-full max-w-[400px]">
-          {/* title */}
-          <div className="mb-6 text-center">
-            <p className="text-[21px] font-black leading-none tracking-[0.02em] text-white">
-              NETHAJI&nbsp;BOYS
-            </p>
-            <p className="mt-1 text-[27px] font-black leading-none tracking-[0.14em] text-amber-400">
-              MANDRAM
-            </p>
-            <p className="mt-2 text-[14px] font-semibold text-white/90">நேதாஜி பாய்ஸ் மன்றம்</p>
-           
-          </div>
+      <div className="relative min-h-dvh overflow-hidden bg-[#0b192c] text-white">
+        {/* ── hero ── */}
+        <div className="relative h-[300px] overflow-hidden sm:h-[330px]">
+          <HeroArt />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[#0b192c]" />
+        </div>
 
-          {/* ── card ── */}
-          <motion.div
-            key={shake}
-            initial={shake ? { x: [0, -10, 10, -6, 6, 0] } : false}
-            animate={{ x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="rounded-3xl border border-sky-300/15 bg-[#11213a]/85 p-6 shadow-[0_24px_60px_-20px_rgba(2,8,20,0.9)] backdrop-blur-md sm:p-7"
-          >
+        {/* ── content ── */}
+        <div className="relative -mt-9 px-5 pb-12">
+          <div className="mx-auto w-full max-w-[400px]">
+            {/* title */}
+            <div className="mb-6 text-center">
+              <p className="text-[21px] font-black leading-none tracking-[0.02em] text-white">
+                NETHAJI&nbsp;BOYS
+              </p>
+              <p className="mt-1 text-[27px] font-black leading-none tracking-[0.14em] text-amber-400">
+                MANDRAM
+              </p>
+              <p className="mt-2 text-[14px] font-semibold text-white/90">நேதாஜி பாய்ஸ் மன்றம்</p>
+
+              <div className="mt-3.5 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-300/20 bg-sky-950/60 px-3.5 py-1 text-[12px] font-bold tracking-wide text-sky-200 backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-amber-400 animate-pulse" />
+                  {mode === "register"
+                    ? tr("New Member Registration", "புதிய உறுப்பினர் பதிவு")
+                    : tr("Member Sign-in", "உறுப்பினர் உள்நுழைவு")}
+                </span>
+              </div>
+            </div>
+
+            {/* ── card ── */}
+            <motion.div
+              key={shake}
+              initial={shake ? { x: [0, -10, 10, -6, 6, 0] } : false}
+              animate={{ x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="rounded-3xl border border-sky-300/15 bg-[#11213a]/85 p-6 shadow-[0_24px_60px_-20px_rgba(2,8,20,0.9)] backdrop-blur-md sm:p-7"
+            >
+              <div className="mb-5 text-center">
+                <h2 className="text-[17px] font-bold text-white">
+                  {mode === "register"
+                    ? tr("Create an Account", "கணக்கை உருவாக்கவும்")
+                    : tr("Welcome Back", "மீண்டும் வருக")}
+                </h2>
+                <p className="mt-0.5 text-[12px] text-slate-300/80">
+                  {mode === "register"
+                    ? tr("Register to join Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றத்தில் இணைய பதிவு செய்க")
+                    : tr("Log in to access your Mandram account", "உங்கள் மன்ற கணக்கில் உள்நுழையவும்")}
+                </p>
+              </div>
             {mode === "login" ? (
               <form onSubmit={submitPassword} className="space-y-4">
                 <HeroInput
@@ -401,5 +457,6 @@ function LoginInner() {
         </div>
       </div>
     </div>
+    </>
   );
 }
