@@ -31,11 +31,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions } from "@/components/shared/RowActions";
 import { PaymentLabel, paymentMeta } from "@/components/shared/meta";
 import { formatINR } from "@/lib/utils/money";
-import { formatShort } from "@/lib/utils/date";
+import { formatShort, todayISO } from "@/lib/utils/date";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseDetail } from "./ExpenseDetail";
 
 const PER_PAGE = 10;
+const YEAR_OPTIONS = Array.from({ length: 10 }, (_, index) => String(Number(todayISO().slice(0, 4)) - index));
 interface EventsPayload { events: Event[] }
 
 export function ExpensesView() {
@@ -48,6 +49,7 @@ export function ExpensesView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
+  const [year, setYear] = useState(() => searchParams.get("year") ?? "");
   const [payment, setPayment] = useState("");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
@@ -62,8 +64,8 @@ export function ExpensesView() {
   const [celebrate, setCelebrate] = useState<{ title: string; subtitle?: string; amount?: string } | null>(null);
 
   const url = useMemo(
-    () => `/api/expenses${qs({ q: debouncedQ, eventId, payment, page, perPage: PER_PAGE })}`,
-    [debouncedQ, eventId, payment, page],
+    () => `/api/expenses${qs({ q: debouncedQ, eventId, year, payment, page, perPage: PER_PAGE })}`,
+    [debouncedQ, eventId, year, payment, page],
   );
   const { data, loading, reload } = useFetch<ExpensePage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
@@ -75,7 +77,7 @@ export function ExpensesView() {
     },
     [events, lang, t],
   );
-  const hasFilters = Boolean(q || eventId || payment);
+  const hasFilters = Boolean(q || eventId || year || payment);
 
   useEffect(() => {
     if (searchParams.get("add") === "1") router.replace("/expenses", { scroll: false });
@@ -87,7 +89,7 @@ export function ExpensesView() {
     return () => clearTimeout(t);
   }, [celebrate]);
 
-  const clearFilters = () => { setQ(""); setEventId(""); setPayment(""); setPage(1); };
+  const clearFilters = () => { setQ(""); setEventId(""); setYear(""); setPayment(""); setPage(1); };
 
   const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
   const openEdit = (rec: Expense) => { setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
@@ -214,19 +216,30 @@ export function ExpensesView() {
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
               "flex h-10.5 items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-bold transition-all shrink-0",
-              showFilters || (eventId || payment)
+              showFilters || (eventId || year || payment)
                 ? "border-saffron-500 bg-saffron-50 text-saffron-900 shadow-sm dark:bg-saffron-500/15 dark:text-saffron-300"
                 : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
             )}
           >
             <SlidersHorizontal className="size-3.5" />
             <span className="hidden sm:inline">{t("Filters", "வடிகட்டி")}</span>
-            {(eventId ? 1 : 0) + (payment ? 1 : 0) > 0 && (
+            {(eventId ? 1 : 0) + (year ? 1 : 0) + (payment ? 1 : 0) > 0 && (
               <span className="flex size-4.5 items-center justify-center rounded-full bg-saffron-500 text-[10px] font-black text-white">
-                {(eventId ? 1 : 0) + (payment ? 1 : 0)}
+                {(eventId ? 1 : 0) + (year ? 1 : 0) + (payment ? 1 : 0)}
               </span>
             )}
           </button>
+          {writable && (
+            <button
+              type="button"
+              onClick={openAdd}
+              aria-label={t("Add Expense", "செலவு சேர்க்க")}
+              title={t("Add Expense", "செலவு சேர்க்க")}
+              className="flex size-10.5 shrink-0 items-center justify-center rounded-full bg-saffron-500 text-white shadow-sm transition-colors hover:bg-saffron-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/40 dark:text-navy-950"
+            >
+              <Plus className="size-5" />
+            </button>
+          )}
         </div>
 
         {/* Quick Payment Chips */}
@@ -282,12 +295,19 @@ export function ExpensesView() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[12px]">
+              <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
                   <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {events.map((ev) => <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Year</label>
+                  <Select value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                    <option value="">All years</option>
+                    {YEAR_OPTIONS.map((value) => <option key={value} value={value}>{value}</option>)}
                   </Select>
                 </div>
                 <div>
@@ -437,6 +457,8 @@ export function ExpensesView() {
         <ExpenseForm
           events={events}
           initial={editing}
+          defaultEventId={eventId || undefined}
+          defaultYear={year || undefined}
           submitting={submitting}
           error={formError}
           onSubmit={handleSubmit}

@@ -13,13 +13,15 @@ export async function GET(req: Request) {
     const eventId = searchParams.get("eventId");
     const category = searchParams.get("category") as ExpenseCategory | null;
     const payment = searchParams.get("payment") as PaymentMethod | null;
+    const yearParam = searchParams.get("year");
+    const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : undefined;
     const page = queryExpenses(await loadDB(), {
       q: searchParams.get("q") ?? undefined,
       eventId: eventId || undefined,
       category: category || null,
       payment: payment || null,
-      from: searchParams.get("from"),
-      to: searchParams.get("to"),
+      from: year ? `${year}-01-01` : searchParams.get("from"),
+      to: year ? `${year}-12-31` : searchParams.get("to"),
       sort: (searchParams.get("sort") as "newest" | "amount_desc" | "amount_asc" | "title") ?? "newest",
       page: intParam(searchParams.get("page"), 1),
       perPage: Math.min(intParam(searchParams.get("perPage"), 10), 200),

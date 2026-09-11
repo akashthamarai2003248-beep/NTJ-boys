@@ -13,7 +13,7 @@ export type UploadFolder = (typeof ALLOWED_FOLDERS)[number];
 
 export async function POST(req: Request) {
   try {
-    await requireUser(["admin", "treasurer"]);
+    const actor = await requireUser();
 
     const formData = await req.formData();
     const file = formData.get("file");
@@ -21,6 +21,9 @@ export async function POST(req: Request) {
     const folder: UploadFolder = ALLOWED_FOLDERS.includes(rawFolder as UploadFolder)
       ? (rawFolder as UploadFolder)
       : "uploads";
+    if (folder !== "gallery" && actor.role !== "admin" && actor.role !== "treasurer") {
+      return NextResponse.json({ error: "You can upload images only to the gallery" }, { status: 403 });
+    }
 
     if (!file || !(file instanceof Blob)) {
       return NextResponse.json({ error: "No image file provided" }, { status: 400 });

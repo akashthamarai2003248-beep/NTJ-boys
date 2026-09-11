@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -8,18 +8,27 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
-  Calendar,
-  CreditCard,
   FileSpreadsheet,
   FileText,
-  PieChart,
   Receipt,
-  Sparkles,
-  TrendingUp,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { ReportsData } from "@/lib/data/repository";
 import { useFetch } from "@/lib/client/hooks";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -272,6 +281,144 @@ function MiniMetric({
   );
 }
 
+const ANALYTICS_COLORS = ["#ff9933", "#5579c1", "#31a76c", "#d9a128", "#a855f7", "#ef4444"];
+
+function AnalyticsCharts({ data }: { data: ReportsData }) {
+  const { t } = useLang();
+  const eventData = useMemo(
+    () => data.byEvent.filter((event) => event.varavu > 0 || event.selavu > 0).slice(0, 6),
+    [data.byEvent],
+  );
+  const categoryData = useMemo(
+    () => data.byCategory.map((category) => ({ name: category.category, value: category.amount })),
+    [data.byCategory],
+  );
+  const tooltipStyle = {
+    borderRadius: 12,
+    border: "1px solid var(--line)",
+    background: "var(--surface)",
+    color: "var(--ink)",
+    boxShadow: "var(--shadow-card-hover)",
+    fontSize: 12,
+    fontWeight: 700,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 xl:grid-cols-3">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.28 }}
+          className="card-surface overflow-hidden rounded-2xl p-4 sm:p-5 xl:col-span-2"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-[14.5px] font-extrabold">{t("Cash-flow trend", "பணப் புழக்கப் போக்கு")}</p>
+              <p className="mt-0.5 text-[11.5px] font-medium text-muted">{t("Collections and expenses over time", "காலத்தின் அடிப்படையில் வரவு மற்றும் செலவு")}</p>
+            </div>
+            <div className="flex items-center gap-3 text-[10.5px] font-bold">
+              <span className="inline-flex items-center gap-1.5 text-saffron-600 dark:text-saffron-400"><i className="size-2 rounded-full bg-saffron-500" />{t("Collections", "வரவு")}</span>
+              <span className="inline-flex items-center gap-1.5 text-navy-600 dark:text-navy-300"><i className="size-2 rounded-full bg-navy-500" />{t("Expenses", "செலவு")}</span>
+            </div>
+          </div>
+          <div className="mt-4 h-60 w-full sm:h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.cashflow} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="reportIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff9933" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="#ff9933" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="reportExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#5579c1" stopOpacity={0.34} />
+                    <stop offset="100%" stopColor="#5579c1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="3 5" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 700 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : value} width={42} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatINR(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
+                <Area type="monotone" dataKey="varavu" name={t("Collections", "வரவு")} stroke="#ff9933" strokeWidth={2.8} fill="url(#reportIncome)" animationDuration={850} animationEasing="ease-out" />
+                <Area type="monotone" dataKey="selavu" name={t("Expenses", "செலவு")} stroke="#5579c1" strokeWidth={2.5} fill="url(#reportExpense)" animationDuration={950} animationEasing="ease-out" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.34 }}
+          className="card-surface rounded-2xl p-4 sm:p-5"
+        >
+          <p className="text-[14.5px] font-extrabold">{t("Expense split", "செலவுப் பிரிவு")}</p>
+          <p className="mt-0.5 text-[11.5px] font-medium text-muted">{t("Where the money was spent", "செலவிடப்பட்ட இடங்கள்")}</p>
+          {categoryData.length === 0 ? (
+            <div className="flex h-60 items-center justify-center text-center text-[12px] font-medium text-muted">{t("No expenses in this period", "இந்தக் காலத்தில் செலவு இல்லை")}</div>
+          ) : (
+            <>
+              <div className="relative mt-2 h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatINR(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
+                    <Pie data={categoryData} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={3} stroke="none" animationDuration={850} animationEasing="ease-out">
+                      {categoryData.map((entry, index) => <Cell key={entry.name} fill={ANALYTICS_COLORS[index % ANALYTICS_COLORS.length]} />)}
+                    </Pie>
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-faint">{t("Expenses", "செலவு")}</span>
+                  <span className="mt-0.5 text-[16px] font-black tabular-nums">{formatINR(data.totals.selavu)}</span>
+                </div>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                {data.byCategory.slice(0, 4).map((category, index) => (
+                  <div key={category.category} className="flex items-center justify-between gap-2 text-[11px]">
+                    <span className="flex min-w-0 items-center gap-1.5 font-semibold text-muted"><i className="size-2 shrink-0 rounded-full" style={{ backgroundColor: ANALYTICS_COLORS[index % ANALYTICS_COLORS.length] }} /> <span className="truncate">{category.category}</span></span>
+                    <span className="shrink-0 font-extrabold tabular-nums">{category.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </motion.section>
+      </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.39 }}
+        className="card-surface overflow-hidden rounded-2xl p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[14.5px] font-extrabold">{t("Event comparison", "நிகழ்வு ஒப்பீடு")}</p>
+            <p className="mt-0.5 text-[11.5px] font-medium text-muted">{t("Collection versus expense by event", "ஒவ்வொரு நிகழ்வின் வரவு மற்றும் செலவு")}</p>
+          </div>
+          <span className="rounded-lg bg-surface-2 px-2 py-1 text-[10.5px] font-bold text-muted">{eventData.length} {t("active data sets", "தரவு தொகுப்புகள்")}</span>
+        </div>
+        {eventData.length === 0 ? (
+          <div className="flex h-56 items-center justify-center text-[12px] font-medium text-muted">{t("No event finance data in this period", "இந்தக் காலத்தில் நிகழ்வு நிதித் தரவு இல்லை")}</div>
+        ) : (
+          <div className="mt-3 h-60 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={eventData} margin={{ top: 8, right: 4, left: -14, bottom: 0 }} barCategoryGap="26%">
+                <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="3 5" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 700 }} interval={0} tickFormatter={(value: string) => value.length > 13 ? `${value.slice(0, 13)}…` : value} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `${Math.round(value / 1000)}k` : value} width={42} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatINR(Number(Array.isArray(value) ? value[0] : value ?? 0))} />
+                <Bar dataKey="varavu" name={t("Collections", "வரவு")} fill="#ff9933" radius={[6, 6, 0, 0]} maxBarSize={42} animationDuration={850} animationEasing="ease-out" />
+                <Bar dataKey="selavu" name={t("Expenses", "செலவு")} fill="#5579c1" radius={[6, 6, 0, 0]} maxBarSize={42} animationDuration={1000} animationEasing="ease-out" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </motion.section>
+    </div>
+  );
+}
+
 function ReportBody({ data }: { data: ReportsData }) {
   const t = data.totals;
   const { t: translate } = useLang();
@@ -342,6 +489,8 @@ function ReportBody({ data }: { data: ReportsData }) {
           index={2}
         />
       </div>
+
+      <AnalyticsCharts data={data} />
 
       {/* Cashflow Efficiency Progress Card */}
       <motion.div

@@ -763,7 +763,6 @@ function validateGalleryUrl(url: string): string {
 }
 
 export async function createGalleryItem(actor: DemoUser, input: GalleryInput): Promise<GalleryPhoto> {
-  assertPermission(canWriteEvents(actor.role), "Only Admin can upload photos");
   if (!input.url) throw new HttpError(400, "Choose an image");
   const url = validateGalleryUrl(input.url);
   const sb = await getSupabaseServer();
@@ -823,5 +822,4 @@ export async function setSettings(
   });
   return { publicView: data.public_view };
 }
-
 

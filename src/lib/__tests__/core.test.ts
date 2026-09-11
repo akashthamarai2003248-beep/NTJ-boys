@@ -243,6 +243,15 @@ describe("reports & public overview", () => {
     expect(byCat).toBe(r.totals.selavu);
   });
 
+  it("keeps every report breakdown scoped to the selected year", () => {
+    const r = buildReports(db, "2026");
+    expect(r.byEvent.reduce((sum, event) => sum + event.varavu, 0)).toBe(r.totals.varavu);
+    expect(r.byEvent.reduce((sum, event) => sum + event.selavu, 0)).toBe(r.totals.selavu);
+    expect(r.topDonors.every((donor) => donor.total > 0 && donor.total <= r.totals.varavu)).toBe(true);
+    expect(r.cashflow.reduce((sum, month) => sum + month.varavu, 0)).toBe(r.totals.varavu);
+    expect(r.cashflow.reduce((sum, month) => sum + month.selavu, 0)).toBe(r.totals.selavu);
+  });
+
   it("public overview hides nothing private", () => {
     const o = publicOverview(db);
     expect(o.enabled).toBe(true);
