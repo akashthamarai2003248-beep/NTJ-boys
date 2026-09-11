@@ -385,12 +385,12 @@ export function queryCollections(db: DB, f: CollectionFilters): CollectionPage {
     return (b.receiptNumber || "").localeCompare(a.receiptNumber || "");
   });
 
-  const perPage = Math.max(1, f.perPage ?? 10);
-  const page = Math.max(1, f.page ?? 1);
-  const pages = Math.max(1, Math.ceil(items.length / perPage));
+  const perPage = f.perPage !== undefined && f.perPage > 0 ? f.perPage : undefined;
+  const page = f.page ? Math.max(1, f.page) : 1;
+  const pages = perPage ? Math.max(1, Math.ceil(items.length / perPage)) : 1;
   const safePage = Math.min(page, pages);
   return {
-    items: items.slice((safePage - 1) * perPage, safePage * perPage),
+    items: perPage ? items.slice((safePage - 1) * perPage, safePage * perPage) : items,
     total: items.length,
     sum: sumFiltered,
     allSum: sum(db.collections),
@@ -550,12 +550,12 @@ export function queryExpenses(db: DB, f: ExpenseFilters): ExpensePage {
     return (b.createdAt || "").localeCompare(a.createdAt || "");
   });
 
-  const perPage = Math.max(1, f.perPage ?? 10);
-  const page = Math.max(1, f.page ?? 1);
-  const pages = Math.max(1, Math.ceil(items.length / perPage));
+  const perPage = f.perPage !== undefined && f.perPage > 0 ? f.perPage : undefined;
+  const page = f.page ? Math.max(1, f.page) : 1;
+  const pages = perPage ? Math.max(1, Math.ceil(items.length / perPage)) : 1;
   const safePage = Math.min(page, pages);
   return {
-    items: items.slice((safePage - 1) * perPage, safePage * perPage),
+    items: perPage ? items.slice((safePage - 1) * perPage, safePage * perPage) : items,
     total: items.length,
     sum: sumFiltered,
     allSum: sum(db.expenses),

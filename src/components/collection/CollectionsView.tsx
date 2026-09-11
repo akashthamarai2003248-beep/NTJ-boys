@@ -27,7 +27,6 @@ import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SuccessOverlay } from "@/components/ui/SuccessOverlay";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Pagination } from "@/components/ui/Pagination";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RowActions, type RowExtraAction } from "@/components/shared/RowActions";
@@ -37,7 +36,6 @@ import { formatINR } from "@/lib/utils/money";
 import { formatShort, todayISO } from "@/lib/utils/date";
 import { CollectionForm } from "./CollectionForm";
 
-const PER_PAGE = 10;
 const CURRENT_YEAR = todayISO().slice(0, 4);
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, index) => String(Number(CURRENT_YEAR) - index));
 
@@ -73,7 +71,6 @@ export function CollectionsView() {
   const [year, setYear] = useState(() => searchParams.get("year") ?? CURRENT_YEAR);
   const [category, setCategory] = useState("");
   const [payment, setPayment] = useState("");
-  const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
 
   const [formOpen, setFormOpen] = useState(() => searchParams.get("add") === "1");
@@ -88,9 +85,9 @@ export function CollectionsView() {
   const url = useMemo(
     () =>
       `/api/collections${qs({
-        q: debouncedQ, eventId, year, category, payment, page, perPage: PER_PAGE,
+        q: debouncedQ, eventId, year, category, payment,
       })}`,
-    [debouncedQ, eventId, year, category, payment, page],
+    [debouncedQ, eventId, year, category, payment],
   );
   const { data, loading, reload } = useFetch<CollectionPage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
@@ -128,7 +125,7 @@ export function CollectionsView() {
   }, [celebrate]);
 
   const clearFilters = () => {
-    setQ(""); setEventId(defaultEventId); setYear(CURRENT_YEAR); setCategory(""); setPayment(""); setPage(1);
+    setQ(""); setEventId(defaultEventId); setYear(CURRENT_YEAR); setCategory(""); setPayment("");
   };
 
   const openAdd = () => {
@@ -240,14 +237,14 @@ export function CollectionsView() {
             <input
               type="text"
               value={q}
-              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              onChange={(e) => setQ(e.target.value)}
               placeholder={t("Search donor, street, receipt…", "நன்கொடையாளர், தெரு, ரசீது தேடுங்கள்…")}
               className="h-10.5 w-full rounded-full border border-line bg-surface-2/60 pl-10 pr-8 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-saffron-500 focus:bg-surface focus:ring-2 focus:ring-saffron-500/20"
             />
             {q && (
               <button
                 type="button"
-                onClick={() => { setQ(""); setPage(1); }}
+                onClick={() => setQ("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-faint hover:text-ink"
               >
                 <X className="size-3.5" />
@@ -279,7 +276,7 @@ export function CollectionsView() {
         <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
           <button
             type="button"
-            onClick={() => { setCategory(""); setPage(1); }}
+            onClick={() => setCategory("")}
             className={cn(
               "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === ""
@@ -291,7 +288,7 @@ export function CollectionsView() {
           </button>
           <button
             type="button"
-            onClick={() => { setCategory(category === "ஊர் வசூல்" ? "" : "ஊர் வசூல்"); setPage(1); }}
+            onClick={() => setCategory(category === "ஊர் வசூல்" ? "" : "ஊர் வசூல்")}
             className={cn(
               "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === "ஊர் வசூல்"
@@ -303,7 +300,7 @@ export function CollectionsView() {
           </button>
           <button
             type="button"
-            onClick={() => { setCategory(category === "மன்றம் வசூல்" ? "" : "மன்றம் வசூல்"); setPage(1); }}
+            onClick={() => setCategory(category === "மன்றம் வசூல்" ? "" : "மன்றம் வசூல்")}
             className={cn(
               "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
               category === "மன்றம் வசூல்"
@@ -338,7 +335,7 @@ export function CollectionsView() {
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
-                  <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                  <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); }} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {events.map((ev) => (
                       <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>
@@ -347,14 +344,14 @@ export function CollectionsView() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Year</label>
-                  <Select value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                  <Select value={year} onChange={(e) => setYear(e.target.value)} className="w-full text-[12.5px] h-9">
                     <option value="">All years</option>
                     {YEAR_OPTIONS.map((value) => <option key={value} value={value}>{value}</option>)}
                   </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Payment", "செலுத்திய முறை")}</label>
-                  <Select value={payment} onChange={(e) => { setPayment(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                  <Select value={payment} onChange={(e) => setPayment(e.target.value)} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All payments", "அனைத்து முறைகள்")}</option>
                     {PAYMENT_CHOICES.map((m) => (
                       <option key={m.value} value={m.value}>{t(m.label, m.ta)}</option>
@@ -499,14 +496,18 @@ export function CollectionsView() {
                 </div>
               ))}
             </div>
-            <Pagination
-              page={data?.page ?? 1}
-              pages={data?.pages ?? 1}
-              total={data?.total ?? 0}
-              pageSize={PER_PAGE}
-              onChange={setPage}
-              className="px-4 sm:px-5"
-            />
+            <div className="flex items-center justify-between border-t border-line/60 px-4 py-3 text-[12px] text-muted dark:border-white/5 sm:px-5">
+              <p>
+                {lang === "ta"
+                  ? `${items.length} வரவுகள் காட்டப்படுகின்றன`
+                  : `Showing all ${items.length} collections`}
+                {hasFilters && data && data.total > items.length && (
+                  <span className="ml-1.5 text-faint">
+                    ({lang === "ta" ? `மொத்தம் ${data.total} இல்` : `of ${data.total} total`})
+                  </span>
+                )}
+              </p>
+            </div>
           </>
         )}
       </div>

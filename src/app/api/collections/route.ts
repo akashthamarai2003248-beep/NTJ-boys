@@ -23,8 +23,8 @@ export async function GET(req: Request) {
       from: year ? `${year}-01-01` : searchParams.get("from"),
       to: year ? `${year}-12-31` : searchParams.get("to"),
       sort: (searchParams.get("sort") as "newest" | "amount_desc" | "amount_asc" | "name") ?? "newest",
-      page: intParam(searchParams.get("page"), 1),
-      perPage: Math.min(intParam(searchParams.get("perPage"), 10), 200),
+      page: searchParams.has("page") ? intParam(searchParams.get("page"), 1) : undefined,
+      perPage: searchParams.has("perPage") ? Math.min(intParam(searchParams.get("perPage"), 50), 1000) : undefined,
     });
     const res = NextResponse.json(page);
     res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");

@@ -169,17 +169,17 @@ export function prefetchData(url: string): Promise<unknown> {
 export function prefetchRoute(route: string) {
   if (typeof window === "undefined" || !route) return;
   if (route === "/collections" || route.startsWith("/collections")) {
-    void prefetchData("/api/collections?page=1&perPage=10");
+    void prefetchData("/api/collections");
     void prefetchData("/api/events");
   } else if (route === "/expenses" || route.startsWith("/expenses")) {
-    void prefetchData("/api/expenses?page=1&perPage=10");
+    void prefetchData("/api/expenses");
     void prefetchData("/api/events");
   } else if (route === "/events" || route.startsWith("/events")) {
     void prefetchData("/api/events");
   } else if (route === "/") {
     void prefetchData("/api/dashboard");
   } else if (route === "/members") {
-    void prefetchData("/api/members?page=1&perPage=15");
+    void prefetchData("/api/members");
   } else if (route === "/reports") {
     void prefetchData("/api/reports?year=all");
   }
@@ -188,8 +188,8 @@ export function prefetchRoute(route: string) {
 /** Preload the core navigation endpoints in the background for zero-latency page transitions */
 export function prefetchCoreRoutes() {
   if (typeof window === "undefined") return;
-  void prefetchData("/api/collections?page=1&perPage=10");
-  void prefetchData("/api/expenses?page=1&perPage=10");
+  void prefetchData("/api/collections");
+  void prefetchData("/api/expenses");
   void prefetchData("/api/events");
   void prefetchData("/api/dashboard");
 }
