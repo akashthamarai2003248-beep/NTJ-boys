@@ -29,6 +29,13 @@ export function EventCard({ event, index = 0 }: { event: EventWithStats; index?:
           <div className="absolute left-3 top-3">
             <EventStatusPill status={status} />
           </div>
+          {event.startDate && (
+            <div className="absolute right-3 top-3">
+              <span className="rounded-full bg-black/60 px-2.5 py-0.5 text-[10.5px] font-bold text-white/95 backdrop-blur-md border border-white/10 shadow-sm">
+                {event.startDate.slice(0, 4)}
+              </span>
+            </div>
+          )}
         </div>
         <div className="p-4 sm:p-4.5">
           <h3 className="truncate text-[15.5px] font-extrabold tracking-tight group-hover:text-navy-800 dark:group-hover:text-navy-200">

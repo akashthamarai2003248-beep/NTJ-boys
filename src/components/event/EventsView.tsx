@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarDays, CalendarPlus, Plus } from "lucide-react";
+import { Calendar, CalendarDays, CalendarPlus, Plus } from "lucide-react";
 import type { Event, EventInput, EventStatus, EventWithStats } from "@/lib/data/types";
 import { EVENT_STATUSES } from "@/lib/data/types";
 import { api } from "@/lib/client/api";
@@ -37,6 +37,7 @@ export function EventsView() {
   const { t, lang } = useLang();
   const admin = can.events;
 
+  const [year, setYear] = useState<string>(() => params.get("year") ?? "all");
   const [filter, setFilter] = useState<Filter>("all");
   const [formOpen, setFormOpen] = useState(() => params.get("new") === "1");
   const [submitting, setSubmitting] = useState(false);
@@ -54,20 +55,48 @@ export function EventsView() {
     if (params.get("new") === "1") router.replace("/events", { scroll: false });
   }, [params, router]);
 
-  const filtered = useMemo(() => {
-    if (filter === "all") return events;
-    if (filter === "upcoming") return events.filter((e) => e.status === "upcoming" || e.status === "registration");
-    return events.filter((e) => e.status === filter);
-  }, [events, filter]);
+  // Extract distinct available years from all events
+  const availableYears = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) {
+      const y1 = e.startDate?.slice(0, 4);
+      const y2 = e.endDate?.slice(0, 4);
+      const y3 = e.createdAt?.slice(0, 4);
+      if (y1 && /^\d{4}$/.test(y1)) set.add(y1);
+      if (y2 && /^\d{4}$/.test(y2)) set.add(y2);
+      if (y3 && /^\d{4}$/.test(y3)) set.add(y3);
+    }
+    set.add(new Date().getFullYear().toString());
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [events]);
 
+  // Filter by year first
+  const eventsInYear = useMemo(() => {
+    if (year === "all") return events;
+    return events.filter((e) => {
+      const y1 = e.startDate?.slice(0, 4);
+      const y2 = e.endDate?.slice(0, 4);
+      const y3 = e.createdAt?.slice(0, 4);
+      return y1 === year || y2 === year || (!y1 && y3 === year);
+    });
+  }, [events, year]);
+
+  // Status counts computed dynamically for the selected year
   const counts = useMemo(() => {
     return {
-      all: events.length,
-      active: events.filter((e) => e.status === "active").length,
-      upcoming: events.filter((e) => e.status === "upcoming" || e.status === "registration").length,
-      completed: events.filter((e) => e.status === "completed").length,
+      all: eventsInYear.length,
+      active: eventsInYear.filter((e) => e.status === "active").length,
+      upcoming: eventsInYear.filter((e) => e.status === "upcoming" || e.status === "registration").length,
+      completed: eventsInYear.filter((e) => e.status === "completed").length,
     };
-  }, [events]);
+  }, [eventsInYear]);
+
+  // Final filtered list respecting both year and status
+  const filtered = useMemo(() => {
+    if (filter === "all") return eventsInYear;
+    if (filter === "upcoming") return eventsInYear.filter((e) => e.status === "upcoming" || e.status === "registration");
+    return eventsInYear.filter((e) => e.status === filter);
+  }, [eventsInYear, filter]);
 
   const handleCreate = async (input: EventInput) => {
     setSubmitting(true);
@@ -94,13 +123,51 @@ export function EventsView() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {admin && (
-        <div className="flex items-center justify-end">
-          <Button variant="primary" size="sm" onClick={() => { setFormError(null); setFormOpen(true); }}>
-            <Plus className="size-4" /> {t("Create Event", "நிகழ்வை உருவாக்கு")}
-          </Button>
+      {/* Top Header & Year Filter Bar */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        {/* Year Filter: 1-Tap Thumb Navigation Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
+          <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-muted shrink-0 mr-1">
+            <Calendar className="size-3.5 text-saffron-500" />
+            <span>{t("Year", "ஆண்டு")}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setYear("all")}
+            className={cn(
+              "shrink-0 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
+              year === "all"
+                ? "bg-saffron-500 text-ink shadow-sm dark:bg-saffron-500 dark:text-ink font-black"
+                : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
+            )}
+          >
+            {t("All Years", "அனைத்தும்")}
+          </button>
+          {availableYears.map((yr) => (
+            <button
+              key={yr}
+              type="button"
+              onClick={() => setYear(yr)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
+                year === yr
+                  ? "bg-saffron-500 text-ink shadow-sm dark:bg-saffron-500 dark:text-ink font-black"
+                  : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
+              )}
+            >
+              {yr}
+            </button>
+          ))}
         </div>
-      )}
+
+        {admin && (
+          <div className="flex items-center justify-end shrink-0">
+            <Button variant="primary" size="sm" onClick={() => { setFormError(null); setFormOpen(true); }}>
+              <Plus className="size-4" /> {t("Create Event", "நிகழ்வை உருவாக்கு")}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* 4-Column responsive tabs bar: clean on mobile without horizontal scrolling */}
       <div className="grid grid-cols-4 gap-1.5 sm:flex sm:items-center sm:gap-2">
@@ -138,23 +205,39 @@ export function EventsView() {
               <CalendarDays className="size-6" />
             </div>
             <h3 className="mt-3 text-[14.5px] font-bold text-ink">
-              No {filter} events
+              {year !== "all"
+                ? `No ${filter === "all" ? "" : filter} events in ${year}`
+                : `No ${filter} events`}
             </h3>
             <p className="mt-1 text-[12px] text-faint max-w-sm">
               {filter === "completed"
                 ? "Completed festivals and celebrations will appear here once wrapped up."
                 : filter === "active"
                 ? "No events are currently ongoing. Check Upcoming to view scheduled celebrations."
+                : year !== "all"
+                ? `No events recorded for ${year}. Try switching to all years.`
                 : "No upcoming celebrations scheduled right now."}
             </p>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-4"
-              onClick={() => setFilter("all")}
-            >
-              View All Events ({events.length})
-            </Button>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              {year !== "all" && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setYear("all")}
+                >
+                  {t("Show All Years", "அனைத்து ஆண்டுகளையும் காட்டு")}
+                </Button>
+              )}
+              {filter !== "all" && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFilter("all")}
+                >
+                  {t(`View All (${eventsInYear.length})`, `அனைத்தும் (${eventsInYear.length})`)}
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="card-surface rounded-2xl">
