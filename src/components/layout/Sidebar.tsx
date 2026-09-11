@@ -36,6 +36,7 @@ function NavRow({
   return (
     <Link
       href={href}
+      prefetch={true}
       onClick={onNavigate}
       aria-label={lang === "en" ? en : `${ta} · ${en}`}
       className={cn(

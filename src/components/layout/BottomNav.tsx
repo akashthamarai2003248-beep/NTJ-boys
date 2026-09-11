@@ -29,6 +29,7 @@ export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
             <Link
               key={item.id}
               href={item.href}
+              prefetch={true}
               aria-label={item.en}
               className={cn(
                 "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 transition-transform duration-100 touch-manipulation select-none active:scale-95",
