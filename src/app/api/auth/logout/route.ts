@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { isSupabaseMode, getSupabaseServer } from "@/lib/data/supabase";
 import { SESSION_COOKIE } from "@/lib/constants";
+import { invalidateSessionUser } from "@/lib/auth";
 
 export async function POST() {
   const cookieStore = await cookies();
+  const currentId = cookieStore.get(SESSION_COOKIE)?.value;
+  invalidateSessionUser(currentId);
   if (isSupabaseMode()) {
     try {
       const sb = await getSupabaseServer();

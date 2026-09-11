@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { registerUser } from "@/lib/data/repository";
-import { toSessionUser, cookieOptions } from "@/lib/auth";
+import { toSessionUser, cookieOptions, cacheSessionUser } from "@/lib/auth";
+import type { DemoUser } from "@/lib/data/types";
 import {
-  isSupabaseMode, getSupabaseServer, resolveSupabaseUser, actorToDemoUser,
+  isSupabaseMode, getSupabaseServer, actorToDemoUser,
 } from "@/lib/data/supabase";
 import { normalizePhone } from "@/lib/utils/id";
 import { SESSION_COOKIE } from "@/lib/constants";
@@ -37,27 +38,24 @@ export async function POST(req: Request) {
 
     if (isSupabaseMode()) {
       const sb = await getSupabaseServer();
-      // public.users is RLS-hidden, so probe for phone collisions via the helper
-      const { data: existing } = await sb.rpc("user_email_by_phone", { p_phone: phone });
-      if (existing) {
-        return NextResponse.json(
-          { error: "This phone number is already registered — try logging in" },
-          { status: 409 },
-        );
-      }
       const { data, error } = await sb.auth.signUp({
         email,
         password,
         options: { data: { name, phone } },
       });
       if (error) {
-        const msg = error.message?.toLowerCase().includes("already registered")
+        const msg = error.message?.toLowerCase().includes("already registered") ||
+          error.message?.toLowerCase().includes("already exists") ||
+          error.status === 422
           ? "This phone number is already registered — try logging in"
           : error.message;
         return NextResponse.json({ error: msg }, { status: 400 });
       }
-      if (!data.user) {
-        return NextResponse.json({ error: "Couldn't create the account — try again" }, { status: 400 });
+      if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
+        return NextResponse.json(
+          { error: "This phone number is already registered — try logging in" },
+          { status: 409 },
+        );
       }
 
       const isAdminPhone = phone === "8248590767";
@@ -106,11 +104,21 @@ export async function POST(req: Request) {
         // must click the link before their first sign-in.
         return NextResponse.json({ needsConfirmation: true, email });
       }
-      const actor = await resolveSupabaseUser(sb, data.user);
-      if (!actor) {
-        return NextResponse.json({ error: "Account created — sign in to continue" });
-      }
-      const user = actorToDemoUser(actor);
+
+      // Construct verified session user directly in-memory to avoid redundant SELECT round-trips
+      const user: DemoUser = {
+        id: data.user.id,
+        name,
+        phone,
+        email,
+        password: "",
+        role: assignedRole,
+        position: assignedPosition as DemoUser["position"],
+      };
+
+      // Pre-warm server session cache so Next.js hydration of '/' resolves in 0ms
+      cacheSessionUser(user);
+
       const res = NextResponse.json({ user: toSessionUser(user) });
       const cookieStore = await cookies();
       for (const c of cookieStore.getAll()) {
@@ -126,6 +134,7 @@ export async function POST(req: Request) {
     }
 
     const user = await registerUser({ name, phone, email, password });
+    cacheSessionUser(user);
     const res = NextResponse.json({ user: toSessionUser(user) });
     res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
     return res;

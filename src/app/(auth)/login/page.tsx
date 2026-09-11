@@ -109,6 +109,12 @@ function LoginInner() {
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
 
+  // Proactively prefetch home and core routes while user views the login/register screen
+  useEffect(() => {
+    router.prefetch("/");
+    prefetchCoreRoutes();
+  }, [router]);
+
   // Auto-redirect if already signed in
   useEffect(() => {
     if (params.has("logout")) {
@@ -191,6 +197,7 @@ function LoginInner() {
 
       // Strict check: Only genuine admins may log in via Admin Portal
       if (mode === "admin" && res.user.role !== "admin") {
+        setLoading(false);
         fail(
           tr(
             "This account does not have admin privileges. Please use Member Login.",
@@ -202,9 +209,8 @@ function LoginInner() {
 
       afterAuth(res.user);
     } catch (e) {
-      fail((e as Error).message);
-    } finally {
       setLoading(false);
+      fail((e as Error).message);
     }
   };
 
@@ -242,14 +248,17 @@ function LoginInner() {
         },
       );
       if (res.needsConfirmation) {
+        setRegLoading(false);
         setRegDone(true);
       } else if (res.user) {
+        // Retain loading spinner seamlessly while router replaces to '/'
         afterAuth(res.user);
+      } else {
+        setRegLoading(false);
       }
     } catch (err) {
-      setRegError((err as Error).message);
-    } finally {
       setRegLoading(false);
+      setRegError((err as Error).message);
     }
   };
 

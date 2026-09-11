@@ -24,43 +24,68 @@ export function toSessionUser(u: DemoUser): SessionUser {
   return { id: u.id, name: u.name, phone: u.phone, email: u.email, role: u.role, position: u.position };
 }
 
+// In-memory server-side session cache to make post-login and post-signup hydration 0ms
+const userSessionCache = new Map<string, { user: DemoUser; expiresAt: number }>();
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+export function cacheSessionUser(user: DemoUser) {
+  userSessionCache.set(user.id, { user, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+export function invalidateSessionUser(id?: string) {
+  if (id) {
+    userSessionCache.delete(id);
+  } else {
+    userSessionCache.clear();
+  }
+}
+
 export async function getSessionUser(): Promise<DemoUser | null> {
   const jar = await cookies();
   const id = jar.get(SESSION_COOKIE)?.value;
+  if (!id) return null;
+
+  // 1. Fast path: in-memory cache lookup (resolves in < 0.01ms)
+  const cached = userSessionCache.get(id);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.user;
+  }
 
   if (isSupabaseMode()) {
-    // Fast-path: If user has persistent session cookie
-    if (id) {
-      if (id.startsWith("usr-")) {
-        const local = getUserById(id);
-        if (local) return local;
+    if (id.startsWith("usr-")) {
+      const local = getUserById(id);
+      if (local) {
+        cacheSessionUser(local);
+        return local;
       }
-      try {
-        const sb = await getSupabaseServer();
-        const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
-        if (profile) {
-          const isAdmin =
-            profile.email === "ntjboys@nbm.mandram" ||
-            profile.phone === "8248590767" ||
-            profile.phone === "ntjboys" ||
-            profile.email?.startsWith("8248590767@") ||
-            profile.role === "admin" ||
-            id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
-            id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
-            id === "usr_admin";
-          return {
-            id: profile.id,
-            name: profile.name,
-            phone: profile.phone ?? "",
-            email: profile.email ?? "",
-            password: "",
-            role: isAdmin ? "admin" : profile.role,
-            position: (isAdmin ? "President" : (profile.position || "Member")) as DemoUser["position"],
-          };
-        }
-      } catch {
-        /* ignore and fallback to Supabase auth check */
+    }
+    try {
+      const sb = await getSupabaseServer();
+      const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
+      if (profile) {
+        const isAdmin =
+          profile.email === "ntjboys@nbm.mandram" ||
+          profile.phone === "8248590767" ||
+          profile.phone === "ntjboys" ||
+          profile.email?.startsWith("8248590767@") ||
+          profile.role === "admin" ||
+          id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+          id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
+          id === "usr_admin";
+        const user: DemoUser = {
+          id: profile.id,
+          name: profile.name,
+          phone: profile.phone ?? "",
+          email: profile.email ?? "",
+          password: "",
+          role: isAdmin ? "admin" : profile.role,
+          position: (isAdmin ? "President" : (profile.position || "Member")) as DemoUser["position"],
+        };
+        cacheSessionUser(user);
+        return user;
       }
+    } catch {
+      /* ignore and fallback to Supabase auth check */
     }
 
     try {
@@ -79,23 +104,30 @@ export async function getSessionUser(): Promise<DemoUser | null> {
           actor.role = "admin";
           actor.position = "President";
         }
-        return actorToDemoUser(actor);
+        const user = actorToDemoUser(actor);
+        cacheSessionUser(user);
+        return user;
       }
     } catch {
       /* ignore */
     }
 
     // Final fallback: check local store in case demo session
-    if (id) {
-      const local = getUserById(id);
-      if (local) return local;
+    const local = getUserById(id);
+    if (local) {
+      cacheSessionUser(local);
+      return local;
     }
 
     return null;
   }
 
-  if (!id) return null;
-  return getUserById(id);
+  const local = getUserById(id);
+  if (local) {
+    cacheSessionUser(local);
+    return local;
+  }
+  return null;
 }
 
 /** Throw 401 when not signed in, 403 when role insufficient. */

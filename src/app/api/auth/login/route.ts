@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { findUser } from "@/lib/data/repository";
-import { toSessionUser, cookieOptions } from "@/lib/auth";
+import { toSessionUser, cookieOptions, cacheSessionUser } from "@/lib/auth";
 import {
   isSupabaseMode, getSupabaseServer, resolveSupabaseUser, actorToDemoUser,
 } from "@/lib/data/supabase";
@@ -82,6 +82,7 @@ export async function POST(req: Request) {
         user.role = "admin";
         user.position = "President";
       }
+      cacheSessionUser(user);
       const res = NextResponse.json({ user: toSessionUser(user) });
       const cookieStore = await cookies();
       for (const c of cookieStore.getAll()) {
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
       user.role = "admin";
       user.position = "President";
     }
+    cacheSessionUser(user);
     const res = NextResponse.json({ user: toSessionUser(user) });
     res.cookies.set(SESSION_COOKIE, user.id, cookieOptions);
     return res;
