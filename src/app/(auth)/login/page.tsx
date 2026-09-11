@@ -75,20 +75,21 @@ function LoginInner() {
   // Mobile splash screen on launch / first arrival in this browser session
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
+      if (params.has("logout")) return false;
       return !sessionStorage.getItem("nbm_splash_seen");
     }
-    return true;
+    return false;
   });
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("nbm_splash_seen")) {
+      if (params.has("logout") || sessionStorage.getItem("nbm_splash_seen")) {
         setShowSplash(false);
       }
     } catch {
       /* storage unavailable */
     }
-  }, []);
+  }, [params]);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -102,6 +103,7 @@ function LoginInner() {
   // Synchronously check if user is already signed in in localStorage
   const [alreadyLoggedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
+    if (params.has("logout")) return false;
     try {
       const stored = localStorage.getItem("nbm_user");
       if (stored) {
@@ -136,6 +138,16 @@ function LoginInner() {
 
   // Auto-redirect if already signed in
   useEffect(() => {
+    if (params.has("logout")) {
+      try {
+        localStorage.removeItem("nbm_user");
+        localStorage.removeItem("nbm.remember");
+        document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
     if (alreadyLoggedIn) {
       const next = params.get("next");
       const destination = next && next.startsWith("/") ? next : "/";
@@ -273,10 +285,18 @@ function LoginInner() {
           __html: `
             (function() {
               try {
+                var p = new URLSearchParams(window.location.search);
+                if (p.has("logout")) {
+                  try {
+                    localStorage.removeItem("nbm_user");
+                    localStorage.removeItem("nbm.remember");
+                    document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+                  } catch (e) {}
+                  return;
+                }
                 var u = localStorage.getItem("nbm_user");
                 if (u && JSON.parse(u).id) {
                   document.documentElement.classList.add("nbm-auth-redirect");
-                  var p = new URLSearchParams(window.location.search);
                   var n = p.get("next");
                   var dest = (n && n.startsWith("/")) ? n : "/";
                   document.cookie = "nbm_session=" + encodeURIComponent(JSON.parse(u).id) + "; path=/; max-age=31536000; SameSite=Lax";

@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client/api";
+import { clearClientCache } from "@/lib/client/hooks";
 
 export interface SessionUser {
   id: string;
@@ -132,19 +133,35 @@ export function SessionProvider({
   }, []);
 
   const signOut = useCallback(async () => {
+    // 1. Immediately clear client state in 0ms (optimistic instant logout)
+    setUser(null);
     try {
       localStorage.removeItem(SESSION_USER_KEY);
       localStorage.removeItem("nbm.remember");
+      clearClientCache();
       if (typeof document !== "undefined") {
         document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+        // Clear all accessible sb- and nbm- cookies
+        document.cookie.split(";").forEach((c) => {
+          const name = c.split("=")[0].trim();
+          if (name.startsWith("sb-") || name.startsWith("nbm")) {
+            document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+          }
+        });
       }
     } catch {
       /* ignore */
     }
-    await api.post("/api/auth/logout");
-    setUser(null);
-    router.replace("/login");
-    router.refresh();
+
+    // 2. Fire backend session revocation in background
+    void api.post("/api/auth/logout").catch(() => {});
+
+    // 3. Immediately route to /login with hard replace to reset all memory state
+    if (typeof window !== "undefined") {
+      window.location.replace("/login?logout=1");
+    } else {
+      router.replace("/login?logout=1");
+    }
   }, [router]);
 
   return (
