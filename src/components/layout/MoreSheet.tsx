@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, LogOut, Settings } from "lucide-react";
 import { MORE_ITEMS, type NavItem } from "@/lib/nav";
@@ -39,9 +41,24 @@ function Row({ item, onClose, suffix }: { item: NavItem; onClose: () => void; su
 }
 
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
   const { user, signOut } = useSession();
   const { role } = usePermissions();
   const { lang, t } = useLang();
+
+  // Pre-load sheet items in background when drawer is opened for instant clicks
+  useEffect(() => {
+    if (open) {
+      MORE_ITEMS.forEach((item) => {
+        try {
+          router.prefetch(item.href);
+        } catch {
+          // safe catch
+        }
+        prefetchRoute(item.href);
+      });
+    }
+  }, [open, router]);
 
   // Prevent background page scrolling & touch contention on mobile while sheet is open
   useBodyScrollLock(open);

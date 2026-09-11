@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LogOut, Settings } from "lucide-react";
 import { NAV_ITEMS, SETTINGS_ITEM } from "@/lib/nav";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
-import { prefetchRoute } from "@/lib/client/hooks";
+import { prefetchRoute, prefetchCoreRoutes } from "@/lib/client/hooks";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSession } from "./session";
@@ -39,9 +40,15 @@ function NavRow({
       href={href}
       prefetch={true}
       onClick={onNavigate}
+      onPointerDown={() => {
+        onNavigate?.();
+        prefetchRoute(href);
+      }}
       onMouseEnter={() => prefetchRoute(href)}
-      onTouchStart={() => prefetchRoute(href)}
-      onPointerDown={() => prefetchRoute(href)}
+      onTouchStart={() => {
+        onNavigate?.();
+        prefetchRoute(href);
+      }}
       aria-label={lang === "en" ? en : `${ta} · ${en}`}
       className={cn(
         "group relative flex items-center gap-3 rounded-xl px-3 py-2 transition-colors duration-150",
@@ -76,10 +83,38 @@ function NavRow({
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, signOut } = useSession();
   const { lang, t } = useLang();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  // Sync back to real pathname on page transition
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  // Safety fallback: reset pending state if route transition is aborted
+  useEffect(() => {
+    if (!pendingHref) return;
+    const timer = setTimeout(() => setPendingHref(null), 2500);
+    return () => clearTimeout(timer);
+  }, [pendingHref]);
+
+  // Eagerly prefetch route chunks and core data on desktop mount
+  useEffect(() => {
+    [...NAV_ITEMS, SETTINGS_ITEM].forEach((item) => {
+      try {
+        router.prefetch(item.href);
+      } catch {
+        // safe catch
+      }
+      prefetchRoute(item.href);
+    });
+    prefetchCoreRoutes();
+  }, [router]);
+
+  const currentActive = pendingHref ?? pathname;
+  const isActive = (href: string) => (href === "/" ? currentActive === "/" : currentActive.startsWith(href));
 
   const roleLabel =
     user?.role === "admin"
@@ -95,12 +130,21 @@ export function Sidebar() {
       </div>
       <nav className="hide-scrollbar flex-1 space-y-1 overflow-y-auto pr-0.5" aria-label={lang === "en" ? "Primary" : "முதன்மை"}>
         {NAV_ITEMS.map((item) => (
-          <NavRow key={item.id} {...item} active={isActive(item.href)} />
+          <NavRow
+            key={item.id}
+            {...item}
+            active={isActive(item.href)}
+            onNavigate={() => setPendingHref(item.href)}
+          />
         ))}
       </nav>
 
       <div className="mt-3 space-y-1 border-t border-line pt-3">
-        <NavRow {...SETTINGS_ITEM} active={isActive(SETTINGS_ITEM.href)} />
+        <NavRow
+          {...SETTINGS_ITEM}
+          active={isActive(SETTINGS_ITEM.href)}
+          onNavigate={() => setPendingHref(SETTINGS_ITEM.href)}
+        />
       </div>
 
       {user && (

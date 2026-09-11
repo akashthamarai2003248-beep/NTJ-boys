@@ -202,7 +202,7 @@ export async function loadDashboardDB(): Promise<DB> {
 
       cachedDashboardDB = fresh;
       dashboardCacheTime = Date.now();
-      if (!cachedDB) {
+      if (!cachedDB || cachedDB.games.length === 0) {
         cachedDB = fresh;
         cacheTime = Date.now();
       }
@@ -231,6 +231,12 @@ export async function loadDB(requireFull = false): Promise<DB> {
   }
   if (!requireFull && cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
     return cachedDashboardDB;
+  }
+
+  // When full database tables (games, gallery, matches) are NOT required, use the 5-table
+  // loadDashboardDB() reader instead of issuing 12 concurrent Supabase REST queries.
+  if (!requireFull) {
+    return loadDashboardDB();
   }
 
   if (inFlightLoad) {
@@ -285,6 +291,8 @@ export async function loadDB(requireFull = false): Promise<DB> {
 
       cachedDB = fresh;
       cacheTime = Date.now();
+      cachedDashboardDB = fresh;
+      dashboardCacheTime = Date.now();
       return fresh;
     } finally {
       inFlightLoad = null;
