@@ -78,4 +78,46 @@ describe("buildSeed events", () => {
     const listedVini = listed.find((e) => e.id === "evt_vini");
     expect(listedVini?.status).toBe("active");
   });
+
+  it("does not include past year collections or expenses in event stats", () => {
+    const seed = buildSeed();
+    const vini = seed.events.find((e) => e.id === "evt_vini")!;
+    const initialStats = listEvents(seed).find((e) => e.id === "evt_vini")!;
+
+    // Add a collection from 2025 tagged with evt_vini
+    seed.collections.push({
+      id: "col_past_year",
+      receiptNumber: "NBM-2025-9999",
+      personName: "Past Contributor",
+      amount: 8999,
+      paymentMethod: "cash",
+      contributionType: "namePhone",
+      date: "2025-08-20",
+      eventId: "evt_vini",
+      createdBy: "Admin",
+      createdAt: "2025-08-20T10:00:00Z",
+      updatedAt: "2025-08-20T10:00:00Z",
+    });
+
+    // Add an expense from 2025 tagged with evt_vini
+    seed.expenses.push({
+      id: "exp_past_year",
+      title: "Past Expense",
+      category: "Other",
+      amount: 3000,
+      paymentMethod: "cash",
+      date: "2025-08-20",
+      eventId: "evt_vini",
+      paidBy: "Mandram",
+      createdBy: "Admin",
+      createdAt: "2025-08-20T10:00:00Z",
+      updatedAt: "2025-08-20T10:00:00Z",
+    });
+
+    const newStats = listEvents(seed).find((e) => e.id === "evt_vini")!;
+    expect(newStats.varavu).toBe(initialStats.varavu);
+    expect(newStats.selavu).toBe(initialStats.selavu);
+    expect(newStats.balance).toBe(initialStats.balance);
+  });
 });
+

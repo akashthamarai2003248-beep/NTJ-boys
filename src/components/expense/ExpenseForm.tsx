@@ -43,7 +43,15 @@ export function ExpenseForm({ events, initial, defaultEventId, defaultYear, subm
   const { lang, t } = useLang();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
-  const [eventId, setEventId] = useState(initial?.eventId ?? defaultEventId ?? events[0]?.id ?? "");
+  const [eventId, setEventId] = useState(() => {
+    if (initial?.eventId !== undefined) return initial.eventId ?? "";
+    if (defaultEventId !== undefined) return defaultEventId;
+    if (defaultYear && /^\d{4}$/.test(defaultYear)) {
+      const match = events.find((e) => e.startDate?.startsWith(defaultYear) || e.createdAt?.startsWith(defaultYear));
+      return match ? match.id : "";
+    }
+    return events[0]?.id ?? "";
+  });
   const [date, setDate] = useState(initial?.date ?? (defaultYear && /^\d{4}$/.test(defaultYear) ? `${defaultYear}${todayISO().slice(4)}` : todayISO()));
   const [method, setMethod] = useState<PaymentMethod>(initial?.paymentMethod ?? "cash");
   const [billUrl, setBillUrl] = useState<string | null>(initial?.billUrl ?? null);
@@ -105,8 +113,7 @@ export function ExpenseForm({ events, initial, defaultEventId, defaultYear, subm
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    const selectedEventId = eventId || events[0]?.id || "";
-    if (!selectedEventId) return setLocalError("Please choose an event");
+    const selectedEventId = eventId ? eventId : null;
     if (!title.trim()) return setLocalError(t("Expense title is required", "செலவின் தலைப்பு தேவை"));
     if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை நேர்மறை எண்ணாக இருக்க வேண்டும்"));
     if (!date) return setLocalError(t("Please choose a date", "தயவுசெய்து தேதியைத் தேர்ந்தெடுக்கவும்"));
@@ -187,10 +194,8 @@ export function ExpenseForm({ events, initial, defaultEventId, defaultYear, subm
           />
         </Field>
         <Field label="Event" ta="நிகழ்வு">
-          <Select value={eventId || events[0]?.id || ""} onChange={(e) => setEventId(e.target.value)}>
-            {events.length === 0 ? (
+          <Select value={eventId ?? ""} onChange={(e) => setEventId(e.target.value)}>
             <option value="">{t("General fund", "பொது நிதி")}</option>
-            ) : null}
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
                 {lang === "ta" ? (ev.tamilName || ev.name) : lang === "en" ? ev.name : `${ev.name}${ev.tamilName ? ` · ${ev.tamilName}` : ""}`}

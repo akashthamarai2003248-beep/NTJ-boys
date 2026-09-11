@@ -44,7 +44,15 @@ export function CollectionForm({ events, initial, defaultEventId, defaultYear, s
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initial?.paymentMethod ?? "cash");
   const [date, setDate] = useState(initial?.date ?? (defaultYear && /^\d{4}$/.test(defaultYear) ? `${defaultYear}${todayISO().slice(4)}` : todayISO()));
-  const [eventId, setEventId] = useState(initial?.eventId ?? defaultEventId ?? events[0]?.id ?? "");
+  const [eventId, setEventId] = useState(() => {
+    if (initial?.eventId !== undefined) return initial.eventId ?? "";
+    if (defaultEventId !== undefined) return defaultEventId;
+    if (defaultYear && /^\d{4}$/.test(defaultYear)) {
+      const match = events.find((e) => e.startDate?.startsWith(defaultYear) || e.createdAt?.startsWith(defaultYear));
+      return match ? match.id : "";
+    }
+    return events[0]?.id ?? "";
+  });
   const [localError, setLocalError] = useState<string | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [voiceSnapshot, setVoiceSnapshot] = useState<VoiceSnapshot | null>(null);
@@ -85,8 +93,7 @@ export function CollectionForm({ events, initial, defaultEventId, defaultYear, s
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    const selectedEventId = eventId || events[0]?.id || "";
-    if (!selectedEventId) return setLocalError("Please choose an event");
+    const selectedEventId = eventId ? eventId : null;
     if (!personName.trim()) return setLocalError(t("Please enter the contributor's name", "நன்கொடையாளர் பெயரை உள்ளிடவும்"));
     if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை சரியான எண்ணாக இருக்க வேண்டும்"));
     if (!date) return setLocalError(t("Please choose a date", "தேதியைத் தேர்ந்தெடுக்கவும்"));
@@ -207,10 +214,8 @@ export function CollectionForm({ events, initial, defaultEventId, defaultYear, s
           />
         </Field>
         <Field label="Event" ta="நிகழ்வு">
-          <Select value={eventId || events[0]?.id || ""} onChange={(e) => setEventId(e.target.value)}>
-            {events.length === 0 ? (
+          <Select value={eventId ?? ""} onChange={(e) => setEventId(e.target.value)}>
             <option value="">{t("General fund", "பொது நிதி")}</option>
-            ) : null}
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
                 {t(ev.name, ev.tamilName)}

@@ -271,8 +271,23 @@ export function buildSeries(db: DB, period: Period): SeriesBucket[] {
 /* ── Aggregations ────────────────────────────────────────── */
 
 function collectionStats(db: DB, eventId?: string): EventStats {
-  const cs = db.collections.filter((c) => (eventId ? c.eventId === eventId : true));
-  const es = db.expenses.filter((e) => (eventId ? e.eventId === eventId : true));
+  const ev = eventId ? db.events.find((e) => e.id === eventId) : null;
+  const eventYear = ev?.startDate
+    ? ev.startDate.slice(0, 4)
+    : ev?.createdAt
+      ? ev.createdAt.slice(0, 4)
+      : null;
+
+  const cs = db.collections.filter((c) => {
+    if (eventId && c.eventId !== eventId) return false;
+    if (eventYear && c.date && !c.date.startsWith(eventYear)) return false;
+    return true;
+  });
+  const es = db.expenses.filter((e) => {
+    if (eventId && e.eventId !== eventId) return false;
+    if (eventYear && e.date && !e.date.startsWith(eventYear)) return false;
+    return true;
+  });
   const varavu = sum(cs);
   const selavu = sum(es);
   return { varavu, selavu, balance: varavu - selavu };
@@ -361,7 +376,15 @@ export function queryCollections(db: DB, f: CollectionFilters): CollectionPage {
         (c.notes ?? "").toLowerCase().includes(q),
     );
   }
-  if (f.eventId) items = items.filter((c) => c.eventId === f.eventId);
+  if (f.eventId) {
+    const ev = db.events.find((e) => e.id === f.eventId);
+    const eventYear = ev?.startDate ? ev.startDate.slice(0, 4) : ev?.createdAt ? ev.createdAt.slice(0, 4) : null;
+    items = items.filter((c) => {
+      if (c.eventId !== f.eventId) return false;
+      if (eventYear && !f.from && !f.to && c.date && !c.date.startsWith(eventYear)) return false;
+      return true;
+    });
+  }
   if (f.category) {
     items = items.filter(
       (c) => (c.category ?? c.street ?? "ஊர் வசூல்") === f.category,
@@ -532,7 +555,15 @@ export function queryExpenses(db: DB, f: ExpenseFilters): ExpensePage {
         (e.description ?? "").toLowerCase().includes(q),
     );
   }
-  if (f.eventId) items = items.filter((e) => e.eventId === f.eventId);
+  if (f.eventId) {
+    const ev = db.events.find((e) => e.id === f.eventId);
+    const eventYear = ev?.startDate ? ev.startDate.slice(0, 4) : ev?.createdAt ? ev.createdAt.slice(0, 4) : null;
+    items = items.filter((e) => {
+      if (e.eventId !== f.eventId) return false;
+      if (eventYear && !f.from && !f.to && e.date && !e.date.startsWith(eventYear)) return false;
+      return true;
+    });
+  }
   if (f.category) items = items.filter((e) => e.category === f.category);
   if (f.payment) items = items.filter((e) => e.paymentMethod === f.payment);
   if (f.from) items = items.filter((e) => e.date >= (f.from ?? ""));
