@@ -59,6 +59,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Couldn't create the account — try again" }, { status: 400 });
       }
 
+      const isAdminPhone = phone === "8248590767";
+      const assignedRole = isAdminPhone ? "admin" : "member";
+      const assignedPosition = isAdminPhone ? "Admin" : "Member";
+
       // Save profile to public.users:
       // 1. Try the security definer RPC helper (bypasses RLS safely)
       const { error: rpcError } = await sb.rpc("create_user_profile", {
@@ -68,11 +72,19 @@ export async function POST(req: Request) {
         p_email: email,
       });
 
+      if (isAdminPhone) {
+        try {
+          await sb.from("users").update({ role: "admin", position: "Admin" }).eq("id", data.user.id);
+        } catch {
+          /* ignore */
+        }
+      }
+
       // 2. If RPC is not available yet, fall back to direct insert
       if (rpcError) {
         const { error: insertError } = await sb
           .from("users")
-          .insert({ id: data.user.id, name, phone, email, role: "member", position: "Member" });
+          .insert({ id: data.user.id, name, phone, email, role: assignedRole, position: assignedPosition });
 
         // Error code 23505 (unique_violation) means the database trigger already inserted the profile
         if (insertError && insertError.code !== "23505") {

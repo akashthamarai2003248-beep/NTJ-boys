@@ -107,7 +107,8 @@ export async function resolveSupabaseUser(
     // Auth user without a public.users profile (e.g. invited but not
     // provisioned, or registered before trigger) — fall back to app_metadata.role
     // and attempt a best-effort self-heal insert.
-    const metaRole = appRole ?? "member";
+    const isAdmin = metaPhone === "8248590767" || user.email?.startsWith("8248590767@");
+    const metaRole = appRole ?? (isAdmin ? "admin" : "member");
     const role = metaRole === "admin" || metaRole === "treasurer" ? metaRole : "member";
     const fallbackProfile: SupabaseActor = {
       id: user.id,
@@ -115,7 +116,7 @@ export async function resolveSupabaseUser(
       email: user.email ?? null,
       phone: metaPhone ?? null,
       role,
-      position: "Member",
+      position: role === "admin" ? "Admin" : "Member",
     };
     try {
       await sb.from("users").upsert({
@@ -131,6 +132,18 @@ export async function resolveSupabaseUser(
     }
     return fallbackProfile;
   }
+
+  const isAdminUser = data.phone === "8248590767" || metaPhone === "8248590767" || user.email?.startsWith("8248590767@");
+  if (isAdminUser && data.role !== "admin") {
+    try {
+      await sb.from("users").update({ role: "admin", position: "Admin" }).eq("id", user.id);
+      data.role = "admin";
+      data.position = "Admin";
+    } catch {
+      /* ignore */
+    }
+  }
+
   return {
     id: data.id,
     name: data.name,
