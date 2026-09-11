@@ -156,12 +156,8 @@ export function SessionProvider({
     // 2. Fire backend session revocation in background
     void api.post("/api/auth/logout").catch(() => {});
 
-    // 3. Immediately route to /login with hard replace to reset all memory state
-    if (typeof window !== "undefined") {
-      window.location.replace("/login?logout=1");
-    } else {
-      router.replace("/login?logout=1");
-    }
+    // 3. Immediately route to /login via client-side router in 0ms (no slow hard reload)
+    router.replace("/login?logout=1");
   }, [router]);
 
   return (

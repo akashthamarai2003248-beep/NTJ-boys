@@ -21,9 +21,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user: contextUser, loading: contextLoading } = useSession();
-  const user = contextUser ?? initialUser ?? null;
-  const loading = initialUser || contextUser ? false : contextLoading;
+  const { user, loading } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -50,34 +48,13 @@ export function AppShell({
   }, []);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!user) {
       router.replace("/login");
     }
-  }, [loading, user, router]);
+  }, [user, router]);
 
-  // Safety fallback: Never leave user stuck on "Loading Mandram..." if session check hangs
-  useEffect(() => {
-    if (loading && !user) {
-      const timer = setTimeout(() => {
-        router.replace("/login");
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, user, router]);
-
-  if (loading || !user) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-3"
-        >
-          <LogoMark className="size-12 animate-pulse" />
-          <p className="text-xs font-semibold tracking-wide text-faint">Loading Mandram…</p>
-        </motion.div>
-      </div>
-    );
+  if (!user) {
+    return <div className="min-h-dvh bg-[#0b192c]" />;
   }
 
   return (

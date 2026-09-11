@@ -9,7 +9,6 @@ import {
 import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
-import { SplashScreen } from "@/components/auth/SplashScreen";
 import { prefetchCoreRoutes } from "@/lib/client/hooks";
 import type { SessionUser } from "@/components/layout/session";
 
@@ -72,33 +71,7 @@ function LoginInner() {
   const params = useSearchParams();
   const { t: tr } = useLang();
 
-  // Mobile splash screen on launch / first arrival in this browser session
-  const [showSplash, setShowSplash] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      if (params.has("logout")) return false;
-      return !sessionStorage.getItem("nbm_splash_seen");
-    }
-    return false;
-  });
 
-  useEffect(() => {
-    try {
-      if (params.has("logout") || sessionStorage.getItem("nbm_splash_seen")) {
-        setShowSplash(false);
-      }
-    } catch {
-      /* storage unavailable */
-    }
-  }, [params]);
-
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-    try {
-      sessionStorage.setItem("nbm_splash_seen", "1");
-    } catch {
-      /* ignore */
-    }
-  };
 
   // Synchronously check if user is already signed in in localStorage
   const [alreadyLoggedIn] = useState<boolean>(() => {
@@ -318,9 +291,7 @@ function LoginInner() {
         }}
       />
 
-      <AnimatePresence>
-        {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
-      </AnimatePresence>
+
 
       <div className="relative min-h-dvh overflow-hidden bg-[#0b192c] text-white">
         {/* ── hero ── */}
