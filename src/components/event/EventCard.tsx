@@ -16,9 +16,9 @@ export function EventCard({ event, index = 0 }: { event: EventWithStats; index?:
   const status = resolveEventStatus(event.status, event.startDate, event.endDate);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.07, 0.35) }}
+      transition={{ duration: 0.2 }}
     >
       <Link
         href={`/events/${event.id}`}

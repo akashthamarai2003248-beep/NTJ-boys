@@ -124,9 +124,9 @@ export function OverviewChart({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: 0.12 }}
+      transition={{ duration: 0.2 }}
       className="card-surface rounded-2xl p-4 sm:p-5"
     >
       {/* Header with Title and Controls */}
@@ -275,7 +275,7 @@ export function OverviewChart({
                       dot={renderVaravuDot}
                       activeDot={{ r: 6.5, fill: "#f59e2e", stroke: "var(--surface)", strokeWidth: 2.5 }}
                       isAnimationActive={true}
-                      animationDuration={1100}
+                      animationDuration={250}
                       animationEasing="ease-out"
                     />
                     <Area
@@ -288,7 +288,7 @@ export function OverviewChart({
                       dot={renderSelavuDot}
                       activeDot={{ r: 5.5, fill: "#5579c1", stroke: "var(--surface)", strokeWidth: 2.5 }}
                       isAnimationActive={true}
-                      animationDuration={1100}
+                      animationDuration={250}
                       animationEasing="ease-out"
                     />
                   </AreaChart>
@@ -317,7 +317,7 @@ export function OverviewChart({
                       radius={[6, 6, 0, 0]}
                       maxBarSize={period === "month" ? 10 : 26}
                       isAnimationActive={true}
-                      animationDuration={850}
+                      animationDuration={250}
                       animationEasing="ease-out"
                     />
                     <Bar
@@ -326,7 +326,7 @@ export function OverviewChart({
                       radius={[6, 6, 0, 0]}
                       maxBarSize={period === "month" ? 10 : 26}
                       isAnimationActive={true}
-                      animationDuration={850}
+                      animationDuration={250}
                       animationEasing="ease-out"
                     />
                   </BarChart>

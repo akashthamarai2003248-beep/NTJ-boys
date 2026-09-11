@@ -52,20 +52,27 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
 
   const g = greeting();
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
+  const greetingText = firstName
+    ? t(`${g.en}, ${firstName} 👋`, `${g.ta}, ${firstName} 👋`)
+    : t(`${g.en} 👋`, `${g.ta} 👋`);
 
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* Greeting hero */}
       <motion.section
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
+        transition={{ duration: 0.2 }}
         className="relative overflow-hidden rounded-2xl px-4 py-5 text-white shadow-card sm:px-6 sm:py-6"
       >
         {/* Tricolor Netaji banner background - vibrant and fully visible */}
         <img
           src="/netaji-banner.png"
           alt="Nethaji Boys Mandram"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
         />
         {/* Subtle vignette: keeps the banner artwork, Netaji portrait, and colors bright and visible */}
@@ -78,7 +85,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
               {t(g.en, g.ta)}
             </p>
             <h1 className="mt-1 flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight sm:text-[24px]">
-              {t(`${g.en}, ${user?.name.split(" ")[0]} 👋`, `${g.ta}, ${user?.name.split(" ")[0]} 👋`)}
+              {greetingText}
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] font-medium text-white/95 sm:text-[12.5px]">
               <Sparkles className="size-3.5 shrink-0 text-saffron-300" />
@@ -149,9 +156,9 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
           <OverviewChart period={period} onPeriodChange={setPeriod} data={data?.series ?? []} loading={loading} />
         </div>
         <motion.section
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.16 }}
+          transition={{ duration: 0.2 }}
           className="card-surface rounded-2xl p-4 sm:p-5 lg:col-span-2"
         >
           <div className="mb-2 flex items-center justify-between">

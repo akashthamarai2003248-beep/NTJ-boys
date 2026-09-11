@@ -10,12 +10,20 @@ import { Topbar } from "./Topbar";
 import { BottomNav } from "./BottomNav";
 import { MoreSheet } from "./MoreSheet";
 import { SearchCommand } from "./SearchCommand";
-import { useSession } from "./session";
+import { useSession, type SessionUser } from "./session";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  initialUser,
+}: {
+  children: ReactNode;
+  initialUser?: SessionUser | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useSession();
+  const { user: contextUser, loading: contextLoading } = useSession();
+  const user = contextUser ?? initialUser ?? null;
+  const loading = initialUser || contextUser ? false : contextLoading;
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 

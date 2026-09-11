@@ -54,10 +54,16 @@ const SessionContext = createContext<SessionState>({
   signOut: async () => {},
 });
 
-export function SessionProvider({ children }: { children: ReactNode }) {
-  // Hydrate user immediately from localStorage so AppShell renders in 0ms without splash lag
-  const [user, setUser] = useState<SessionUser | null>(() => getStoredUser());
-  const [loading, setLoading] = useState<boolean>(() => !getStoredUser());
+export function SessionProvider({
+  children,
+  initialUser,
+}: {
+  children: ReactNode;
+  initialUser?: SessionUser | null;
+}) {
+  // Hydrate user immediately from server initialUser or localStorage so AppShell renders in 0ms without splash lag
+  const [user, setUser] = useState<SessionUser | null>(() => initialUser ?? getStoredUser());
+  const [loading, setLoading] = useState<boolean>(() => !initialUser && !getStoredUser());
   const router = useRouter();
 
   const load = useCallback(async () => {

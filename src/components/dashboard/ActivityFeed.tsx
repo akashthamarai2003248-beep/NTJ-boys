@@ -102,9 +102,9 @@ export function ActivityFeed({ logs, limit = 7 }: { logs: ActivityLog[]; limit?:
         return (
           <motion.div
             key={log.id}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: Math.min(0.2 + i * 0.04, 0.5) }}
+            transition={{ duration: 0.15 }}
             className="flex items-start gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-2/70"
           >
             <Avatar name={log.actorName} size="sm" />
