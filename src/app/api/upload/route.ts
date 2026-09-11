@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-helpers";
-import { getSupabaseServer } from "@/lib/data/supabase";
+import { getSupabaseServer, isSupabaseMode } from "@/lib/data/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -49,11 +49,8 @@ export async function POST(req: Request) {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const filePath = `${folder}/${uniqueId}.${ext}`;
 
-    // Attempt upload to Supabase Storage if credentials are configured
-    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (sbUrl && sbKey) {
+    // Attempt upload to Supabase Storage if running in Supabase mode
+    if (isSupabaseMode()) {
       try {
         const sb = await getSupabaseServer();
         const { data, error } = await sb.storage

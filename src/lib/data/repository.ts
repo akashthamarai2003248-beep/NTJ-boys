@@ -19,11 +19,14 @@ export { HttpError, canWriteFinances, canWriteEvents, canWriteMembers, canManage
 /** Supabase mode is env-driven; mirrored here (not imported) so unit
  * tests can keep exercising the pure local repository in isolation. */
 export function isSupabaseMode(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_DATA_MODE !== "local" &&
-    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-    Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-  );
+  if (process.env.NEXT_PUBLIC_DATA_MODE === "local") return false;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY;
+  return Boolean(url && key);
 }
 
 /** Loads the Supabase write repository only when running in Supabase mode. */
