@@ -105,6 +105,29 @@ export function CollectionsView() {
   const hasFilters = Boolean(q || eventId || year || category || payment);
   const hasCustomFilters = Boolean(q || category || payment || eventId !== defaultEventId || year !== CURRENT_YEAR);
 
+  const availableEvents = useMemo(() => {
+    if (!year) return events;
+    return events.filter(
+      (e) => e.startDate?.startsWith(year) || e.createdAt?.startsWith(year),
+    );
+  }, [events, year]);
+
+  const handleYearChange = (newYear: string) => {
+    setYear(newYear);
+    if (!newYear) return;
+    if (eventId) {
+      const ev = events.find((e) => e.id === eventId);
+      const evYear = ev?.startDate?.slice(0, 4) || ev?.createdAt?.slice(0, 4);
+      if (evYear && evYear !== newYear) {
+        const match = events.find((e) => e.startDate?.startsWith(newYear) || e.createdAt?.startsWith(newYear));
+        setEventId(match ? match.id : "");
+      }
+    } else {
+      const match = events.find((e) => e.startDate?.startsWith(newYear) || e.createdAt?.startsWith(newYear));
+      if (match) setEventId(match.id);
+    }
+  };
+
   // Event data arrives after the first client render, so choose the active/current event once it is available.
   useEffect(() => {
     if (defaultEventWasSet.current || eventsFetch.loading) return;
@@ -337,14 +360,14 @@ export function CollectionsView() {
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
                   <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); }} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
-                    {events.map((ev) => (
+                    {availableEvents.map((ev) => (
                       <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">Year</label>
-                  <Select value={year} onChange={(e) => setYear(e.target.value)} className="w-full text-[12.5px] h-9">
+                  <Select value={year} onChange={(e) => handleYearChange(e.target.value)} className="w-full text-[12.5px] h-9">
                     <option value="">All years</option>
                     {YEAR_OPTIONS.map((value) => <option key={value} value={value}>{value}</option>)}
                   </Select>

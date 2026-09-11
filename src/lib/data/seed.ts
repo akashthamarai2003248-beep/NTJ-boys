@@ -125,6 +125,21 @@ export function buildSeed(now: Date = new Date()): DB {
       updatedAt: new Date(viniStart.getTime() - 90 * 86400000).toISOString(),
     },
     {
+      id: "evt_vini_2025",
+      name: "Vinayagar Chathurthi 2025",
+      tamilName: "விநாயகர் சதுர்த்தி விழா 2025",
+      type: "festival",
+      status: "completed",
+      startDate: "2025-08-27",
+      endDate: "2025-08-31",
+      location: "Netaji Subhash Chandra Bose Street, Temple Arch",
+      cover: "/vinayagar-chathurthi.webp",
+      description:
+        "Annual Vinayagar Chathurthi celebration 2025 with pandal, idol installation, prasadam distribution and cultural evening.",
+      createdAt: "2025-05-01T00:00:00.000Z",
+      updatedAt: "2025-08-31T00:00:00.000Z",
+    },
+    {
       id: "evt_pongal",
       name: `Pongal ${pongalYear}`,
       tamilName: "பொங்கல் திருவிழா",

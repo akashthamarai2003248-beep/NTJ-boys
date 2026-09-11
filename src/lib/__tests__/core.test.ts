@@ -140,9 +140,9 @@ describe("demo seed invariants", () => {
     expect(varavu - selavu).toBe(DEMO_TOTALS.varavu - DEMO_TOTALS.selavu);
   });
 
-  it("contains 25+ members and three anchor events", () => {
+  it("contains 25+ members and anchor events", () => {
     expect(db.members.length).toBeGreaterThanOrEqual(25);
-    expect(db.events).toHaveLength(3);
+    expect(db.events.length).toBeGreaterThanOrEqual(3);
     expect(db.users).toHaveLength(3);
   });
 
