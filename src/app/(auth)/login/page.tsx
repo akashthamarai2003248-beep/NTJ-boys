@@ -303,8 +303,8 @@ function LoginInner() {
                     setPassword("");
                   } else {
                     setMode("admin");
-                    setIdentifier("ntjboys");
-                    setPassword("ntj2010");
+                    setIdentifier("");
+                    setPassword("");
                   }
                   setError("");
                   setRegError("");
@@ -335,7 +335,7 @@ function LoginInner() {
                 </h2>
                 <p className="mt-0.5 text-[12px] text-slate-300/80">
                   {mode === "admin"
-                    ? tr("Authorized Mandram Admin login (ntjboys)", "அங்கீகரிக்கப்பட்ட மன்ற நிர்வாகி உள்நுழைவு (ntjboys)")
+                    ? tr("Authorized Mandram Admin login", "அங்கீகரிக்கப்பட்ட மன்ற நிர்வாகி உள்நுழைவு")
                     : mode === "register"
                     ? tr("Register to join Nethaji Boys Mandram", "நேதாஜி பாய்ஸ் மன்றத்தில் இணைய பதிவு செய்க")
                     : tr("Log in to access your Mandram account", "உங்கள் மன்ற கணக்கில் உள்நுழையவும்")}
@@ -414,7 +414,7 @@ function LoginInner() {
                 <HeroInput
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={mode === "admin" ? tr("Admin Username (ntjboys)", "நிர்வாகி பயனர் பெயர் (ntjboys)") : tr("Phone number", "தொலைபேசி எண்")}
+                  placeholder={mode === "admin" ? tr("Admin Username", "நிர்வாகி பயனர் பெயர்") : tr("Phone number", "தொலைபேசி எண்")}
                   icon={mode === "admin" ? <UserRound className="size-4" /> : <Phone className="size-4" />}
                   autoComplete={mode === "admin" ? "username" : "tel"}
                   inputMode={mode === "admin" ? "text" : "tel"}
@@ -425,7 +425,7 @@ function LoginInner() {
                     type={showPw ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === "admin" ? tr("Admin Password (ntj2010)", "நிர்வாகி கடவுச்சொல் (ntj2010)") : tr("Password", "கடவுச்சொல்")}
+                    placeholder={mode === "admin" ? tr("Admin Password", "நிர்வாகி கடவுச்சொல்") : tr("Password", "கடவுச்சொல்")}
                     icon={<Lock className="size-4" />}
                     autoComplete="current-password"
                     aria-label={tr("Password", "கடவுச்சொல்")}
@@ -461,7 +461,7 @@ function LoginInner() {
                     </button>
                   ) : (
                     <span className="text-[11.5px] font-bold text-amber-300/90">
-                      ntjboys · Admin
+                      {tr("Admin Portal", "நிர்வாகி போர்ட்டல்")}
                     </span>
                   )}
                 </div>
@@ -528,8 +528,8 @@ function LoginInner() {
                     type="button"
                     onClick={() => {
                       setMode("admin");
-                      setIdentifier("ntjboys");
-                      setPassword("ntj2010");
+                      setIdentifier("");
+                      setPassword("");
                       setError("");
                     }}
                     className="inline-flex items-center justify-center gap-1.5 text-[12px] font-medium text-amber-400/90 transition-colors hover:text-amber-300"
@@ -555,8 +555,8 @@ function LoginInner() {
                     type="button"
                     onClick={() => {
                       setMode("admin");
-                      setIdentifier("ntjboys");
-                      setPassword("ntj2010");
+                      setIdentifier("");
+                      setPassword("");
                       setRegError("");
                       setRegDone(false);
                     }}
