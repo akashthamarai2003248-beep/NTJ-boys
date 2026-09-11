@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     return NextResponse.json({
-      games: listGames(await loadDB(), {
+      games: listGames(await loadDB(true), {
         eventId: searchParams.get("eventId") ?? undefined,
         q: searchParams.get("q") ?? undefined,
         status: searchParams.get("status"),

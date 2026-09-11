@@ -123,7 +123,7 @@ export const mapSettings = (r: SettingsRow): AppSettings => ({
 let cachedDB: DB | null = null;
 let cacheTime = 0;
 let inFlightLoad: Promise<DB> | null = null;
-const CACHE_TTL_MS = 15_000;
+const CACHE_TTL_MS = 60_000;
 
 let cachedDashboardDB: DB | null = null;
 let dashboardCacheTime = 0;
@@ -202,6 +202,10 @@ export async function loadDashboardDB(): Promise<DB> {
 
       cachedDashboardDB = fresh;
       dashboardCacheTime = Date.now();
+      if (!cachedDB) {
+        cachedDB = fresh;
+        cacheTime = Date.now();
+      }
       return fresh;
     } finally {
       inFlightDashboardLoad = null;
@@ -218,12 +222,15 @@ export async function loadDashboardDB(): Promise<DB> {
  * and caching with a short TTL to keep page transitions and multi-endpoint
  * views lightning fast.
  */
-export async function loadDB(): Promise<DB> {
+export async function loadDB(requireFull = false): Promise<DB> {
   if (!isSupabaseMode()) return getDB();
 
   const now = Date.now();
-  if (cachedDB && now - cacheTime < CACHE_TTL_MS) {
+  if (cachedDB && now - cacheTime < CACHE_TTL_MS && (!requireFull || cachedDB.games.length > 0)) {
     return cachedDB;
+  }
+  if (!requireFull && cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
+    return cachedDashboardDB;
   }
 
   if (inFlightLoad) {

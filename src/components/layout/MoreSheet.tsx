@@ -8,7 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { LogoMark } from "@/components/ui/Logo";
 import { usePermissions, useSession } from "./session";
 import { useLang } from "@/lib/i18n";
-import { useBodyScrollLock } from "@/lib/client/hooks";
+import { useBodyScrollLock, prefetchRoute } from "@/lib/client/hooks";
 
 function Row({ item, onClose, suffix }: { item: NavItem; onClose: () => void; suffix?: React.ReactNode }) {
   const { lang } = useLang();
@@ -19,6 +19,9 @@ function Row({ item, onClose, suffix }: { item: NavItem; onClose: () => void; su
     <Link
       href={item.href}
       onClick={onClose}
+      onMouseEnter={() => prefetchRoute(item.href)}
+      onTouchStart={() => prefetchRoute(item.href)}
+      onPointerDown={() => prefetchRoute(item.href)}
       aria-label={item.en}
       className="flex items-center gap-3.5 rounded-xl px-3 py-3 transition-colors active:scale-[0.99] hover:bg-surface-2"
     >

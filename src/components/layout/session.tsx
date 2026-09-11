@@ -100,6 +100,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const onStorage = () => {
+      const u = getStoredUser();
+      if (u) {
+        setUser(u);
+        setLoading(false);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("nbm_session_update", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("nbm_session_update", onStorage);
+    };
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       localStorage.removeItem(SESSION_USER_KEY);

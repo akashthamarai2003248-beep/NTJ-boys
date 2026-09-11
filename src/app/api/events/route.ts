@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return NextResponse.json({ events: listEvents(await loadDB()) });
+    const res = NextResponse.json({ events: listEvents(await loadDB()) });
+    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

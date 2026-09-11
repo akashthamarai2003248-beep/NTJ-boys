@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId") ?? undefined;
-    return NextResponse.json({ photos: listGallery(await loadDB(), { eventId }) });
+    return NextResponse.json({ photos: listGallery(await loadDB(true), { eventId }) });
   } catch (e) {
     return handleApiError(e);
   }

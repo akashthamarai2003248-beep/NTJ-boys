@@ -24,7 +24,9 @@ export async function GET(req: Request) {
       page: intParam(searchParams.get("page"), 1),
       perPage: Math.min(intParam(searchParams.get("perPage"), 10), 200),
     });
-    return NextResponse.json(page);
+    const res = NextResponse.json(page);
+    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

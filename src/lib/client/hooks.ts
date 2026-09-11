@@ -129,6 +129,71 @@ export function clearClientCache(prefix?: string) {
   removePersistentCache(prefix);
 }
 
+const inFlightPrefetches = new Map<string, Promise<unknown>>();
+
+/**
+ * Preload an API endpoint into clientCache and localStorage ahead of time.
+ * When the target view mounts, useFetch serves this data in 0ms without showing loading skeletons.
+ */
+export function prefetchData(url: string): Promise<unknown> {
+  if (typeof window === "undefined" || !url) return Promise.resolve(null);
+
+  const mem = clientCache.get(url);
+  if (mem && Date.now() - mem.timestamp < 30_000) {
+    return Promise.resolve(mem.data);
+  }
+
+  const existing = inFlightPrefetches.get(url);
+  if (existing) return existing;
+
+  const promise = fetch(url, { cache: "default" })
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      if (data) {
+        clientCache.set(url, { data, timestamp: Date.now() });
+        writePersistentCache(url, data);
+      }
+      return data;
+    })
+    .catch(() => null)
+    .finally(() => {
+      inFlightPrefetches.delete(url);
+    });
+
+  inFlightPrefetches.set(url, promise);
+  return promise;
+}
+
+/** Prefetch data for a specific navigation route on hover / touch / intent */
+export function prefetchRoute(route: string) {
+  if (typeof window === "undefined" || !route) return;
+  if (route === "/collections" || route.startsWith("/collections")) {
+    void prefetchData("/api/collections?page=1&perPage=10");
+    void prefetchData("/api/events");
+  } else if (route === "/expenses" || route.startsWith("/expenses")) {
+    void prefetchData("/api/expenses?page=1&perPage=10");
+    void prefetchData("/api/events");
+  } else if (route === "/events" || route.startsWith("/events")) {
+    void prefetchData("/api/events");
+  } else if (route === "/") {
+    void prefetchData("/api/dashboard?period=year");
+  } else if (route === "/members") {
+    void prefetchData("/api/members?page=1&perPage=15");
+  } else if (route === "/reports") {
+    void prefetchData("/api/reports?year=all");
+  }
+}
+
+/** Preload the core navigation endpoints in the background for zero-latency page transitions */
+export function prefetchCoreRoutes() {
+  if (typeof window === "undefined") return;
+  void prefetchData("/api/collections?page=1&perPage=10");
+  void prefetchData("/api/expenses?page=1&perPage=10");
+  void prefetchData("/api/events");
+  void prefetchData("/api/dashboard?period=year");
+}
+
 /**
  * Fetch a JSON endpoint on mount / whenever `url` changes.
  * Uses persistent Stale-While-Revalidate (SWR) so the Home page and previously
@@ -181,8 +246,8 @@ export function useFetch<T>(
     // If cached data is present, immediately serve it without blocking render
     if (currentCached) {
       setState((s) => ({ ...s, data: currentCached.data, error: null, loading: false }));
-      // If the cache was fetched very recently (< 15s) and not an explicit reload, avoid redundant network traffic
-      if (tick === 0 && Date.now() - currentCached.timestamp < 15_000) {
+      // If the cache was fetched very recently (< 30s) and not an explicit reload, avoid redundant network traffic
+      if (tick === 0 && Date.now() - currentCached.timestamp < 30_000) {
         return;
       }
     } else if (initialData && tick === 0) {

@@ -7,6 +7,7 @@ import { LogOut, Settings } from "lucide-react";
 import { NAV_ITEMS, SETTINGS_ITEM } from "@/lib/nav";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
+import { prefetchRoute } from "@/lib/client/hooks";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSession } from "./session";
@@ -38,6 +39,9 @@ function NavRow({
       href={href}
       prefetch={true}
       onClick={onNavigate}
+      onMouseEnter={() => prefetchRoute(href)}
+      onTouchStart={() => prefetchRoute(href)}
+      onPointerDown={() => prefetchRoute(href)}
       aria-label={lang === "en" ? en : `${ta} · ${en}`}
       className={cn(
         "group relative flex items-center gap-3 rounded-xl px-3 py-2 transition-colors duration-150",

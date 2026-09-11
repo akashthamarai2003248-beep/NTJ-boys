@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { HandCoins, TrendingDown, Users, Wallet, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useLang } from "@/lib/i18n";
+import { prefetchRoute } from "@/lib/client/hooks";
 
 interface Stat {
   key: string;
@@ -30,36 +32,54 @@ function StatCard({ stat }: { stat: Stat; index: number }) {
   const subText = stat.subtitle ? (lang === "ta" ? stat.subtitle.ta : stat.subtitle.en) : null;
   const formatted = stat.value.toLocaleString("en-IN");
 
+  const href =
+    stat.key === "varavu"
+      ? "/collections"
+      : stat.key === "selavu"
+      ? "/expenses"
+      : stat.key === "balance"
+      ? "/reports"
+      : "/members";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
-      className="card-surface group rounded-2xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
+    <Link
+      href={href}
+      prefetch={true}
+      onMouseEnter={() => prefetchRoute(href)}
+      onTouchStart={() => prefetchRoute(href)}
+      onPointerDown={() => prefetchRoute(href)}
+      className="block cursor-pointer select-none"
     >
-      <div className="flex items-start gap-2.5 sm:gap-3">
-        <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", tones[stat.tone])}>
-          <stat.icon className="size-4.5 sm:size-5" strokeWidth={2.1} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="flex items-baseline justify-between gap-1 leading-none">
-            <span className="truncate text-[12px] font-bold text-muted sm:text-[13px]">{primary}</span>
-            {secondary ? (
-              <span className="hidden truncate text-[10px] font-medium text-faint sm:block">{secondary}</span>
-            ) : null}
-          </p>
-          <p className="mt-1.5 truncate text-[18px] font-black leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[24px]">
-            {stat.prefix}
-            <span>{formatted}</span>
-          </p>
-          {subText ? (
-            <p className="mt-1 truncate text-[10.5px] font-semibold text-faint sm:text-[11px]">
-              {subText}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18 }}
+        className="card-surface group rounded-2xl p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover sm:p-5"
+      >
+        <div className="flex items-start gap-2.5 sm:gap-3">
+          <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", tones[stat.tone])}>
+            <stat.icon className="size-4.5 sm:size-5" strokeWidth={2.1} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-baseline justify-between gap-1 leading-none">
+              <span className="truncate text-[12px] font-bold text-muted sm:text-[13px]">{primary}</span>
+              {secondary ? (
+                <span className="hidden truncate text-[10px] font-medium text-faint sm:block">{secondary}</span>
+              ) : null}
             </p>
-          ) : null}
+            <p className="mt-1.5 truncate text-[18px] font-black leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[24px]">
+              {stat.prefix}
+              <span>{formatted}</span>
+            </p>
+            {subText ? (
+              <p className="mt-1 truncate text-[10.5px] font-semibold text-faint sm:text-[11px]">
+                {subText}
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
 

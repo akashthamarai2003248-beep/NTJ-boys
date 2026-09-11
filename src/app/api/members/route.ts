@@ -17,7 +17,9 @@ export async function GET(req: Request) {
       area: area || undefined,
       role: role || null,
     });
-    return NextResponse.json({ members, total: members.length });
+    const res = NextResponse.json({ members, total: members.length });
+    res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=60");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

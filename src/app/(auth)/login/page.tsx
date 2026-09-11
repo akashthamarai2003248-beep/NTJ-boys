@@ -10,6 +10,7 @@ import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
 import { SplashScreen } from "@/components/auth/SplashScreen";
+import { prefetchCoreRoutes } from "@/lib/client/hooks";
 import type { SessionUser } from "@/components/layout/session";
 
 
@@ -170,12 +171,16 @@ function LoginInner() {
       localStorage.setItem("nbm_user", JSON.stringify(finalUser));
       if (remember) localStorage.setItem("nbm.remember", identifier);
       else localStorage.removeItem("nbm.remember");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("nbm_session_update"));
+      }
     } catch {
       /* storage unavailable */
     }
+    prefetchCoreRoutes();
     console.info(`[demo] signed in as ${finalUser.name} (${finalUser.role})`);
     const destination = next && next.startsWith("/") ? next : "/";
-    window.location.href = destination;
+    router.push(destination);
   };
 
   const login = async (identifierArg: string, passwordArg: string) => {

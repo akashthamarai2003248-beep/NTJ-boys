@@ -7,7 +7,7 @@ import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import type { ActivityLog, EventWithStats, MemberPosition } from "@/lib/data/types";
 import type { SeriesBucket } from "@/lib/data/repository";
 import type { DashboardPayload } from "@/lib/data/dashboard";
-import { useFetch } from "@/lib/client/hooks";
+import { useFetch, prefetchRoute } from "@/lib/client/hooks";
 import { qs } from "@/lib/client/api";
 import { useSession, usePermissions } from "@/components/layout/session";
 import { useLang } from "@/lib/i18n";
@@ -89,7 +89,13 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
           </div>
           <div className="flex flex-wrap items-center gap-2.5 pt-1 sm:pt-0">
             {can.finances ? (
-              <Link href="/collections?add=1">
+              <Link
+                href="/collections?add=1"
+                prefetch={true}
+                onMouseEnter={() => prefetchRoute("/collections")}
+                onTouchStart={() => prefetchRoute("/collections")}
+                onPointerDown={() => prefetchRoute("/collections")}
+              >
                 <Button
                   size="md"
                   className="bg-white text-navy-900 shadow-none hover:bg-saffron-50 hover:text-saffron-800"
@@ -99,7 +105,13 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
                 </Button>
               </Link>
             ) : null}
-            <Link href="/events">
+            <Link
+              href="/events"
+              prefetch={true}
+              onMouseEnter={() => prefetchRoute("/events")}
+              onTouchStart={() => prefetchRoute("/events")}
+              onPointerDown={() => prefetchRoute("/events")}
+            >
               <Button
                 size="md"
                 variant="secondary"
@@ -176,7 +188,14 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
             <h2 className="text-[16px] font-extrabold tracking-tight">{t("Upcoming Events", "வரவிருக்கும் நிகழ்வுகள்")}</h2>
             <p className="truncate text-[12px] font-medium text-muted">{t("what the Mandram is celebrating next", "மன்றத்தின் அடுத்த கொண்டாட்டங்கள்")}</p>
           </div>
-          <Link href="/events" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-saffron-600 hover:underline dark:text-saffron-400">
+          <Link
+            href="/events"
+            prefetch={true}
+            onMouseEnter={() => prefetchRoute("/events")}
+            onTouchStart={() => prefetchRoute("/events")}
+            onPointerDown={() => prefetchRoute("/events")}
+            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-saffron-600 hover:underline dark:text-saffron-400"
+          >
             {t("View all", "அனைத்தும்")} <ArrowRight className="size-3.5" />
           </Link>
         </div>
