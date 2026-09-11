@@ -28,7 +28,7 @@ import { addDaysISO, toISO } from "@/lib/utils/date";
 export const DEMO_TOTALS = { varavu: 85500, selavu: 42750 } as const;
 
 export const DEMO_CREDENTIALS = [
-  { role: "admin", email: "admin@nbm.demo", password: "admin123", name: "Akash" },
+  { role: "admin", email: "admin@nbm.demo", password: "akash123", name: "Akash", phone: "8248590767" },
   { role: "treasurer", email: "treasurer@nbm.demo", password: "treasurer123", name: "Muthu Kannan" },
   { role: "member", email: "member@nbm.demo", password: "member123", name: "Karthik Raja" },
 ] as const;
@@ -160,7 +160,7 @@ export function buildSeed(now: Date = new Date()): DB {
     return {
       id: `mem_${String(i + 1).padStart(2, "0")}`,
       name,
-      phone: phoneFor(i, rnd),
+      phone: i === 0 ? "8248590767" : phoneFor(i, rnd),
       street: `${10 + i}, ${STREETS[i % STREETS.length]}`,
       role: POSITIONS[i] ?? "Member",
       joinedDate: toISO(joined),
@@ -172,8 +172,8 @@ export function buildSeed(now: Date = new Date()): DB {
   // Demo sign-in users also appear as board members
   const users: DemoUser[] = [
     {
-      id: "usr_admin", name: "Akash", phone: "9840010001",
-      email: "admin@nbm.demo", password: "admin123", role: "admin", position: "President",
+      id: "usr_admin", name: "Akash", phone: "8248590767",
+      email: "admin@nbm.demo", password: "akash123", role: "admin", position: "President",
     },
     {
       id: "usr_treasurer", name: "Muthu Kannan", phone: "9840010002",

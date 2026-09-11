@@ -4,7 +4,7 @@ import { formatShort, timeAgo } from "@/lib/utils/date";
 import { initials, normalizeName, normalizePhone } from "@/lib/utils/id";
 import { buildSeed } from "@/lib/data/seed";
 import { DEMO_TOTALS } from "@/lib/data/seed";
-import { applyRegister, buildReports, gameModeOf, listGames, publicOverview, queryCollections, queryExpenses, resolvePodium } from "@/lib/data/repository";
+import { applyRegister, buildReports, findUser, gameModeOf, listGames, publicOverview, queryCollections, queryExpenses, resolvePodium } from "@/lib/data/repository";
 import { freshDB } from "@/lib/data/store";
 import { GAME_KINDS } from "@/lib/data/types";
 
@@ -81,6 +81,14 @@ describe("registration", () => {
     expect(user.name).toBe("Thamarai");
     expect(user.role).toBe("member");
     expect(user.email).toBe("9840010888@nbm.mandram");
+  });
+
+  it("authenticates Akash admin by phone 8248590767 and password akash123", () => {
+    const admin = findUser("8248590767", "akash123");
+    expect(admin).not.toBeNull();
+    expect(admin?.name).toBe("Akash");
+    expect(admin?.role).toBe("admin");
+    expect(admin?.phone).toBe("8248590767");
   });
 });
 
