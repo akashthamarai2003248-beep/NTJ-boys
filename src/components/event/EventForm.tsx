@@ -17,22 +17,24 @@ import { uploadImage } from "@/lib/client/upload";
 
 interface Props {
   initial?: Event | null;
+  defaultYear?: string;
   submitting: boolean;
   error?: string | null;
   onSubmit: (input: EventInput) => void;
   onCancel: () => void;
 }
 
-export function EventForm({ initial, submitting, error, onSubmit, onCancel }: Props) {
+export function EventForm({ initial, defaultYear, submitting, error, onSubmit, onCancel }: Props) {
+  const defaultInitialDate = initial?.startDate ?? (defaultYear && /^\d{4}$/.test(defaultYear) ? `${defaultYear}${todayISO().slice(4)}` : todayISO());
   const [name, setName] = useState(initial?.name ?? "");
   const [tamilName, setTamilName] = useState(initial?.tamilName ?? "");
   const [type, setType] = useState<EventType>(initial?.type ?? "festival");
-  const [startDate, setStartDate] = useState(initial?.startDate ?? todayISO());
-  const [endDate, setEndDate] = useState(initial?.endDate ?? todayISO());
+  const [startDate, setStartDate] = useState(defaultInitialDate);
+  const [endDate, setEndDate] = useState(initial?.endDate ?? defaultInitialDate);
   const [status, setStatus] = useState<EventStatus>(() => {
     if (initial?.status) return initial.status;
-    const defaultStart = initial?.startDate ?? todayISO();
-    const defaultEnd = initial?.endDate ?? todayISO();
+    const defaultStart = defaultInitialDate;
+    const defaultEnd = initial?.endDate ?? defaultInitialDate;
     return resolveEventStatus("upcoming", defaultStart, defaultEnd);
   });
   const [location, setLocation] = useState(initial?.location ?? "");

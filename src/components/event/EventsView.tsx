@@ -55,7 +55,7 @@ export function EventsView() {
     if (params.get("new") === "1") router.replace("/events", { scroll: false });
   }, [params, router]);
 
-  // Extract distinct available years from all events
+  // Extract distinct available years from all events + past 10 years
   const availableYears = useMemo(() => {
     const set = new Set<string>();
     for (const e of events) {
@@ -66,7 +66,11 @@ export function EventsView() {
       if (y2 && /^\d{4}$/.test(y2)) set.add(y2);
       if (y3 && /^\d{4}$/.test(y3)) set.add(y3);
     }
-    set.add(new Date().getFullYear().toString());
+    // Include current year and past 10 years (e.g. 2026 down to 2017)
+    const currentNum = new Date().getFullYear();
+    for (let i = 0; i < 10; i++) {
+      set.add(String(currentNum - i));
+    }
     return Array.from(set).sort((a, b) => b.localeCompare(a));
   }, [events]);
 
@@ -237,6 +241,15 @@ export function EventsView() {
                   {t(`View All (${eventsInYear.length})`, `அனைத்தும் (${eventsInYear.length})`)}
                 </Button>
               )}
+              {admin && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => { setFormError(null); setFormOpen(true); }}
+                >
+                  <Plus className="size-4" /> {year !== "all" ? t(`Create ${year} Event`, `${year} நிகழ்வை உருவாக்கு`) : t("Create Event", "நிகழ்வை உருவாக்கு")}
+                </Button>
+              )}
             </div>
           </div>
         ) : (
@@ -273,7 +286,13 @@ export function EventsView() {
         description="நிகழ்வு உருவாக்கு · festivals, sports, meetings — anything the Mandram hosts"
         maxWidth="max-w-xl"
       >
-        <EventForm submitting={submitting} error={formError} onSubmit={handleCreate} onCancel={() => setFormOpen(false)} />
+        <EventForm
+          defaultYear={year !== "all" ? year : undefined}
+          submitting={submitting}
+          error={formError}
+          onSubmit={handleCreate}
+          onCancel={() => setFormOpen(false)}
+        />
       </Modal>
     </div>
   );
