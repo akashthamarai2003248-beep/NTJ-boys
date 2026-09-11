@@ -762,6 +762,15 @@ function validateGalleryUrl(url: string): string {
   return u;
 }
 
+export async function listGalleryPhotos(f: { eventId?: string } = {}): Promise<GalleryPhoto[]> {
+  const sb = await getSupabaseServer();
+  let query = sb.from("gallery").select("*").order("created_at", { ascending: false });
+  if (f.eventId) query = query.eq("event_id", f.eventId);
+  const { data, error } = await query;
+  if (error) throw dbError(error, "Could not load gallery photos");
+  return (data ?? []).map(mapGallery);
+}
+
 export async function createGalleryItem(actor: DemoUser, input: GalleryInput): Promise<GalleryPhoto> {
   if (!input.url) throw new HttpError(400, "Choose an image");
   const url = validateGalleryUrl(input.url);
@@ -782,6 +791,7 @@ export async function createGalleryItem(actor: DemoUser, input: GalleryInput): P
   await log(sb, actor, {
     action: "added", entity: "gallery", label: rec.caption || "Photo", eventName: await eventNameFor(sb, rec.eventId),
   });
+  invalidateDBCache();
   return rec;
 }
 
@@ -796,6 +806,7 @@ export async function deleteGalleryItem(actor: DemoUser, id: string): Promise<vo
   await log(sb, actor, {
     action: "deleted", entity: "gallery", label: rec.caption || "Photo", eventName: await eventNameFor(sb, rec.event_id),
   });
+  invalidateDBCache();
 }
 
 /* ── Settings ─────────────────────────────────────────────── */

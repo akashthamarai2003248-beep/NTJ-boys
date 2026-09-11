@@ -180,6 +180,9 @@ export function prefetchRoute(route: string) {
     void prefetchData("/api/dashboard");
   } else if (route === "/members") {
     void prefetchData("/api/members");
+  } else if (route === "/gallery" || route.startsWith("/gallery")) {
+    void prefetchData("/api/gallery");
+    void prefetchData("/api/events");
   } else if (route === "/reports") {
     void prefetchData("/api/reports?year=all");
   }

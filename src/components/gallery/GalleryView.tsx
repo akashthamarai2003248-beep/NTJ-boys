@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, ChevronLeft, ChevronRight, ImagePlus, Link2, Loader2, SearchX, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft, Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Link2, Loader2, SearchX, Trash2, X, ZoomIn, ZoomOut,
+} from "lucide-react";
 import type { Event, GalleryInput, GalleryPhoto } from "@/lib/data/types";
 import { api, qs } from "@/lib/client/api";
 import { useFetch } from "@/lib/client/hooks";
@@ -146,32 +148,27 @@ export function GalleryView({ eventId: deepLink }: { eventId?: string }) {
         />
       </Modal>
 
-      {/* lightbox */}
-      {lightbox && typeof document !== "undefined" ? (
-        <Modal open onClose={() => setLightboxId(null)} hideClose maxWidth="max-w-4xl">
-          <GalleryCarousel
-            photo={lightbox}
-            photos={photos}
-            index={lightboxIndex}
-            direction={slideDirection}
-            eventName={eventName}
-            onClose={() => setLightboxId(null)}
-            onMove={movePhoto}
-            onSelect={(id) => { setSlideDirection(photos.findIndex((photo) => photo.id === id) > lightboxIndex ? 1 : -1); setLightboxId(id); }}
-          />
-          <div className="mt-3 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[15px] font-bold">{lightbox.caption || "Mandram photo"}</p>
-              <p className="mt-0.5 text-[12px] text-muted">{eventName(lightbox.eventId)} · added by {lightbox.uploadedBy} · {timeAgo(lightbox.createdAt)}</p>
-            </div>
-            {admin ? (
-              <Button variant="danger" size="sm" onClick={() => { setDeleting(lightbox); setLightboxId(null); }}>
-                <Trash2 className="size-3.5" /> Remove
-              </Button>
-            ) : null}
-          </div>
-        </Modal>
-      ) : null}
+      {/* full-screen native gallery app viewer */}
+      {lightbox && typeof document !== "undefined" && (
+        <FullScreenGalleryViewer
+          photo={lightbox}
+          photos={photos}
+          index={lightboxIndex}
+          direction={slideDirection}
+          eventName={eventName}
+          admin={admin}
+          onClose={() => setLightboxId(null)}
+          onMove={movePhoto}
+          onSelect={(id) => {
+            setSlideDirection(photos.findIndex((photo) => photo.id === id) > lightboxIndex ? 1 : -1);
+            setLightboxId(id);
+          }}
+          onDelete={(photo) => {
+            setDeleting(photo);
+            setLightboxId(null);
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(deleting)}
@@ -199,86 +196,357 @@ export function GalleryView({ eventId: deepLink }: { eventId?: string }) {
   );
 }
 
-function GalleryCarousel({
-  photo, photos, index, direction, eventName, onClose, onMove, onSelect,
+function FullScreenGalleryViewer({
+  photo,
+  photos,
+  index,
+  direction,
+  eventName,
+  admin,
+  onClose,
+  onMove,
+  onSelect,
+  onDelete,
 }: {
   photo: GalleryPhoto;
   photos: GalleryPhoto[];
   index: number;
   direction: 1 | -1;
   eventName: (id?: string | null) => string;
+  admin: boolean;
   onClose: () => void;
   onMove: (direction: 1 | -1) => void;
   onSelect: (id: string) => void;
+  onDelete: (photo: GalleryPhoto) => void;
 }) {
+  const [showControls, setShowControls] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const activeThumbRef = useRef<HTMLButtonElement | null>(null);
   const hasMultiple = photos.length > 1;
 
-  return (
-    <div>
-      <div
-        className="relative min-h-[280px] overflow-hidden rounded-xl bg-navy-950 sm:min-h-[420px]"
-        onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
-        onTouchEnd={(event) => {
-          const startX = touchStartX.current;
-          const endX = event.changedTouches[0]?.clientX;
-          touchStartX.current = null;
-          if (startX === null || endX === undefined || Math.abs(endX - startX) < 45) return;
-          onMove(endX < startX ? 1 : -1);
-        }}
-      >
-        <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div
-            key={photo.id}
-            initial={{ x: direction * 56, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: direction * -56, opacity: 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt={photo.caption ?? "Mandram photo"} className="max-h-[62dvh] w-full select-none object-contain" draggable={false} />
-          </motion.div>
-        </AnimatePresence>
+  // Lock body scroll
+  useEffect(() => {
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = orig;
+    };
+  }, []);
 
-        <button onClick={onClose} aria-label="Close gallery" className="absolute right-3 top-3 rounded-full bg-black/55 p-2 text-white backdrop-blur transition-colors hover:bg-black/75">
-          <X className="size-4" />
-        </button>
-        {hasMultiple ? (
-          <>
-            <button onClick={() => onMove(-1)} aria-label="Previous photo" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white backdrop-blur transition-colors hover:bg-black/75 sm:left-3 sm:p-2.5">
-              <ChevronLeft className="size-5" />
+  // Preload adjacent images for 0ms transitions
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    const nextPhoto = photos[(index + 1) % photos.length];
+    const prevPhoto = photos[(index - 1 + photos.length) % photos.length];
+    if (nextPhoto?.url) {
+      const img = new Image();
+      img.src = nextPhoto.url;
+    }
+    if (prevPhoto?.url) {
+      const img = new Image();
+      img.src = prevPhoto.url;
+    }
+  }, [photos, index]);
+
+  // Reset zoom & drag offset on photo change
+  useEffect(() => {
+    setZoom(1);
+    setDragY(0);
+    setIsDragging(false);
+  }, [photo.id]);
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    activeThumbRef.current?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [index]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") onMove(-1);
+      else if (e.key === "ArrowRight") onMove(1);
+      else if (e.key === "f" || e.key === "F") setShowControls((v) => !v);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, onMove]);
+
+  // Touch handlers for swipe & pull-down-to-dismiss
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+
+    // Pull down to dismiss if pulling downwards vertically and not zoomed
+    if (dy > 12 && Math.abs(dy) > Math.abs(dx) && zoom === 1) {
+      setIsDragging(true);
+      setDragY(dy);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const startX = touchStartX.current;
+    const startY = touchStartY.current;
+    const endX = e.changedTouches[0]?.clientX ?? startX;
+    const endY = e.changedTouches[0]?.clientY ?? startY;
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    if (isDragging) {
+      setIsDragging(false);
+      if (dy > 100) {
+        onClose();
+        return;
+      }
+      setDragY(0);
+      return;
+    }
+
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) && zoom === 1) {
+      onMove(dx < 0 ? 1 : -1);
+    }
+  };
+
+  // Download photo
+  const handleDownload = async () => {
+    try {
+      toast.info("Downloading photo…");
+      const res = await fetch(photo.url);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `mandram-photo-${photo.id}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+      toast.success("Photo saved to device");
+    } catch {
+      window.open(photo.url, "_blank");
+    }
+  };
+
+  // Calculate drag opacity
+  const dragOpacity = isDragging ? Math.max(0.35, 1 - dragY / 320) : 1;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black text-white select-none overflow-hidden"
+      style={{
+        backgroundColor: `rgba(0, 0, 0, ${dragOpacity})`,
+        transition: isDragging ? "none" : "background-color 0.25s ease-out",
+      }}
+    >
+      {/* Top Bar */}
+      <div
+        className={cn(
+          "absolute top-0 inset-x-0 z-30 flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4 bg-gradient-to-b from-black/85 via-black/40 to-transparent transition-all duration-300",
+          "pt-[max(env(safe-area-inset-top),12px)]",
+          showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"
+        )}
+      >
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+          <span className="text-[13.5px] font-semibold tabular-nums tracking-wide text-white/90">
+            {index + 1} / {photos.length}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Zoom button */}
+          <button
+            type="button"
+            onClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
+            title={zoom === 1 ? "Zoom In" : "Reset Zoom"}
+            className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
+          >
+            {zoom === 1 ? <ZoomIn className="size-4.5" /> : <ZoomOut className="size-4.5" />}
+          </button>
+
+          {/* Download button */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            title="Save / Download photo"
+            aria-label="Download photo"
+            className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
+          >
+            <Download className="size-4.5" />
+          </button>
+
+          {/* Delete button for admin */}
+          {admin && (
+            <button
+              type="button"
+              onClick={() => onDelete(photo)}
+              title="Remove photo"
+              aria-label="Remove photo"
+              className="flex size-10 items-center justify-center rounded-full bg-red-500/20 text-red-400 backdrop-blur-md transition hover:bg-red-500/30 active:scale-95"
+            >
+              <Trash2 className="size-4.5" />
             </button>
-            <button onClick={() => onMove(1)} aria-label="Next photo" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white backdrop-blur transition-colors hover:bg-black/75 sm:right-3 sm:p-2.5">
-              <ChevronRight className="size-5" />
-            </button>
-          </>
-        ) : null}
-        <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-          {index + 1} / {photos.length}
-        </span>
+          )}
+
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
       </div>
 
-      {hasMultiple ? (
-        <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
-          {photos.map((item, itemIndex) => (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item.id)}
-              aria-label={`View photo ${itemIndex + 1}`}
-              aria-current={item.id === photo.id ? "true" : undefined}
-              className={cn("relative size-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all sm:size-16", item.id === photo.id ? "border-saffron-400 opacity-100" : "border-transparent opacity-55 hover:opacity-90")}
+      {/* Main Viewport Container */}
+      <div
+        className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden touch-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => setShowControls((v) => !v)}
+      >
+        <div
+          className="relative size-full flex items-center justify-center transition-transform duration-200"
+          style={{
+            transform: `translateY(${dragY}px) scale(${isDragging ? Math.max(0.85, 1 - dragY / 700) : 1})`,
+            transition: isDragging ? "none" : "transform 0.25s ease-out",
+          }}
+        >
+          <AnimatePresence initial={false} custom={direction} mode="wait">
+            <motion.div
+              key={photo.id}
+              initial={{ x: direction * 60, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: direction * -60, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center justify-center p-0 sm:p-4"
+              onClick={(e) => {
+                // Prevent bubbling
+              }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt="" className="size-full object-cover" />
-            </button>
-          ))}
+              <img
+                src={photo.url}
+                alt={photo.caption ?? "Mandram photo"}
+                draggable={false}
+                decoding="async"
+                fetchPriority="high"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setZoom((z) => (z === 1 ? 2 : 1));
+                }}
+                className={cn(
+                  "max-h-[100dvh] max-w-[100dvw] w-auto h-auto object-contain select-none transition-transform duration-250 cursor-pointer",
+                  zoom > 1 && "scale-[2] cursor-zoom-out"
+                )}
+              />
+            </motion.div>
+          </AnimatePresence>
         </div>
-      ) : null}
 
-      <p className="mt-3 text-[12px] font-medium text-muted">
-        {hasMultiple ? "Swipe, use the arrows, or press ← → to browse photos." : eventName(photo.eventId)}
-      </p>
+        {/* Desktop Left/Right Navigation Chevrons */}
+        {hasMultiple && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMove(-1); }}
+              aria-label="Previous photo"
+              className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 size-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/10 transition hover:bg-black/70 hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft className="size-6" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMove(1); }}
+              aria-label="Next photo"
+              className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 size-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/10 transition hover:bg-black/70 hover:scale-105 active:scale-95"
+            >
+              <ChevronRight className="size-6" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Bottom Bar: Caption & Thumbnail Strip */}
+      <div
+        className={cn(
+          "absolute bottom-0 inset-x-0 z-30 flex flex-col gap-2.5 px-4 pb-4 pt-8 sm:px-6 sm:pb-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent transition-all duration-300",
+          "pb-[max(env(safe-area-inset-bottom),14px)]",
+          showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full pointer-events-none"
+        )}
+      >
+        {/* Caption & Metadata */}
+        <div className="min-w-0 max-w-2xl">
+          <p className="text-[15px] sm:text-[17px] font-bold text-white leading-snug drop-shadow-md">
+            {photo.caption || "Mandram photo"}
+          </p>
+          <p className="mt-1 text-[11.5px] sm:text-[12.5px] font-medium text-white/75 flex items-center gap-2 flex-wrap">
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] font-semibold text-white">
+              {eventName(photo.eventId)}
+            </span>
+            {photo.uploadedBy && <span>added by {photo.uploadedBy}</span>}
+            <span>•</span>
+            <span>{timeAgo(photo.createdAt)}</span>
+          </p>
+        </div>
+
+        {/* Thumbnail Filmstrip */}
+        {hasMultiple && (
+          <div className="hide-scrollbar mt-1 flex items-center gap-2 overflow-x-auto py-1">
+            {photos.map((item, itemIndex) => {
+              const isSelected = item.id === photo.id;
+              return (
+                <button
+                  key={item.id}
+                  ref={isSelected ? activeThumbRef : null}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
+                  aria-label={`View photo ${itemIndex + 1}`}
+                  className={cn(
+                    "relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-lg transition-all",
+                    isSelected
+                      ? "ring-2 ring-saffron-400 scale-105 opacity-100 shadow-lg shadow-saffron-500/20"
+                      : "opacity-45 hover:opacity-85"
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.url} alt="" className="size-full object-cover" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadDB } from "@/lib/data/supabase-store";
-import { createGalleryItem, listGallery } from "@/lib/data/repository";
+import { createGalleryItem, getGalleryPhotos } from "@/lib/data/repository";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-helpers";
 import type { GalleryInput } from "@/lib/data/types";
@@ -11,7 +10,10 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("eventId") ?? undefined;
-    return NextResponse.json({ photos: listGallery(await loadDB(true), { eventId }) });
+    const photos = await getGalleryPhotos({ eventId });
+    const res = NextResponse.json({ photos });
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return res;
   } catch (e) {
     return handleApiError(e);
   }

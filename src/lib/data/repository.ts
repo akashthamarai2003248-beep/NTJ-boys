@@ -1254,6 +1254,11 @@ export function listGallery(db: DB, f: { eventId?: string } = {}): GalleryPhoto[
   return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export async function getGalleryPhotos(f: { eventId?: string } = {}): Promise<GalleryPhoto[]> {
+  if (isSupabaseMode()) return (await supabaseRepo()).listGalleryPhotos(f);
+  return listGallery(getDB(), f);
+}
+
 function validateGalleryUrl(url: string): string {
   const u = url.trim();
   const ok =
