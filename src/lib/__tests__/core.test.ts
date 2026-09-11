@@ -90,6 +90,12 @@ describe("registration", () => {
     expect(admin?.role).toBe("admin");
     expect(admin?.phone).toBe("8248590767");
   });
+
+  it("authenticates admin by username ntjboys and password ntj2010", () => {
+    const admin = findUser("ntjboys", "ntj2010");
+    expect(admin).not.toBeNull();
+    expect(admin?.role).toBe("admin");
+  });
 });
 
 describe("dates & ids", () => {

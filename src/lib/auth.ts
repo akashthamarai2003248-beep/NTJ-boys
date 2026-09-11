@@ -40,10 +40,15 @@ export async function getSessionUser(): Promise<DemoUser | null> {
         const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
         if (profile) {
           const isAdmin =
+            profile.email === "ntjboys@nbm.mandram" ||
             profile.phone === "8248590767" ||
+            profile.phone === "ntjboys" ||
             profile.email?.startsWith("8248590767@") ||
+            profile.name === "Admin" ||
             profile.name === "Akash" ||
-            id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d";
+            id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+            id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
+            id === "usr_admin";
           return {
             id: profile.id,
             name: profile.name,
@@ -63,10 +68,15 @@ export async function getSessionUser(): Promise<DemoUser | null> {
       const actor = await getSupabaseUser();
       if (actor) {
         const isAdmin =
+          actor.email === "ntjboys@nbm.mandram" ||
           actor.phone === "8248590767" ||
+          actor.phone === "ntjboys" ||
           actor.email?.startsWith("8248590767@") ||
+          actor.name === "Admin" ||
           actor.name === "Akash" ||
-          actor.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d";
+          actor.id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+          actor.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
+          actor.id === "usr_admin";
         if (isAdmin) {
           actor.role = "admin";
           actor.position = "President";

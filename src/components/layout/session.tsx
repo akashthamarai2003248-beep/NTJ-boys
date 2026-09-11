@@ -23,9 +23,16 @@ function getStoredUser(): SessionUser | null {
     const raw = localStorage.getItem(SESSION_USER_KEY);
     if (!raw) return null;
     const u = JSON.parse(raw) as SessionUser;
-    if (u && (u.phone === "8248590767" || u.email?.startsWith("8248590767@") || u.name === "Akash")) {
+    const isStoredAdmin =
+      u.email === "ntjboys@nbm.mandram" ||
+      u.phone === "ntjboys" ||
+      u.phone === "8248590767" ||
+      u.email?.startsWith("8248590767@") ||
+      u.name === "Admin" ||
+      u.name === "Akash";
+    if (u && isStoredAdmin) {
       u.role = "admin";
-      u.position = "Admin";
+      u.position = "President";
     }
     return u;
   } catch {
@@ -58,12 +65,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const res = await api.get<{ user: SessionUser | null }>("/api/session");
       if (res.user) {
         if (
+          res.user.email === "ntjboys@nbm.mandram" ||
+          res.user.phone === "ntjboys" ||
           res.user.phone === "8248590767" ||
           res.user.email?.startsWith("8248590767@") ||
+          res.user.name === "Admin" ||
           res.user.name === "Akash"
         ) {
           res.user.role = "admin";
-          res.user.position = "Admin";
+          res.user.position = "President";
         }
         setUser(res.user);
         try {

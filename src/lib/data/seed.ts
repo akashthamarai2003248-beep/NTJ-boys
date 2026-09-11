@@ -28,7 +28,7 @@ import { addDaysISO, toISO } from "@/lib/utils/date";
 export const DEMO_TOTALS = { varavu: 85500, selavu: 42750 } as const;
 
 export const DEMO_CREDENTIALS = [
-  { role: "admin", email: "admin@nbm.demo", password: "akash123", name: "Akash", phone: "8248590767" },
+  { role: "admin", email: "admin@nbm.demo", password: "ntj2010", name: "Akash", phone: "8248590767" },
   { role: "treasurer", email: "treasurer@nbm.demo", password: "treasurer123", name: "Muthu Kannan" },
   { role: "member", email: "member@nbm.demo", password: "member123", name: "Karthik Raja" },
 ] as const;
@@ -173,7 +173,7 @@ export function buildSeed(now: Date = new Date()): DB {
   const users: DemoUser[] = [
     {
       id: "usr_admin", name: "Akash", phone: "8248590767",
-      email: "admin@nbm.demo", password: "akash123", role: "admin", position: "President",
+      email: "admin@nbm.demo", password: "ntj2010", role: "admin", position: "President",
     },
     {
       id: "usr_treasurer", name: "Muthu Kannan", phone: "9840010002",

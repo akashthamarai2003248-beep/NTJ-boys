@@ -25,12 +25,12 @@ function hydrateShape(db: DB): DB {
   if (!Array.isArray(db.results)) db.results = [];
   if (!Array.isArray(db.gallery)) db.gallery = [];
   if (!db.settings) db.settings = { publicView: true, updatedAt: new Date().toISOString() };
-  // Synchronize Akash admin credentials
+  // Synchronize admin credentials
   const admin = db.users?.find((u) => u.id === "usr_admin" || u.role === "admin");
   if (admin) {
     admin.name = "Akash";
     admin.phone = "8248590767";
-    admin.password = "akash123";
+    admin.password = "ntj2010";
     admin.role = "admin";
   }
   return db;

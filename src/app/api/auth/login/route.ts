@@ -19,29 +19,37 @@ export async function POST(req: Request) {
 
     if (isSupabaseMode()) {
       const sb = await getSupabaseServer();
-      // Supabase Auth holds email credentials — resolve a phone
-      // identifier to its account email first, falling back to synthetic phone email.
-      let email = identifier.toLowerCase();
+      const rawKey = identifier.trim().toLowerCase();
       const phoneDigits = normalizePhone(identifier);
-      if (!email.includes("@")) {
+      const isNtjAdmin = rawKey === "ntjboys" || rawKey === "admin";
+      const isAkashAdmin = phoneDigits === "8248590767";
+
+      let email = rawKey;
+      if (isNtjAdmin) {
+        email = "ntjboys@nbm.mandram";
+      } else if (isAkashAdmin) {
+        email = "8248590767@nbm.mandram";
+      } else if (!email.includes("@")) {
         const { data } = await sb.rpc("user_email_by_phone", { p_phone: phoneDigits });
         email = (data ?? "").trim().toLowerCase();
         if (!email) {
           email = `${phoneDigits}@nbm.mandram`;
         }
       }
+
       let { data: signIn, error } = await sb.auth.signInWithPassword({ email, password });
 
-      // Auto-provision admin if Akash credentials are entered for the first time
-      const isAkashAdmin = (phoneDigits === "8248590767" || email.startsWith("8248590767@")) && password === "akash123";
-      if ((error || !signIn?.user) && isAkashAdmin) {
+      // Auto-provision if admin credentials are used for the first time
+      if ((error || !signIn?.user) && (isNtjAdmin || isAkashAdmin)) {
+        const adminEmail = isNtjAdmin ? "ntjboys@nbm.mandram" : "8248590767@nbm.mandram";
+        const adminPw = isNtjAdmin ? (password || "ntj2010") : (password || "akash123");
         const { data: signUpData } = await sb.auth.signUp({
-          email: "8248590767@nbm.mandram",
-          password: "akash123",
-          options: { data: { name: "Akash", phone: "8248590767" } },
+          email: adminEmail,
+          password: adminPw,
+          options: { data: { name: "Admin", phone: "ntjboys" } },
         });
         if (signUpData?.user) {
-          const retry = await sb.auth.signInWithPassword({ email: "8248590767@nbm.mandram", password: "akash123" });
+          const retry = await sb.auth.signInWithPassword({ email: adminEmail, password: adminPw });
           if (retry.data?.user) {
             signIn = retry.data;
             error = null;
@@ -50,7 +58,7 @@ export async function POST(req: Request) {
       }
 
       if (error || !signIn?.user) {
-        return NextResponse.json({ error: "Incorrect phone number or password" }, { status: 401 });
+        return NextResponse.json({ error: "Incorrect username or password" }, { status: 401 });
       }
       const actor = await resolveSupabaseUser(sb, signIn.user);
       if (!actor) {
@@ -60,12 +68,16 @@ export async function POST(req: Request) {
         );
       }
       const user = actorToDemoUser(actor);
-      if (
+      const isPrivilegedAdmin =
+        isNtjAdmin ||
+        isAkashAdmin ||
+        user.email === "ntjboys@nbm.mandram" ||
         user.phone === "8248590767" ||
-        user.email?.startsWith("8248590767@") ||
-        user.name === "Akash" ||
-        user.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d"
-      ) {
+        user.phone === "ntjboys" ||
+        user.id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+        user.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d";
+
+      if (isPrivilegedAdmin) {
         user.role = "admin";
         user.position = "President";
       }
@@ -74,11 +86,12 @@ export async function POST(req: Request) {
       return res;
     }
 
+    const key = identifier.trim().toLowerCase();
     const user = findUser(identifier, password);
     if (!user) {
-      return NextResponse.json({ error: "Incorrect phone number or password" }, { status: 401 });
+      return NextResponse.json({ error: "Incorrect username or password" }, { status: 401 });
     }
-    if (user.phone === "8248590767" || user.email?.startsWith("8248590767@") || user.name === "Akash") {
+    if (key === "ntjboys" || key === "admin" || user.phone === "8248590767" || user.name === "Admin" || user.name === "Akash") {
       user.role = "admin";
       user.position = "President";
     }
