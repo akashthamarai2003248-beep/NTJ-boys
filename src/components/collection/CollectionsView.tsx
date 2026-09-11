@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -38,10 +38,26 @@ import { formatShort, todayISO } from "@/lib/utils/date";
 import { CollectionForm } from "./CollectionForm";
 
 const PER_PAGE = 10;
-const YEAR_OPTIONS = Array.from({ length: 10 }, (_, index) => String(Number(todayISO().slice(0, 4)) - index));
+const CURRENT_YEAR = todayISO().slice(0, 4);
+const YEAR_OPTIONS = Array.from({ length: 10 }, (_, index) => String(Number(CURRENT_YEAR) - index));
 
 interface EventsPayload {
   events: (Event & { varavu?: number })[];
+}
+
+/** Prefer the live event; otherwise keep the financial view on this year's next event. */
+function currentEventId(events: Event[]) {
+  const today = todayISO();
+  const active = events
+    .filter((event) => event.status === "active" || (event.startDate <= today && event.endDate >= today))
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+  if (active[0]) return active[0].id;
+
+  const thisYear = events.filter((event) => event.startDate.startsWith(CURRENT_YEAR));
+  const upcoming = thisYear
+    .filter((event) => event.endDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  return upcoming[0]?.id ?? thisYear.sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? "";
 }
 
 export function CollectionsView() {
@@ -54,7 +70,7 @@ export function CollectionsView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
-  const [year, setYear] = useState(() => searchParams.get("year") ?? "");
+  const [year, setYear] = useState(() => searchParams.get("year") ?? CURRENT_YEAR);
   const [category, setCategory] = useState("");
   const [payment, setPayment] = useState("");
   const [page, setPage] = useState(1);
@@ -80,6 +96,8 @@ export function CollectionsView() {
   const eventsFetch = useFetch<EventsPayload>("/api/events");
 
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
+  const defaultEventId = useMemo(() => currentEventId(events), [events]);
+  const defaultEventWasSet = useRef(Boolean(searchParams.get("eventId")));
   const eventName = useCallback(
     (id?: string | null) => {
       const ev = events.find((e) => e.id === id);
@@ -88,6 +106,14 @@ export function CollectionsView() {
     [events, lang, t],
   );
   const hasFilters = Boolean(q || eventId || year || category || payment);
+  const hasCustomFilters = Boolean(q || category || payment || eventId !== defaultEventId || year !== CURRENT_YEAR);
+
+  // Event data arrives after the first client render, so choose the active/current event once it is available.
+  useEffect(() => {
+    if (defaultEventWasSet.current || eventsFetch.loading) return;
+    defaultEventWasSet.current = true;
+    if (defaultEventId) setEventId(defaultEventId);
+  }, [defaultEventId, eventsFetch.loading]);
 
   // deep-link ?add=1 / ?eventId=x — state is initialised from the URL once
   useEffect(() => {
@@ -102,7 +128,7 @@ export function CollectionsView() {
   }, [celebrate]);
 
   const clearFilters = () => {
-    setQ(""); setEventId(""); setYear(""); setCategory(""); setPayment(""); setPage(1);
+    setQ(""); setEventId(defaultEventId); setYear(CURRENT_YEAR); setCategory(""); setPayment(""); setPage(1);
   };
 
   const openAdd = () => {
@@ -169,24 +195,6 @@ export function CollectionsView() {
     }
   };
 
-  const items = data?.items ?? [];
-  const filteredSum = data?.sum ?? 0;
-
-  return (
-    <div className="space-y-4 sm:space-y-5">
-      {writable && (
-        <div className="flex items-center justify-end">
-          <Button variant="primary" size="sm" onClick={openAdd}>
-            <Plus className="size-4" /> {t("Add Collection", "வரவு சேர்க்க")}
-          </Button>
-        </div>
-      )}
-
-      {/* total banner */}
-      <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-saffron-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-navy-950 dark:via-navy-900 dark:to-navy-800 dark:text-white">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-saffron-500/30 bg-saffron-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-saffron-700 dark:border-transparent dark:bg-saffron-500/20 dark:text-saffron-300">
               {t("Total Collection", "மொத்த வரவு")}
             </span>
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
@@ -255,17 +263,6 @@ export function CollectionsView() {
               </span>
             )}
           </button>
-          {writable && (
-            <button
-              type="button"
-              onClick={openAdd}
-              aria-label={t("Add Collection", "வரவு சேர்க்க")}
-              title={t("Add Collection", "வரவு சேர்க்க")}
-              className="flex size-10.5 shrink-0 items-center justify-center rounded-full bg-saffron-500 text-white shadow-sm transition-colors hover:bg-saffron-600 focus:outline-none focus:ring-2 focus:ring-saffron-500/40 dark:text-navy-950"
-            >
-              <Plus className="size-5" />
-            </button>
-          )}
         </div>
 
         {/* Quick Category Chips */}
@@ -307,7 +304,7 @@ export function CollectionsView() {
             👥 {t("Mandram Vasul", "மன்றம் வசூல்")}
           </button>
 
-          {hasFilters && (
+          {hasCustomFilters && (
             <button
               type="button"
               onClick={clearFilters}
@@ -331,7 +328,7 @@ export function CollectionsView() {
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
-                  <Select value={eventId} onChange={(e) => { setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
+                  <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); setPage(1); }} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {events.map((ev) => (
                       <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>
