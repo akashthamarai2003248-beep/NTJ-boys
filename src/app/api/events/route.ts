@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as EventInput;
     const event = await createEvent(actor, input);
     return NextResponse.json({ event }, { status: 201 });

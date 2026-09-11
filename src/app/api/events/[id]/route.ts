@@ -29,7 +29,7 @@ export async function GET(_req: Request, ctx: Ctx) {
 export async function PATCH(req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as EventInput;
     const event = await updateEvent(actor, id, input);
     return NextResponse.json({ event });
@@ -41,7 +41,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
 export async function DELETE(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     await deleteEvent(actor, id);
     return NextResponse.json({ ok: true });
   } catch (e) {

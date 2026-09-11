@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Incorrect username or password" }, { status: 401 });
     }
-    if (key === "ntjboys" || key === "admin" || user.phone === "8248590767" || user.name === "Admin" || user.name === "Akash") {
+    if (key === "ntjboys" || key === "admin" || user.phone === "8248590767" || user.role === "admin") {
       user.role = "admin";
       user.position = "President";
     }

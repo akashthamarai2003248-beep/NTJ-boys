@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as MatchInput;
     const match = await createMatch(actor, input);
     return NextResponse.json({ match }, { status: 201 });

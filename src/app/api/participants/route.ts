@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as ParticipantInput;
     const participant = await createParticipant(actor, input);
     return NextResponse.json({ participant }, { status: 201 });

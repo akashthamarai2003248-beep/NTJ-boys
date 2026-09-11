@@ -29,8 +29,7 @@ function getStoredUser(): SessionUser | null {
       u.phone === "ntjboys" ||
       u.phone === "8248590767" ||
       u.email?.startsWith("8248590767@") ||
-      u.name === "Admin" ||
-      u.name === "Akash";
+      u.role === "admin";
     if (u && isStoredAdmin) {
       u.role = "admin";
       u.position = "President";
@@ -76,8 +75,7 @@ export function SessionProvider({
           res.user.phone === "ntjboys" ||
           res.user.phone === "8248590767" ||
           res.user.email?.startsWith("8248590767@") ||
-          res.user.name === "Admin" ||
-          res.user.name === "Akash"
+          res.user.role === "admin"
         ) {
           res.user.role = "admin";
           res.user.position = "President";

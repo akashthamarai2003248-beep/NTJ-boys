@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function DELETE(_req: Request, ctx: Ctx) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const { id } = await ctx.params;
     await deleteParticipant(actor, id);
     return NextResponse.json({ ok: true });

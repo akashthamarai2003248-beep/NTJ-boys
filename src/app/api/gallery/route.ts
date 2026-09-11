@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as GalleryInput;
     const photo = await createGalleryItem(actor, input);
     return NextResponse.json({ photo }, { status: 201 });

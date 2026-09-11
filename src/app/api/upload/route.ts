@@ -13,7 +13,7 @@ export type UploadFolder = (typeof ALLOWED_FOLDERS)[number];
 
 export async function POST(req: Request) {
   try {
-    await requireUser();
+    await requireUser(["admin", "treasurer"]);
 
     const formData = await req.formData();
     const file = formData.get("file");

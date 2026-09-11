@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const input = (await req.json().catch(() => ({}))) as GameInput;
     const game = await createGame(actor, input);
     return NextResponse.json({ game }, { status: 201 });

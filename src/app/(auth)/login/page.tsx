@@ -149,16 +149,16 @@ function LoginInner() {
   const afterAuth = (user: SessionUser) => {
     const next = params.get("next");
     const isAdminUser =
-      mode === "admin" ||
       user.role === "admin" ||
       user.phone === "8248590767" ||
-      user.email?.startsWith("8248590767@") ||
-      user.name === "Akash";
+      user.phone === "ntjboys" ||
+      user.email === "ntjboys@nbm.mandram" ||
+      user.email?.startsWith("8248590767@");
 
     const finalUser: SessionUser = {
       ...user,
-      role: isAdminUser ? "admin" : user.role,
-      position: isAdminUser ? "Admin" : user.position,
+      role: isAdminUser ? "admin" : (user.role ?? "member"),
+      position: isAdminUser ? (user.position || "President") : (user.position || "Member"),
     };
 
     try {
@@ -188,6 +188,18 @@ function LoginInner() {
         identifier: identifierArg,
         password: passwordArg,
       });
+
+      // Strict check: Only genuine admins may log in via Admin Portal
+      if (mode === "admin" && res.user.role !== "admin") {
+        fail(
+          tr(
+            "This account does not have admin privileges. Please use Member Login.",
+            "இந்த கணக்கிற்கு நிர்வாகி அனுமதி இல்லை. உறுப்பினர் உள்நுழைவைப் பயன்படுத்தவும்.",
+          ),
+        );
+        return;
+      }
+
       afterAuth(res.user);
     } catch (e) {
       fail((e as Error).message);

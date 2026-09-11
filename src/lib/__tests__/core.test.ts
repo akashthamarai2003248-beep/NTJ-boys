@@ -96,6 +96,22 @@ describe("registration", () => {
     expect(admin).not.toBeNull();
     expect(admin?.role).toBe("admin");
   });
+
+  it("never grants admin role to regular registered members even if named Akash or Admin", () => {
+    const db = freshDB();
+    const u1 = applyRegister(db, { name: "Akash", phone: "9876543210", password: "mypassword1" });
+    expect(u1.role).toBe("member");
+    expect(u1.position).toBe("Member");
+
+    const u2 = applyRegister(db, { name: "Admin", phone: "9876543211", password: "mypassword2" });
+    expect(u2.role).toBe("member");
+    expect(u2.position).toBe("Member");
+  });
+
+  it("rejects invalid admin password", () => {
+    const fake = findUser("ntjboys", "wrongpassword");
+    expect(fake).toBeNull();
+  });
 });
 
 describe("dates & ids", () => {

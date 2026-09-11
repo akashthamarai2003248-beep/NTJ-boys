@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin", "treasurer"]);
     const input = (await req.json().catch(() => ({}))) as CollectionInput;
     const rec = await createCollection(actor, input);
     return NextResponse.json({ collection: rec }, { status: 201 });

@@ -10,7 +10,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, ctx: Ctx) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const { id } = await ctx.params;
     const input = (await req.json().catch(() => ({}))) as Partial<MatchInput>;
     const match = await updateMatch(actor, id, input);
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
 export async function DELETE(_req: Request, ctx: Ctx) {
   try {
-    const actor = await requireUser();
+    const actor = await requireUser(["admin"]);
     const { id } = await ctx.params;
     await deleteMatch(actor, id);
     return NextResponse.json({ ok: true });
