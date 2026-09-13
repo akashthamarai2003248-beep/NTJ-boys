@@ -282,20 +282,22 @@ export function useFetch<T>(
         }));
       });
 
-    // Auto-revalidate when tab gains focus or device is unlocked
+    // Auto-revalidate when tab gains focus, device is unlocked, or network restores
     const onVisibilityOrFocus = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         setTick((t) => t + 1);
       }
     };
     window.addEventListener("focus", onVisibilityOrFocus);
-    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("visibilitychange", onVisibilityOrFocus);
+    window.addEventListener("online", onVisibilityOrFocus);
 
     return () => {
       active = false;
       ctrl.abort();
       window.removeEventListener("focus", onVisibilityOrFocus);
-      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("visibilitychange", onVisibilityOrFocus);
+      window.removeEventListener("online", onVisibilityOrFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, tick, getCachedEntry, ...deps]);

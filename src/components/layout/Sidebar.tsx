@@ -8,7 +8,7 @@ import { LogOut, Settings } from "lucide-react";
 import { NAV_ITEMS, SETTINGS_ITEM } from "@/lib/nav";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
-import { prefetchRoute, prefetchCoreRoutes } from "@/lib/client/hooks";
+import { prefetchRoute } from "@/lib/client/hooks";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSession } from "./session";
@@ -100,7 +100,7 @@ export function Sidebar() {
     return () => clearTimeout(timer);
   }, [pendingHref]);
 
-  // Eagerly prefetch route chunks and core data on desktop mount
+  // Prefetch route chunks on desktop mount for instant transitions
   useEffect(() => {
     [...NAV_ITEMS, SETTINGS_ITEM].forEach((item) => {
       try {
@@ -108,9 +108,7 @@ export function Sidebar() {
       } catch {
         // safe catch
       }
-      prefetchRoute(item.href);
     });
-    prefetchCoreRoutes();
   }, [router]);
 
   const currentActive = pendingHref ?? pathname;

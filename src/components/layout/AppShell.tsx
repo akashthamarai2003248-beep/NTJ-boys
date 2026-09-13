@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LogoMark } from "@/components/ui/Logo";
-import { prefetchCoreRoutes } from "@/lib/client/hooks";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { BottomNav } from "./BottomNav";
@@ -24,16 +23,6 @@ export function AppShell({
   const { user, loading } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-
-  // Warm up primary app navigation routes in background
-  useEffect(() => {
-    if (user) {
-      const timer = setTimeout(() => {
-        prefetchCoreRoutes();
-      }, 80);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
 
   // ⌘K / Ctrl+K opens search
   useEffect(() => {

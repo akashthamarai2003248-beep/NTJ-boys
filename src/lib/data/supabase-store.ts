@@ -164,7 +164,7 @@ export async function loadDashboardDB(): Promise<DB> {
     try {
       const sb = await getSupabaseServer();
       const [members, events, collections, expenses, activity] = await Promise.all([
-        sb.from("members").select("*"),
+        sb.from("members").select("id, name, phone, street, role, joined_date, created_at, updated_at"),
         sb.from("events").select("*"),
         sb.from("collections").select("*"),
         sb.from("expenses").select("*"),
@@ -185,7 +185,7 @@ export async function loadDashboardDB(): Promise<DB> {
 
       const fresh: DB = {
         users: [],
-        members: (members.data ?? []).map(mapMember),
+        members: ((members.data ?? []) as unknown as MemberRow[]).map(mapMember),
         events: (events.data ?? []).map(mapEvent),
         collections: (collections.data ?? []).map(mapCollection),
         expenses: (expenses.data ?? []).map(mapExpense),

@@ -7,7 +7,7 @@ import { LayoutGrid } from "lucide-react";
 import { BOTTOM_NAV } from "@/lib/nav";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils/cn";
-import { prefetchRoute, prefetchCoreRoutes } from "@/lib/client/hooks";
+import { prefetchRoute } from "@/lib/client/hooks";
 
 export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
   const pathname = usePathname();
@@ -27,7 +27,7 @@ export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
     return () => clearTimeout(timer);
   }, [pendingHref]);
 
-  // Preload Next.js route chunks and API data eagerly on mount for instant navigation
+  // Preload Next.js route chunks on mount for instant navigation
   useEffect(() => {
     BOTTOM_NAV.forEach((item) => {
       try {
@@ -35,9 +35,7 @@ export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
       } catch {
         // router.prefetch safe catch
       }
-      prefetchRoute(item.href);
     });
-    prefetchCoreRoutes();
   }, [router]);
 
   const currentActive = pendingHref ?? pathname;
@@ -93,9 +91,6 @@ export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
         <button
           type="button"
           onClick={onOpenMore}
-          onMouseEnter={() => prefetchCoreRoutes()}
-          onTouchStart={() => prefetchCoreRoutes()}
-          onPointerDown={() => prefetchCoreRoutes()}
           aria-label={t("More", "மேலும்")}
           className={cn(
             "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 transition-transform duration-100 touch-manipulation select-none active:scale-95",

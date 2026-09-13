@@ -111,8 +111,10 @@ export function SessionProvider({
   }, []);
 
   useEffect(() => {
+    // When initialUser is already resolved by the server layout, avoid duplicate /api/session request
+    if (initialUser) return;
     load();
-  }, [load]);
+  }, [load, initialUser]);
 
   useEffect(() => {
     const onStorage = () => {

@@ -31,7 +31,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
   const { can } = usePermissions();
   const { t } = useLang();
   const [period, setPeriod] = useState<PeriodKey>("year");
-  const { data, loading } = useFetch<DashboardPayload>(
+  const { data, loading, error, reload } = useFetch<DashboardPayload>(
     "/api/dashboard",
     [],
     initialData,
@@ -137,6 +137,20 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
           </div>
         </div>
       </motion.section>
+
+      {/* Graceful network retry banner if initial fetch fails on slow/offline network */}
+      {error && !data ? (
+        <div className="flex items-center justify-between rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-[12.5px] font-medium text-amber-200">
+          <span>{t("Slow or disconnected network. Showing cached/offline view.", "நெட்வொர்க் இணைப்பு மெதுவாக உள்ளது. ஆஃப்லைன் காட்சி காட்டப்படுகிறது.")}</span>
+          <button
+            type="button"
+            onClick={reload}
+            className="ml-3 shrink-0 rounded-xl bg-amber-500/20 px-3 py-1 text-[12px] font-bold text-amber-300 transition-colors hover:bg-amber-500/30"
+          >
+            {t("Retry", "மீண்டும் முயற்சி")}
+          </button>
+        </div>
+      ) : null}
 
       {/* Stat cards */}
       {loading && !data ? (

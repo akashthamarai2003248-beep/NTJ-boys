@@ -9,7 +9,6 @@ import {
 import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
-import { prefetchCoreRoutes } from "@/lib/client/hooks";
 import type { SessionUser } from "@/components/layout/session";
 
 
@@ -109,10 +108,9 @@ function LoginInner() {
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
 
-  // Proactively prefetch home and core routes while user views the login/register screen
+  // Prefetch home route while user views the login/register screen
   useEffect(() => {
     router.prefetch("/");
-    prefetchCoreRoutes();
   }, [router]);
 
   // Auto-redirect if already signed in
@@ -180,7 +178,6 @@ function LoginInner() {
     } catch {
       /* storage unavailable */
     }
-    prefetchCoreRoutes();
     console.info(`[demo] signed in as ${finalUser.name} (${finalUser.role})`);
     const destination = next && next.startsWith("/") ? next : "/";
     router.replace(destination);

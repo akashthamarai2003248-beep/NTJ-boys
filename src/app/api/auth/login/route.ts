@@ -26,19 +26,34 @@ export async function POST(req: Request) {
       const isAkashAdmin = phoneDigits === "8248590767";
 
       let email = rawKey;
+      let usedDefaultPhoneEmail = false;
       if (isNtjAdmin) {
         email = "ntjboys@nbm.mandram";
       } else if (isAkashAdmin) {
         email = "8248590767@nbm.mandram";
       } else if (!email.includes("@")) {
-        const { data } = await sb.rpc("user_email_by_phone", { p_phone: phoneDigits });
-        email = (data ?? "").trim().toLowerCase();
-        if (!email) {
-          email = `${phoneDigits}@nbm.mandram`;
-        }
+        email = `${phoneDigits}@nbm.mandram`;
+        usedDefaultPhoneEmail = true;
       }
 
       let { data: signIn, error } = await sb.auth.signInWithPassword({ email, password });
+
+      // Fast fallback: if standard phone email failed, check if the account has a custom email via RPC
+      if (error && usedDefaultPhoneEmail && phoneDigits && !isNtjAdmin && !isAkashAdmin) {
+        try {
+          const { data: rpcEmail } = await sb.rpc("user_email_by_phone", { p_phone: phoneDigits });
+          const customEmail = (rpcEmail ?? "").trim().toLowerCase();
+          if (customEmail && customEmail !== email) {
+            const retry = await sb.auth.signInWithPassword({ email: customEmail, password });
+            if (retry.data?.user) {
+              signIn = retry.data;
+              error = null;
+            }
+          }
+        } catch {
+          /* ignore rpc fallback error */
+        }
+      }
 
       // Auto-provision if admin credentials are used for the first time
       if ((error || !signIn?.user) && (isNtjAdmin || isAkashAdmin)) {
