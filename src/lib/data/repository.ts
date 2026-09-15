@@ -377,13 +377,7 @@ export function queryCollections(db: DB, f: CollectionFilters): CollectionPage {
     );
   }
   if (f.eventId) {
-    const ev = db.events.find((e) => e.id === f.eventId);
-    const eventYear = ev?.startDate ? ev.startDate.slice(0, 4) : ev?.createdAt ? ev.createdAt.slice(0, 4) : null;
-    items = items.filter((c) => {
-      if (c.eventId !== f.eventId) return false;
-      if (eventYear && !f.from && !f.to && c.date && !c.date.startsWith(eventYear)) return false;
-      return true;
-    });
+    items = items.filter((c) => c.eventId === f.eventId);
   }
   if (f.category) {
     items = items.filter(

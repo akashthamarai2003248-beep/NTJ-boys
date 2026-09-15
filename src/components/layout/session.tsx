@@ -54,6 +54,8 @@ const SessionContext = createContext<SessionState>({
   signOut: async () => {},
 });
 
+import { getSupabaseBrowser, isSupabaseMode } from "@/lib/data/supabase-browser";
+
 export function SessionProvider({
   children,
   initialUser,
@@ -61,10 +63,22 @@ export function SessionProvider({
   children: ReactNode;
   initialUser?: SessionUser | null;
 }) {
-  // Hydrate user immediately from server initialUser or localStorage so AppShell renders in 0ms without splash lag
+  // Synchronously hydrate from server initialUser or localStorage cache so there is 0ms flash
   const [user, setUser] = useState<SessionUser | null>(() => initialUser ?? getStoredUser());
+  // If either initialUser or storedUser is present, we are already restored; otherwise wait for auth check
   const [loading, setLoading] = useState<boolean>(() => !initialUser && !getStoredUser());
   const router = useRouter();
+
+  const syncUserToStorage = useCallback((u: SessionUser) => {
+    try {
+      localStorage.setItem(SESSION_USER_KEY, JSON.stringify(u));
+      if (typeof document !== "undefined") {
+        document.cookie = `nbm_session=${encodeURIComponent(u.id)}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    } catch {
+      /* ignore storage error */
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -81,16 +95,10 @@ export function SessionProvider({
           res.user.position = "President";
         }
         setUser(res.user);
-        try {
-          localStorage.setItem(SESSION_USER_KEY, JSON.stringify(res.user));
-          if (typeof document !== "undefined") {
-            document.cookie = `nbm_session=${encodeURIComponent(res.user.id)}; path=/; max-age=31536000; SameSite=Lax`;
-          }
-        } catch {
-          /* ignore storage error */
-        }
+        syncUserToStorage(res.user);
       } else {
         const cached = getStoredUser();
+        // Only clear if no valid cached user exists in localStorage
         if (!cached) {
           setUser(null);
           try {
@@ -108,13 +116,124 @@ export function SessionProvider({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [syncUserToStorage]);
 
+  // Supabase Auth lifecycle: listen via onAuthStateChange (handles INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
   useEffect(() => {
-    // When initialUser is already resolved by the server layout, avoid duplicate /api/session request
-    if (initialUser) return;
-    load();
-  }, [load, initialUser]);
+    if (!isSupabaseMode()) {
+      if (!initialUser && !getStoredUser()) {
+        load();
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
+    const sb = getSupabaseBrowser();
+    if (!sb) {
+      if (!initialUser && !getStoredUser()) {
+        load();
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // onAuthStateChange immediately provides INITIAL_SESSION without duplicate getSession/getUser calls
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT" || (!session && event === "INITIAL_SESSION")) {
+        // Only clear if there was no server initialUser or stored demo session
+        const cached = getStoredUser();
+        if (!cached || !cached.id.startsWith("usr-")) {
+          if (!session) {
+            setUser(null);
+            try {
+              localStorage.removeItem(SESSION_USER_KEY);
+              if (typeof document !== "undefined") {
+                document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (session?.user) {
+        // Fast path: if state or storage already has this user's profile, keep it in 0ms
+        const cached = getStoredUser();
+        if (cached && cached.id === session.user.id) {
+          setUser(cached);
+          syncUserToStorage(cached);
+          setLoading(false);
+          return;
+        }
+
+        // Extract metadata or fallback from auth session
+        const metaName = (session.user.user_metadata?.name as string | undefined) || session.user.email?.split("@")[0] || "Member";
+        const metaPhone = (session.user.user_metadata?.phone as string | undefined) || "";
+        const isAdmin =
+          session.user.email === "ntjboys@nbm.mandram" ||
+          session.user.email?.startsWith("8248590767@") ||
+          metaPhone === "8248590767" ||
+          metaPhone === "ntjboys" ||
+          session.user.app_metadata?.role === "admin";
+
+        const resolvedUser: SessionUser = {
+          id: session.user.id,
+          name: metaName,
+          phone: metaPhone,
+          email: session.user.email || "",
+          role: isAdmin ? "admin" : (session.user.app_metadata?.role as SessionUser["role"]) || "member",
+          position: isAdmin ? "President" : "Member",
+        };
+
+        setUser(resolvedUser);
+        syncUserToStorage(resolvedUser);
+        setLoading(false);
+
+        // Background profile hydration from public.users to fetch updated role/position if any
+        void (async () => {
+          try {
+            const { data: profile } = await sb
+              .from("users")
+              .select("id, name, phone, email, role, position")
+              .eq("id", session.user.id)
+              .maybeSingle();
+
+            if (profile) {
+              const isProfileAdmin =
+                profile.role === "admin" ||
+                profile.email === "ntjboys@nbm.mandram" ||
+                profile.phone === "8248590767" ||
+                profile.phone === "ntjboys" ||
+                profile.email?.startsWith("8248590767@");
+              const freshUser: SessionUser = {
+                id: profile.id,
+                name: profile.name,
+                phone: profile.phone || "",
+                email: profile.email || "",
+                role: isProfileAdmin ? "admin" : (profile.role as SessionUser["role"]) || "member",
+                position: isProfileAdmin ? "President" : (profile.position || "Member"),
+              };
+              setUser(freshUser);
+              syncUserToStorage(freshUser);
+            }
+          } catch {
+            /* ignore background refresh error */
+          }
+        })();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [load, initialUser, syncUserToStorage]);
 
   useEffect(() => {
     const onStorage = () => {
@@ -135,13 +254,13 @@ export function SessionProvider({
   const signOut = useCallback(async () => {
     // 1. Immediately clear client state in 0ms (optimistic instant logout)
     setUser(null);
+    setLoading(false);
     try {
       localStorage.removeItem(SESSION_USER_KEY);
       localStorage.removeItem("nbm.remember");
       clearClientCache();
       if (typeof document !== "undefined") {
         document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
-        // Clear all accessible sb- and nbm- cookies
         document.cookie.split(";").forEach((c) => {
           const name = c.split("=")[0].trim();
           if (name.startsWith("sb-") || name.startsWith("nbm")) {
@@ -153,10 +272,20 @@ export function SessionProvider({
       /* ignore */
     }
 
-    // 2. Fire backend session revocation in background
+    // 2. Fire client Supabase sign out if in Supabase mode
+    try {
+      const sb = getSupabaseBrowser();
+      if (sb) {
+        void sb.auth.signOut();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // 3. Fire backend session revocation in background
     void api.post("/api/auth/logout").catch(() => {});
 
-    // 3. Immediately route to /login via client-side router in 0ms (no slow hard reload)
+    // 4. Immediately route to /login via client-side router
     router.replace("/login?logout=1");
   }, [router]);
 

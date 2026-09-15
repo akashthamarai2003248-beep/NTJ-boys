@@ -61,7 +61,12 @@ export async function getSessionUser(): Promise<DemoUser | null> {
     }
     try {
       const sb = await getSupabaseServer();
-      const { data: profile } = await sb.from("users").select("*").eq("id", id).maybeSingle();
+      const fetchProfile = sb.from("users").select("*").eq("id", id).maybeSingle();
+      // Bound Supabase query to 2500ms max to prevent weak mobile network latency from blocking SSR
+      const timeoutPromise = new Promise<{ data: null }>((resolve) =>
+        setTimeout(() => resolve({ data: null }), 2500)
+      );
+      const { data: profile } = await Promise.race([fetchProfile, timeoutPromise]);
       if (profile) {
         const isAdmin =
           profile.email === "ntjboys@nbm.mandram" ||

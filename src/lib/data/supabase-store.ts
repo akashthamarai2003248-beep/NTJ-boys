@@ -146,17 +146,17 @@ export function invalidateDBCache() {
  * skipping 7 heavy unused tables (games, teams, participants, matches, game_results, gallery, settings)
  * for a 75%+ drop in server latency.
  */
-export async function loadDashboardDB(): Promise<DB> {
+export async function loadDashboardDB(forceFresh = false): Promise<DB> {
   if (!isSupabaseMode()) return getDB();
 
   const now = Date.now();
-  if (cachedDB && now - cacheTime < CACHE_TTL_MS) {
+  if (!forceFresh && cachedDB && now - cacheTime < CACHE_TTL_MS) {
     return cachedDB;
   }
-  if (cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
+  if (!forceFresh && cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
     return cachedDashboardDB;
   }
-  if (inFlightDashboardLoad) {
+  if (!forceFresh && inFlightDashboardLoad) {
     return inFlightDashboardLoad;
   }
 
@@ -165,8 +165,11 @@ export async function loadDashboardDB(): Promise<DB> {
       const sb = await getSupabaseServer();
       const [members, events, collections, expenses, activity] = await Promise.all([
         sb.from("members").select("id, name, phone, street, role, joined_date, created_at, updated_at"),
-        sb.from("events").select("*"),
-        sb.from("collections").select("*"),
+        sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, cover_url, created_at, updated_at"),
+        sb.from("collections")
+          .select("id, receipt_number, person_name, phone, street, amount, payment_method, contribution_type, date, event_id, notes, created_by, created_by_name, created_at, updated_at")
+          .order("date", { ascending: false })
+          .limit(5000),
         sb.from("expenses").select("*"),
         sb.from("activity_logs").select("*").order("at", { ascending: false }).limit(15),
       ]);
@@ -222,24 +225,24 @@ export async function loadDashboardDB(): Promise<DB> {
  * and caching with a short TTL to keep page transitions and multi-endpoint
  * views lightning fast.
  */
-export async function loadDB(requireFull = false): Promise<DB> {
+export async function loadDB(requireFull = false, forceFresh = false): Promise<DB> {
   if (!isSupabaseMode()) return getDB();
 
   const now = Date.now();
-  if (cachedDB && now - cacheTime < CACHE_TTL_MS && (!requireFull || cachedDB.games.length > 0)) {
+  if (!forceFresh && cachedDB && now - cacheTime < CACHE_TTL_MS && (!requireFull || cachedDB.games.length > 0)) {
     return cachedDB;
   }
-  if (!requireFull && cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
+  if (!forceFresh && !requireFull && cachedDashboardDB && now - dashboardCacheTime < DASHBOARD_CACHE_TTL_MS) {
     return cachedDashboardDB;
   }
 
   // When full database tables (games, gallery, matches) are NOT required, use the 5-table
   // loadDashboardDB() reader instead of issuing 12 concurrent Supabase REST queries.
   if (!requireFull) {
-    return loadDashboardDB();
+    return loadDashboardDB(forceFresh);
   }
 
-  if (inFlightLoad) {
+  if (!forceFresh && inFlightLoad) {
     return inFlightLoad;
   }
 
@@ -249,8 +252,11 @@ export async function loadDB(requireFull = false): Promise<DB> {
       const [members, events, collections, expenses, games, teams, participants, matches, results, gallery, activity, settings] =
         await Promise.all([
           sb.from("members").select("*"),
-          sb.from("events").select("*"),
-          sb.from("collections").select("*"),
+          sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, cover_url, created_at, updated_at"),
+          sb.from("collections")
+            .select("id, receipt_number, person_name, phone, street, amount, payment_method, contribution_type, date, event_id, notes, created_by, created_by_name, created_at, updated_at")
+            .order("date", { ascending: false })
+            .limit(5000),
           sb.from("expenses").select("*"),
           sb.from("games").select("*"),
           sb.from("teams").select("*"),

@@ -62,42 +62,25 @@ export async function POST(req: Request) {
       const assignedRole = isAdminPhone ? "admin" : "member";
       const assignedPosition = isAdminPhone ? "Admin" : "Member";
 
-      // Save profile to public.users:
-      // 1. Try the security definer RPC helper (bypasses RLS safely)
-      const { error: rpcError } = await sb.rpc("create_user_profile", {
-        p_id: data.user.id,
-        p_name: name,
-        p_phone: phone,
-        p_email: email,
-      });
-
-      if (isAdminPhone) {
+      const newUserId = data.user.id;
+      // Profile creation is already handled automatically by the PostgreSQL
+      // trigger on_auth_user_created (migration 0004). As an extra safeguard,
+      // fire the RPC in the background without blocking the signup response.
+      void (async () => {
         try {
-          await sb.from("users").update({ role: "admin", position: "Admin" }).eq("id", data.user.id);
+          await sb.rpc("create_user_profile", {
+            p_id: newUserId,
+            p_name: name,
+            p_phone: phone,
+            p_email: email,
+          });
+          if (isAdminPhone) {
+            await sb.from("users").update({ role: "admin", position: "President" }).eq("id", newUserId);
+          }
         } catch {
           /* ignore */
         }
-      }
-
-      // 2. If RPC is not available yet, fall back to direct insert
-      if (rpcError) {
-        const { error: insertError } = await sb
-          .from("users")
-          .insert({ id: data.user.id, name, phone, email, role: assignedRole, position: assignedPosition });
-
-        // Error code 23505 (unique_violation) means the database trigger already inserted the profile
-        if (insertError && insertError.code !== "23505") {
-          // If session is absent, email confirmation is active in Supabase and the client is anon.
-          // In this case, the database trigger on_auth_user_created handles the profile,
-          // and resolveSupabaseUser self-heals upon first login.
-          if (data.session) {
-            return NextResponse.json(
-              { error: "Account created, but the profile couldn't be saved — contact the app admin (Akash)." },
-              { status: 409 },
-            );
-          }
-        }
-      }
+      })();
 
       if (!data.session) {
         // Email confirmation is enabled in Supabase Auth — the user
@@ -113,13 +96,23 @@ export async function POST(req: Request) {
         email,
         password: "",
         role: assignedRole,
-        position: assignedPosition as DemoUser["position"],
+        position: (isAdminPhone ? "President" : assignedPosition) as DemoUser["position"],
       };
 
-      // Pre-warm server session cache so Next.js hydration of '/' resolves in 0ms
+      // Pre-warm server session cache so Next.js hydration resolves in 0ms
       cacheSessionUser(user);
 
-      const res = NextResponse.json({ user: toSessionUser(user) });
+      const res = NextResponse.json({
+        user: toSessionUser(user),
+        session: data.session ? {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+          expires_in: data.session.expires_in,
+          token_type: data.session.token_type,
+        } : null,
+      });
+
       const cookieStore = await cookies();
       for (const c of cookieStore.getAll()) {
         res.cookies.set(c.name, c.value, {

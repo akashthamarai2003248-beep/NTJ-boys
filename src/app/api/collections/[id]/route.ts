@@ -12,7 +12,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    const rec = (await loadDB()).collections.find((c) => c.id === id);
+    const rec = (await loadDB(false, true)).collections.find((c) => c.id === id);
     if (!rec) return NextResponse.json({ error: "Collection not found" }, { status: 404 });
     return NextResponse.json({ collection: rec });
   } catch (e) {

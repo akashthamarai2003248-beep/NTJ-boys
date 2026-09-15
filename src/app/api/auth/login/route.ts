@@ -98,7 +98,16 @@ export async function POST(req: Request) {
         user.position = "President";
       }
       cacheSessionUser(user);
-      const res = NextResponse.json({ user: toSessionUser(user) });
+      const res = NextResponse.json({
+        user: toSessionUser(user),
+        session: signIn.session ? {
+          access_token: signIn.session.access_token,
+          refresh_token: signIn.session.refresh_token,
+          expires_at: signIn.session.expires_at,
+          expires_in: signIn.session.expires_in,
+          token_type: signIn.session.token_type,
+        } : null,
+      });
       const cookieStore = await cookies();
       for (const c of cookieStore.getAll()) {
         res.cookies.set(c.name, c.value, {

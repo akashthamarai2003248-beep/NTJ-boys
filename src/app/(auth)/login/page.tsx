@@ -65,15 +65,15 @@ function HeroInput({
   );
 }
 
+import { getSupabaseBrowser, isSupabaseMode } from "@/lib/data/supabase-browser";
+
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { t: tr } = useLang();
 
-
-
-  // Synchronously check if user is already signed in in localStorage
-  const [alreadyLoggedIn] = useState<boolean>(() => {
+  // Check if session is already active in localStorage or Supabase
+  const [alreadyLoggedIn, setAlreadyLoggedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     if (params.has("logout")) return false;
     try {
@@ -113,22 +113,40 @@ function LoginInner() {
     router.prefetch("/");
   }, [router]);
 
-  // Auto-redirect if already signed in
+  // Check existing session on startup before deciding whether to show form or redirect
   useEffect(() => {
     if (params.has("logout")) {
       try {
         localStorage.removeItem("nbm_user");
         localStorage.removeItem("nbm.remember");
         document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
+        const sb = getSupabaseBrowser();
+        if (sb) void sb.auth.signOut();
       } catch {
         /* ignore */
       }
       return;
     }
+
     if (alreadyLoggedIn) {
       const next = params.get("next");
       const destination = next && next.startsWith("/") ? next : "/";
       router.replace(destination);
+      return;
+    }
+
+    if (isSupabaseMode()) {
+      const sb = getSupabaseBrowser();
+      if (sb) {
+        sb.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user && !params.has("logout")) {
+            setAlreadyLoggedIn(true);
+            const next = params.get("next");
+            const destination = next && next.startsWith("/") ? next : "/";
+            router.replace(destination);
+          }
+        }).catch(() => {});
+      }
     }
   }, [alreadyLoggedIn, params, router]);
 
@@ -150,7 +168,10 @@ function LoginInner() {
     setShake((s) => s + 1);
   };
 
-  const afterAuth = (user: SessionUser) => {
+  const afterAuth = async (
+    user: SessionUser,
+    session?: { access_token: string; refresh_token: string } | null,
+  ) => {
     const next = params.get("next");
     const isAdminUser =
       user.role === "admin" ||
@@ -165,6 +186,20 @@ function LoginInner() {
       position: isAdminUser ? (user.position || "President") : (user.position || "Member"),
     };
 
+    if (session && isSupabaseMode()) {
+      try {
+        const sb = getSupabaseBrowser();
+        if (sb) {
+          await sb.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
     try {
       localStorage.setItem("nbm_user", JSON.stringify(finalUser));
       if (remember) localStorage.setItem("nbm.remember", identifier);
@@ -178,7 +213,6 @@ function LoginInner() {
     } catch {
       /* storage unavailable */
     }
-    console.info(`[demo] signed in as ${finalUser.name} (${finalUser.role})`);
     const destination = next && next.startsWith("/") ? next : "/";
     router.replace(destination);
   };
@@ -187,7 +221,10 @@ function LoginInner() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post<{ user: SessionUser }>("/api/auth/login", {
+      const res = await api.post<{
+        user: SessionUser;
+        session?: { access_token: string; refresh_token: string } | null;
+      }>("/api/auth/login", {
         identifier: identifierArg,
         password: passwordArg,
       });
@@ -204,7 +241,7 @@ function LoginInner() {
         return;
       }
 
-      afterAuth(res.user);
+      await afterAuth(res.user, res.session);
     } catch (e) {
       setLoading(false);
       fail((e as Error).message);
@@ -236,7 +273,12 @@ function LoginInner() {
     }
     setRegLoading(true);
     try {
-      const res = await api.post<{ user?: SessionUser; needsConfirmation?: boolean; email?: string }>(
+      const res = await api.post<{
+        user?: SessionUser;
+        session?: { access_token: string; refresh_token: string } | null;
+        needsConfirmation?: boolean;
+        email?: string;
+      }>(
         "/api/auth/register",
         {
           name: reg.name,
@@ -248,8 +290,7 @@ function LoginInner() {
         setRegLoading(false);
         setRegDone(true);
       } else if (res.user) {
-        // Retain loading spinner seamlessly while router replaces to '/'
-        afterAuth(res.user);
+        await afterAuth(res.user, res.session);
       } else {
         setRegLoading(false);
       }
@@ -259,7 +300,7 @@ function LoginInner() {
     }
   };
 
-  // If already logged in, do not render auth forms at all to avoid any UI flash
+  // If already logged in, show pulse while router replaces to destination
   if (alreadyLoggedIn) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#0b192c]">

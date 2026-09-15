@@ -68,7 +68,7 @@ export function CollectionsView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
-  const [year, setYear] = useState(() => searchParams.get("year") ?? CURRENT_YEAR);
+  const [year, setYear] = useState(() => searchParams.get("year") ?? "");
   const [category, setCategory] = useState("");
   const [payment, setPayment] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -89,12 +89,11 @@ export function CollectionsView() {
       })}`,
     [debouncedQ, eventId, year, category, payment],
   );
-  const { data, loading, reload } = useFetch<CollectionPage>(url);
+  const { data, loading, error, reload, mutate } = useFetch<CollectionPage>(url);
   const eventsFetch = useFetch<EventsPayload>("/api/events");
 
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
   const defaultEventId = useMemo(() => currentEventId(events), [events]);
-  const defaultEventWasSet = useRef(Boolean(searchParams.get("eventId")));
   const eventName = useCallback(
     (id?: string | null) => {
       const ev = events.find((e) => e.id === id);
@@ -103,7 +102,7 @@ export function CollectionsView() {
     [events, lang, t],
   );
   const hasFilters = Boolean(q || eventId || year || category || payment);
-  const hasCustomFilters = Boolean(q || category || payment || eventId !== defaultEventId || year !== CURRENT_YEAR);
+  const hasCustomFilters = Boolean(q || category || payment || eventId || year);
 
   const availableEvents = useMemo(() => {
     if (!year) return events;
@@ -119,21 +118,10 @@ export function CollectionsView() {
       const ev = events.find((e) => e.id === eventId);
       const evYear = ev?.startDate?.slice(0, 4) || ev?.createdAt?.slice(0, 4);
       if (evYear && evYear !== newYear) {
-        const match = events.find((e) => e.startDate?.startsWith(newYear) || e.createdAt?.startsWith(newYear));
-        setEventId(match ? match.id : "");
+        setEventId("");
       }
-    } else {
-      const match = events.find((e) => e.startDate?.startsWith(newYear) || e.createdAt?.startsWith(newYear));
-      if (match) setEventId(match.id);
     }
   };
-
-  // Event data arrives after the first client render, so choose the active/current event once it is available.
-  useEffect(() => {
-    if (defaultEventWasSet.current || eventsFetch.loading) return;
-    defaultEventWasSet.current = true;
-    if (defaultEventId) setEventId(defaultEventId);
-  }, [defaultEventId, eventsFetch.loading]);
 
   // deep-link ?add=1 / ?eventId=x — state is initialised from the URL once
   useEffect(() => {
@@ -148,7 +136,7 @@ export function CollectionsView() {
   }, [celebrate]);
 
   const clearFilters = () => {
-    setQ(""); setEventId(defaultEventId); setYear(CURRENT_YEAR); setCategory(""); setPayment("");
+    setQ(""); setEventId(""); setYear(""); setCategory(""); setPayment("");
   };
 
   const openAdd = () => {
@@ -172,10 +160,31 @@ export function CollectionsView() {
     setFormError(null);
     try {
       if (editing) {
-        await api.patch(`/api/collections/${editing.id}`, input);
+        const res = await api.patch<{ collection: Collection }>(`/api/collections/${editing.id}`, input);
+        const updated = res.collection;
+        mutate((prev) => {
+          if (!prev) return prev;
+          const diff = (updated.amount ?? input.amount) - (editing.amount ?? 0);
+          return {
+            ...prev,
+            items: prev.items.map((it) => (it.id === editing.id ? { ...it, ...input, ...updated } : it)),
+            sum: prev.sum + diff,
+            allSum: prev.allSum + diff,
+          };
+        });
         toast.success(t("Collection updated", "வரவு புதுப்பிக்கப்பட்டது"));
       } else {
         const res = await api.post<{ collection: Collection }>("/api/collections", input);
+        mutate((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: [res.collection, ...prev.items],
+            total: prev.total + 1,
+            sum: prev.sum + res.collection.amount,
+            allSum: prev.allSum + res.collection.amount,
+          };
+        });
         setCelebrate({
           title: t("Collection Added", "வரவு சேர்க்கப்பட்டது"),
           subtitle: `${t("Received from", "பெறப்பட்டது")} ${input.personName}`,
@@ -198,9 +207,20 @@ export function CollectionsView() {
 
   const handleDelete = async () => {
     if (!deleting) return;
+    const target = deleting;
     setDeleteBusy(true);
     try {
-      await api.del(`/api/collections/${deleting.id}`);
+      await api.del(`/api/collections/${target.id}`);
+      mutate((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.filter((it) => it.id !== target.id),
+          total: Math.max(0, prev.total - 1),
+          sum: Math.max(0, prev.sum - target.amount),
+          allSum: Math.max(0, prev.allSum - target.amount),
+        };
+      });
       toast.success(t("Collection removed", "வரவு நீக்கப்பட்டது"));
       clearClientCache("/api/collections");
       clearClientCache("/api/dashboard");
@@ -358,7 +378,7 @@ export function CollectionsView() {
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
-                  <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); }} className="w-full text-[12.5px] h-9">
+                  <Select value={eventId} onChange={(e) => setEventId(e.target.value)} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {availableEvents.map((ev) => (
                       <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>
@@ -389,7 +409,14 @@ export function CollectionsView() {
 
       {/* results */}
       <div className="card-surface rounded-2xl">
-        {loading && !data ? (
+        {error && !data ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">{error}</p>
+            <Button variant="secondary" onClick={() => reload()}>
+              {t("Retry", "மீண்டும் முயற்சி")}
+            </Button>
+          </div>
+        ) : loading && !data ? (
           <div className="space-y-2 p-4">
             {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="flex items-center gap-4 px-2 py-2.5">

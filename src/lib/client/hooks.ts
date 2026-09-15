@@ -207,7 +207,10 @@ export function useFetch<T>(
   url: string | null,
   deps: unknown[] = [],
   initialData?: T,
-): AsyncState<T> & { reload: () => void } {
+): AsyncState<T> & {
+  reload: () => void;
+  mutate: (updater: T | ((prev: T | null) => T | null)) => void;
+} {
   const getCachedEntry = useCallback((): { data: T; timestamp: number } | null => {
     if (!url) return null;
     const mem = clientCache.get(url);
@@ -259,28 +262,40 @@ export function useFetch<T>(
 
     const ctrl = new AbortController();
     let active = true;
+    let retries = 1;
 
-    fetch(url, { cache: "no-store", signal: ctrl.signal })
-      .then(async (res) => {
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load");
-        if (active) {
-          const entry = { data: body, timestamp: Date.now() };
-          clientCache.set(url, entry);
-          writePersistentCache(url, body);
-          setState({ data: body as T, error: null, loading: false });
-        }
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // Keep previously displayed cached data instead of blanking out the view
-        setState((s) => ({
-          data: s.data,
-          error: (err as Error).message,
-          loading: false,
-        }));
-      });
+    const executeFetch = () => {
+      fetch(url, { cache: "no-store", signal: ctrl.signal })
+        .then(async (res) => {
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load");
+          if (active) {
+            const entry = { data: body, timestamp: Date.now() };
+            clientCache.set(url, entry);
+            writePersistentCache(url, body);
+            setState({ data: body as T, error: null, loading: false });
+          }
+        })
+        .catch((err: unknown) => {
+          if (!active) return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          if (retries > 0) {
+            retries--;
+            setTimeout(() => {
+              if (active) executeFetch();
+            }, 800);
+            return;
+          }
+          // Keep previously displayed cached data instead of blanking out the view
+          setState((s) => ({
+            data: s.data,
+            error: (err as Error).message,
+            loading: false,
+          }));
+        });
+    };
+
+    executeFetch();
 
     // Auto-revalidate when tab gains focus, device is unlocked, or network restores
     const onVisibilityOrFocus = () => {
@@ -316,5 +331,23 @@ export function useFetch<T>(
     setTick((t) => t + 1);
   }, [url]);
 
-  return { ...state, reload };
+  const mutate = useCallback(
+    (updater: T | ((prev: T | null) => T | null)) => {
+      setState((prev) => {
+        const nextData =
+          typeof updater === "function"
+            ? (updater as (p: T | null) => T | null)(prev.data)
+            : updater;
+        if (url && nextData !== null) {
+          const entry = { data: nextData, timestamp: Date.now() };
+          clientCache.set(url, entry);
+          writePersistentCache(url, nextData);
+        }
+        return { ...prev, data: nextData };
+      });
+    },
+    [url],
+  );
+
+  return { ...state, reload, mutate };
 }

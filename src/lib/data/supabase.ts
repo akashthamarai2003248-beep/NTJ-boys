@@ -45,11 +45,7 @@ function envKeys() {
   return { url, key };
 }
 
-/** Browser client — safe to call from client components only when mode is on. */
-export function getSupabaseBrowser() {
-  const { url, key } = envKeys();
-  return createBrowserClient<Database>(url, key);
-}
+export { getSupabaseBrowser } from "./supabase-browser";
 
 /**
  * Server client bound to the request cookie jar, so reads and writes

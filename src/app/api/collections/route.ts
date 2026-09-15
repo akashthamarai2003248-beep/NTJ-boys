@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const payment = searchParams.get("payment") as PaymentMethod | null;
     const yearParam = searchParams.get("year");
     const year = yearParam && /^\d{4}$/.test(yearParam) ? yearParam : undefined;
-    const page = queryCollections(await loadDB(), {
+    const page = queryCollections(await loadDB(false, true), {
       q: searchParams.get("q") ?? undefined,
       eventId: eventId || undefined,
       category: category || null,

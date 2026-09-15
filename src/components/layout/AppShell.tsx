@@ -36,14 +36,38 @@ export function AppShell({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Only redirect after session restoration has completely finished
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       router.replace("/login");
     }
-  }, [user, router]);
+  }, [loading, user, router]);
 
-  if (!user) {
-    return <div className="min-h-dvh bg-[#0b192c]" />;
+  // Short auth-loading/splash state only while checking the session
+  if (loading || !user) {
+    return (
+      <div className="fixed inset-0 z-50 flex min-h-dvh flex-col items-center justify-center bg-[#06111f] text-white">
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute size-24 animate-ping rounded-full border border-amber-400/30 bg-amber-500/10 duration-1000" />
+            <div className="relative size-20 overflow-hidden rounded-full border-2 border-amber-400/80 p-1 shadow-[0_0_35px_rgba(245,158,11,0.35)]">
+              <img
+                src="/nbm-logo.png"
+                alt="Nethaji Boys Mandram"
+                className="size-full object-cover object-center"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <p className="text-[13px] font-black tracking-[0.22em] text-white/90">NETHAJI BOYS</p>
+            <p className="text-[18px] font-black tracking-[0.18em] text-amber-400">MANDRAM</p>
+          </div>
+          <div className="relative mt-2 h-1 w-28 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full w-1/2 animate-[pulse_1.2s_infinite] rounded-full bg-gradient-to-r from-amber-400 to-amber-500" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
