@@ -87,9 +87,9 @@ export function ExpensesView() {
   const eventName = useCallback(
     (id?: string | null) => {
       const ev = events.find((e) => e.id === id);
-      return ev ? translateEventName(ev.name, ev.tamilName, lang) : t("General", "பொது நிதி");
+      return ev ? translateEventName(ev.name, ev.tamilName, lang) : "";
     },
-    [events, lang, t],
+    [events, lang],
   );
   const hasFilters = Boolean(q || eventId || year || payment);
   const hasCustomFilters = hasFilters;
@@ -199,7 +199,7 @@ export function ExpensesView() {
             <p className="text-[11.5px] text-muted dark:text-white/75">
               {hasFilters
                 ? t(`filtered from ${formatINR(data?.allSum ?? 0)} overall`, `மொத்தம் ${formatINR(data?.allSum ?? 0)} இலிருந்து`)
-                : t("spent across all events & general", "அனைத்து நிகழ்வுகள் மற்றும் பொது செலவுகள்")}
+                : t("spent across all events", "அனைத்து நிகழ்வுகளின் செலவுகள்")}
             </p>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-4">
@@ -425,9 +425,11 @@ export function ExpensesView() {
                     <p className="truncate text-[15px] font-bold tracking-tight text-ink dark:text-white">
                       {translateExpenseTitle(e.title, lang)}
                     </p>
-                    <p className="mt-0.5 truncate text-[12px] font-medium text-muted dark:text-navy-200/70">
-                      {eventName(e.eventId)}
-                    </p>
+                    {eventName(e.eventId) ? (
+                      <p className="mt-0.5 truncate text-[12px] font-medium text-muted dark:text-navy-200/70">
+                        {eventName(e.eventId)}
+                      </p>
+                    ) : null}
                     <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint">
                       <span>{translatePaymentMethod(e.paymentMethod, lang)}</span>
                       <span>•</span>

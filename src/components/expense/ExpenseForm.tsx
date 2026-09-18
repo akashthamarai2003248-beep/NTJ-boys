@@ -113,7 +113,7 @@ export function ExpenseForm({ events, initial, defaultEventId, defaultYear, subm
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    const selectedEventId = eventId ? eventId : null;
+    const selectedEventId = eventId || (events[0]?.id ?? null);
     if (!title.trim()) return setLocalError(t("Expense title is required", "செலவின் தலைப்பு தேவை"));
     if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை நேர்மறை எண்ணாக இருக்க வேண்டும்"));
     if (!date) return setLocalError(t("Please choose a date", "தயவுசெய்து தேதியைத் தேர்ந்தெடுக்கவும்"));
@@ -193,9 +193,8 @@ export function ExpenseForm({ events, initial, defaultEventId, defaultYear, subm
             leading={<CalendarDays className="size-4" />}
           />
         </Field>
-        <Field label="Event" ta="நிகழ்வு">
-          <Select value={eventId ?? ""} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">{t("General fund", "பொது நிதி")}</option>
+        <Field label="Event" ta="நிகழ்வு" required>
+          <Select value={eventId || (events[0]?.id ?? "")} onChange={(e) => setEventId(e.target.value)}>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
                 {lang === "ta" ? (ev.tamilName || ev.name) : lang === "en" ? ev.name : `${ev.name}${ev.tamilName ? ` · ${ev.tamilName}` : ""}`}

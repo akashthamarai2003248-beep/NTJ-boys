@@ -53,7 +53,7 @@ export function ExpenseDetail({
         </p>
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl bg-surface-2 p-4 text-[13px]">
-          <Info label={t("Event", "நிகழ்வு")} value={eventName ?? (lang === "ta" ? "பொது நிதி" : "General")} />
+          {eventName ? <Info label={t("Event", "நிகழ்வு")} value={eventName} /> : null}
           <Info label={t("Payment", "கட்டணம்")} value={<PaymentLabel method={expense.paymentMethod} />} />
           <Info label={t("Recorded by", "பதிவு செய்தவர்")} value={translatePersonName(expense.createdBy ?? "", lang)} />
           <Info label={t("Created", "உருவாக்கப்பட்டது")} value={new Date(expense.createdAt).toLocaleDateString(lang === "ta" ? "ta-IN" : "en-GB", { day: "numeric", month: "short", year: "numeric" })} />
