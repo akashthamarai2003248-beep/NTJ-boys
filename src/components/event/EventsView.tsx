@@ -131,7 +131,7 @@ export function EventsView() {
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         {/* Year Filter: 1-Tap Thumb Navigation Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-muted shrink-0 mr-1">
+          <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-muted shrink-0 mr-1 whitespace-nowrap">
             <Calendar className="size-3.5 text-saffron-500" />
             <span>{t("Year", "ஆண்டு")}</span>
           </span>
@@ -139,7 +139,7 @@ export function EventsView() {
             type="button"
             onClick={() => setYear("all")}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
+              "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-bold transition-all",
               year === "all"
                 ? "bg-saffron-500 text-ink shadow-sm dark:bg-saffron-500 dark:text-ink font-black"
                 : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
@@ -153,7 +153,7 @@ export function EventsView() {
               type="button"
               onClick={() => setYear(yr)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1 text-[12px] font-bold transition-all",
+                "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-bold transition-all",
                 year === yr
                   ? "bg-saffron-500 text-ink shadow-sm dark:bg-saffron-500 dark:text-ink font-black"
                   : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink"
@@ -173,8 +173,8 @@ export function EventsView() {
         )}
       </div>
 
-      {/* 4-Column responsive tabs bar: clean on mobile without horizontal scrolling */}
-      <div className="grid grid-cols-4 gap-1.5 sm:flex sm:items-center sm:gap-2">
+      {/* Status filter tabs: horizontal scrolling chips that never overlap */}
+      <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
         {FILTERS.map((f) => {
           const active = filter === f.value;
           return (
@@ -183,9 +183,9 @@ export function EventsView() {
               type="button"
               onClick={() => setFilter(f.value)}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-bold transition-all sm:px-3.5 sm:py-1.5",
+                "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-all sm:text-[12.5px]",
                 active
-                  ? "bg-navy-900 text-white shadow-sm dark:bg-saffron-500 dark:text-ink"
+                  ? "bg-navy-900 text-white shadow-sm dark:bg-saffron-500 dark:text-ink font-black"
                   : "border border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-ink",
               )}
             >

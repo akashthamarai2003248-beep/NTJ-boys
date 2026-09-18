@@ -44,7 +44,7 @@ export function BottomNav({ onOpenMore }: { onOpenMore: () => void }) {
   // In English mode bottom tabs show the English name (Home / வரவு…);
   // otherwise the Tamil name — combined mode fits by showing both.
   const label = (item: { en: string; ta: string; id: string }) =>
-    lang === "en" ? (item.id === "dashboard" ? "Home" : item.en) : lang === "ta" ? item.ta : `${item.ta} · ${item.en}`;
+    lang === "en" ? (item.id === "dashboard" ? "Home" : item.en) : item.ta;
 
   return (
     <nav
