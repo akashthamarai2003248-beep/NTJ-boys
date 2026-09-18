@@ -63,7 +63,7 @@ export function ExpensesView() {
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 280);
   const [eventId, setEventId] = useState(() => searchParams.get("eventId") ?? "");
-  const [year, setYear] = useState(() => searchParams.get("year") ?? CURRENT_YEAR);
+  const [year, setYear] = useState(() => searchParams.get("year") ?? "");
   const [payment, setPayment] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -84,7 +84,6 @@ export function ExpensesView() {
   const eventsFetch = useFetch<EventsPayload>("/api/events");
   const events = useMemo(() => eventsFetch.data?.events ?? [], [eventsFetch.data]);
   const defaultEventId = useMemo(() => currentEventId(events), [events]);
-  const defaultEventWasSet = useRef(Boolean(searchParams.get("eventId")));
   const eventName = useCallback(
     (id?: string | null) => {
       const ev = events.find((e) => e.id === id);
@@ -93,7 +92,7 @@ export function ExpensesView() {
     [events, lang, t],
   );
   const hasFilters = Boolean(q || eventId || year || payment);
-  const hasCustomFilters = Boolean(q || payment || eventId !== defaultEventId || year !== CURRENT_YEAR);
+  const hasCustomFilters = hasFilters;
 
   const availableEvents = useMemo(() => {
     if (!year) return events;
@@ -118,13 +117,6 @@ export function ExpensesView() {
     }
   };
 
-  // Event data arrives after the first client render, so choose the active/current event once it is available.
-  useEffect(() => {
-    if (defaultEventWasSet.current || eventsFetch.loading) return;
-    defaultEventWasSet.current = true;
-    if (defaultEventId) setEventId(defaultEventId);
-  }, [defaultEventId, eventsFetch.loading]);
-
   useEffect(() => {
     if (searchParams.get("add") === "1") router.replace("/expenses", { scroll: false });
   }, [searchParams, router]);
@@ -135,7 +127,7 @@ export function ExpensesView() {
     return () => clearTimeout(t);
   }, [celebrate]);
 
-  const clearFilters = () => { setQ(""); setEventId(defaultEventId); setYear(CURRENT_YEAR); setPayment(""); };
+  const clearFilters = () => { setQ(""); setEventId(""); setYear(""); setPayment(""); };
 
   const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
   const openEdit = (rec: Expense) => { setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
@@ -325,7 +317,7 @@ export function ExpensesView() {
               <div className="pt-2.5 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12px]">
                 <div>
                   <label className="text-[10px] font-bold text-faint uppercase tracking-wider block mb-1">{t("Event", "நிகழ்வு")}</label>
-                  <Select value={eventId} onChange={(e) => { defaultEventWasSet.current = true; setEventId(e.target.value); }} className="w-full text-[12.5px] h-9">
+                  <Select value={eventId} onChange={(e) => setEventId(e.target.value)} className="w-full text-[12.5px] h-9">
                     <option value="">{t("All events", "அனைத்து நிகழ்வுகள்")}</option>
                     {availableEvents.map((ev) => <option key={ev.id} value={ev.id}>{t(ev.name, ev.tamilName)}</option>)}
                   </Select>
