@@ -93,10 +93,11 @@ export function CollectionForm({ events, initial, defaultEventId, defaultYear, s
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const rupees = parseRupees(amount);
-    const selectedEventId = eventId ? eventId : null;
+    const selectedEventId = eventId || events[0]?.id || "";
     if (!personName.trim()) return setLocalError(t("Please enter the contributor's name", "நன்கொடையாளர் பெயரை உள்ளிடவும்"));
     if (!rupees || rupees <= 0) return setLocalError(t("Amount must be a positive number", "தொகை சரியான எண்ணாக இருக்க வேண்டும்"));
     if (!date) return setLocalError(t("Please choose a date", "தேதியைத் தேர்ந்தெடுக்கவும்"));
+    if (!selectedEventId) return setLocalError(t("Please choose an event", "நிகழ்வைத் தேர்ந்தெடுக்கவும்"));
     setLocalError(null);
     setVoiceTranscript(null);
     setVoiceSnapshot(null);
@@ -213,9 +214,8 @@ export function CollectionForm({ events, initial, defaultEventId, defaultYear, s
             leading={<CalendarDays className="size-4" />}
           />
         </Field>
-        <Field label="Event" ta="நிகழ்வு">
-          <Select value={eventId ?? ""} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">{t("General fund", "பொது நிதி")}</option>
+        <Field label="Event" ta="நிகழ்வு" required>
+          <Select value={eventId || (events[0]?.id ?? "")} onChange={(e) => setEventId(e.target.value)}>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
                 {t(ev.name, ev.tamilName)}

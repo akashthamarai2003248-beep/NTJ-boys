@@ -36,7 +36,7 @@ export function ReceiptDialog({
     const text =
       `${line}\nReceipt ${collection.receiptNumber}\n` +
       `${formatINR(collection.amount)} received from ${collection.personName}\n` +
-      `${event ? event.name : "General Fund"} · ${formatLong(collection.date)} · ${collection.paymentMethod.toUpperCase()}`;
+      `${event ? event.name : (data?.events[0]?.name ?? "")} · ${formatLong(collection.date)} · ${collection.paymentMethod.toUpperCase()}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: `Receipt ${collection.receiptNumber}`, text });

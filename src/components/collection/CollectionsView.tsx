@@ -97,9 +97,11 @@ export function CollectionsView() {
   const eventName = useCallback(
     (id?: string | null) => {
       const ev = events.find((e) => e.id === id);
-      return ev ? translateEventName(ev.name, ev.tamilName, lang) : t("General fund", "பொது நிதி");
+      return ev
+        ? translateEventName(ev.name, ev.tamilName, lang)
+        : (events[0] ? translateEventName(events[0].name, events[0].tamilName, lang) : "");
     },
-    [events, lang, t],
+    [events, lang],
   );
   const hasFilters = Boolean(q || eventId || year || category || payment);
   const hasCustomFilters = Boolean(q || category || payment || eventId || year);

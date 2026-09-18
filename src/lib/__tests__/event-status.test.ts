@@ -3,8 +3,9 @@ import { resolveEventStatus, friendlyDateRange } from "../utils/date";
 import { buildSeed } from "../data/seed";
 import { listEvents } from "../data/repository";
 
+const TODAY = "2026-09-10";
+
 describe("resolveEventStatus", () => {
-  const TODAY = "2026-09-10";
 
   it("marks past start date as active even if stored status was upcoming (the user's case)", () => {
     const status = resolveEventStatus("upcoming", "2026-09-08", "2026-09-08", TODAY);
@@ -70,7 +71,7 @@ describe("friendlyDateRange", () => {
 
 describe("buildSeed events", () => {
   it("produces Vinayagar Chathurthi 2026 with Tue 8 Sep and active status", () => {
-    const seed = buildSeed();
+    const seed = buildSeed(new Date(TODAY));
     const vini = seed.events.find((e) => e.id === "evt_vini");
     expect(vini).toBeDefined();
     expect(vini?.startDate).toBe("2026-09-08");
@@ -80,7 +81,7 @@ describe("buildSeed events", () => {
   });
 
   it("does not include past year collections or expenses in event stats", () => {
-    const seed = buildSeed();
+    const seed = buildSeed(new Date(TODAY));
     const vini = seed.events.find((e) => e.id === "evt_vini")!;
     const initialStats = listEvents(seed).find((e) => e.id === "evt_vini")!;
 

@@ -20,7 +20,7 @@ export function ReceiptSheet({
   const method = paymentMeta[collection.paymentMethod];
   const eventLabel = event
     ? `${event.tamilName || event.name}`
-    : "General Fund · பொது நிதி";
+    : "";
   return (
     <div
       className={cn(

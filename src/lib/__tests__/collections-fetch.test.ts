@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { queryCollections } from "@/lib/data/repository";
+import { queryCollections, getEventStats } from "@/lib/data/repository";
 import { buildSeed } from "@/lib/data/seed";
 import type { DB, Collection } from "@/lib/data/types";
 
@@ -199,5 +199,74 @@ describe("collections data fetching and query logic", () => {
     };
     expect(state.total).toBe(seedDB.collections.length);
     expect(state.sum).toBe(seedDB.collections.reduce((s, c) => s + c.amount, 0));
+  });
+
+  it("calculates event totals accurately including date-window fallback for unlinked items", () => {
+    const testDB: DB = {
+      ...seedDB,
+      events: [
+        {
+          id: "evt_vini_2026",
+          name: "Vinayagar chathurthi 2026",
+          tamilName: "விநாயகர் சதுர்த்தி 2026",
+          type: "festival",
+          status: "active",
+          startDate: "2026-09-08",
+          endDate: "2026-09-17",
+          location: "Temple Arch",
+          description: "Festival",
+          createdAt: "2026-09-01T00:00:00Z",
+          updatedAt: "2026-09-01T00:00:00Z",
+        },
+      ],
+      collections: [
+        {
+          id: "col_linked",
+          receiptNumber: "NBM-2026-0001",
+          personName: "Donor 1",
+          amount: 31250,
+          paymentMethod: "cash",
+          contributionType: "name",
+          date: "2026-09-10",
+          eventId: "evt_vini_2026",
+          createdBy: "Admin",
+          createdAt: "2026-09-10T00:00:00Z",
+          updatedAt: "2026-09-10T00:00:00Z",
+        },
+        {
+          id: "col_unlinked",
+          receiptNumber: "NBM-2026-0002",
+          personName: "Donor 2",
+          amount: 6980,
+          paymentMethod: "cash",
+          contributionType: "name",
+          date: "2026-09-14",
+          eventId: null,
+          createdBy: "Admin",
+          createdAt: "2026-09-14T00:00:00Z",
+          updatedAt: "2026-09-14T00:00:00Z",
+        },
+      ],
+      expenses: [
+        {
+          id: "exp_1",
+          title: "Sound & lights",
+          amount: 34700,
+          category: "Sound",
+          paymentMethod: "cash",
+          date: "2026-09-12",
+          eventId: "evt_vini_2026",
+          paidBy: "Admin",
+          createdBy: "Admin",
+          createdAt: "2026-09-12T00:00:00Z",
+          updatedAt: "2026-09-12T00:00:00Z",
+        },
+      ],
+    };
+
+    const stats = getEventStats(testDB, "evt_vini_2026");
+    expect(stats.varavu).toBe(38230);
+    expect(stats.selavu).toBe(34700);
+    expect(stats.balance).toBe(3530);
   });
 });

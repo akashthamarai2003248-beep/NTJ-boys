@@ -279,12 +279,18 @@ function collectionStats(db: DB, eventId?: string): EventStats {
       : null;
 
   const cs = db.collections.filter((c) => {
-    if (eventId && c.eventId !== eventId) return false;
+    if (eventId && c.eventId !== eventId) {
+      if (!c.eventId && ev && c.date && c.date >= ev.startDate && c.date <= ev.endDate) return true;
+      return false;
+    }
     if (eventYear && c.date && !c.date.startsWith(eventYear)) return false;
     return true;
   });
   const es = db.expenses.filter((e) => {
-    if (eventId && e.eventId !== eventId) return false;
+    if (eventId && e.eventId !== eventId) {
+      if (!e.eventId && ev && e.date && e.date >= ev.startDate && e.date <= ev.endDate) return true;
+      return false;
+    }
     if (eventYear && e.date && !e.date.startsWith(eventYear)) return false;
     return true;
   });
@@ -1359,12 +1365,16 @@ export function buildReports(db: DB, year: string | "all" = "all"): ReportsData 
     selavu: sum(yearExps.filter((x) => x.eventId === e.id)),
     balance: sum(yearCols.filter((c) => c.eventId === e.id)) - sum(yearExps.filter((x) => x.eventId === e.id)),
   }));
-  byEvent.unshift({
-    id: "__general", name: "General fund · பொது நிதி", tamilName: "", type: "community" as const, status: "completed" as const,
-    varavu: sum(yearCols.filter((c) => !c.eventId)),
-    selavu: sum(yearExps.filter((e) => !e.eventId)),
-    balance: sum(yearCols.filter((c) => !c.eventId)) - sum(yearExps.filter((e) => !e.eventId)),
-  });
+  const unlinkedVaravu = sum(yearCols.filter((c) => !c.eventId));
+  const unlinkedSelavu = sum(yearExps.filter((e) => !e.eventId));
+  if (unlinkedVaravu > 0 || unlinkedSelavu > 0) {
+    byEvent.unshift({
+      id: "__general", name: "General fund · பொது நிதி", tamilName: "", type: "community" as const, status: "completed" as const,
+      varavu: unlinkedVaravu,
+      selavu: unlinkedSelavu,
+      balance: unlinkedVaravu - unlinkedSelavu,
+    });
+  }
 
   // the Mandram records only Cash / GPay (UPI) — legacy bank/other rows (if any)
   // still count in the totals but get no breakdown row of their own
