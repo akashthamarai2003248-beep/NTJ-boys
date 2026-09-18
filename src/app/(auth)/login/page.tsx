@@ -10,6 +10,7 @@ import { api } from "@/lib/client/api";
 import { useLang } from "@/lib/i18n";
 import { LogoMark } from "@/components/ui/Logo";
 import type { SessionUser } from "@/components/layout/session";
+import { SplashScreen } from "@/components/auth/SplashScreen";
 
 
 export default function LoginPage() {
@@ -88,13 +89,49 @@ function LoginInner() {
     return false;
   });
 
-  // Mode selection: default to member login for returning users, registration for new visitors
+  // Only new users see the splash animation screen
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    if (params.has("logout")) return false;
+    const m = params.get("mode");
+    if (m === "login" || m === "admin") return false;
+    try {
+      if (localStorage.getItem("nbm_user")) return false;
+      if (localStorage.getItem("nbm_has_account")) return false;
+      if (localStorage.getItem("nbm.remember")) return false;
+      if (localStorage.getItem("nbm_visited")) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  // Mode selection: default to registration for new visitors, member login for returning users
   const [mode, setMode] = useState<"login" | "register" | "admin">(() => {
     const m = params.get("mode");
     if (m === "admin") return "admin";
-    if (m === "register") return "register";
-    return "login";
+    if (m === "register" || m === "signup") return "register";
+    if (m === "login") return "login";
+    if (typeof window === "undefined") return "register";
+    try {
+      if (params.has("logout")) return "login";
+      if (localStorage.getItem("nbm_user")) return "login";
+      if (localStorage.getItem("nbm_has_account")) return "login";
+      if (localStorage.getItem("nbm.remember")) return "login";
+      return "register";
+    } catch {
+      return "register";
+    }
   });
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    try {
+      localStorage.setItem("nbm_visited", "true");
+    } catch {
+      /* ignore */
+    }
+  };
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -192,6 +229,8 @@ function LoginInner() {
     // 1. Immediately persist session in localStorage & cookies synchronously (0ms)
     try {
       localStorage.setItem("nbm_user", JSON.stringify(finalUser));
+      localStorage.setItem("nbm_has_account", "true");
+      localStorage.setItem("nbm_visited", "true");
       if (remember) localStorage.setItem("nbm.remember", identifier);
       else localStorage.removeItem("nbm.remember");
       if (typeof document !== "undefined") {
@@ -328,6 +367,12 @@ function LoginInner() {
 
   return (
     <>
+      <AnimatePresence>
+        {showSplash && (
+          <SplashScreen onFinish={handleSplashFinish} duration={2400} />
+        )}
+      </AnimatePresence>
+
       {/* Zero-flash client guard: If already logged in, hide body and redirect in 0ms before paint */}
       <script
         dangerouslySetInnerHTML={{
@@ -670,6 +715,12 @@ function LoginInner() {
                       setMode("login");
                       setRegError("");
                       setRegDone(false);
+                      try {
+                        localStorage.setItem("nbm_has_account", "true");
+                        localStorage.setItem("nbm_visited", "true");
+                      } catch {
+                        /* ignore */
+                      }
                     }}
                     className="text-[13px] font-semibold text-sky-300/90 transition-colors hover:text-white"
                   >
