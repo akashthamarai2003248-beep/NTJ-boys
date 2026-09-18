@@ -39,7 +39,7 @@ export const mapMember = (r: MemberRow): Member => ({
   createdAt: r.created_at, updatedAt: r.updated_at,
 });
 
-export const mapEvent = (r: EventRow): Event => ({
+export const mapEvent = (r: any): Event => ({
   id: r.id,
   name: r.name,
   tamilName: r.tamil_name,
@@ -49,7 +49,9 @@ export const mapEvent = (r: EventRow): Event => ({
   endDate: r.end_date,
   location: r.location,
   description: r.description,
-  cover: r.cover_url,
+  cover: (r.cover_url && !r.cover_url.startsWith("data:"))
+    ? r.cover_url
+    : (r.id === "6dc3d3b8-6914-4431-81be-e2c34631d86e" ? "/uploads/events/vinayagar_2026_cover.png" : (r.cover_url ?? null)),
   createdAt: r.created_at,
   updatedAt: r.updated_at,
 });
@@ -165,7 +167,7 @@ export async function loadDashboardDB(forceFresh = false): Promise<DB> {
       const sb = await getSupabaseServer();
       const [members, events, collections, expenses, activity] = await Promise.all([
         sb.from("members").select("id, name, phone, street, role, joined_date, created_at, updated_at"),
-        sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, cover_url, created_at, updated_at"),
+        sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, created_at, updated_at"),
         sb.from("collections")
           .select("id, receipt_number, person_name, phone, street, amount, payment_method, contribution_type, date, event_id, notes, created_by, created_by_name, created_at, updated_at")
           .order("date", { ascending: false })
@@ -252,7 +254,7 @@ export async function loadDB(requireFull = false, forceFresh = false): Promise<D
       const [members, events, collections, expenses, games, teams, participants, matches, results, gallery, activity, settings] =
         await Promise.all([
           sb.from("members").select("*"),
-          sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, cover_url, created_at, updated_at"),
+          sb.from("events").select("id, name, tamil_name, type, status, start_date, end_date, location, description, created_at, updated_at"),
           sb.from("collections")
             .select("id, receipt_number, person_name, phone, street, amount, payment_method, contribution_type, date, event_id, notes, created_by, created_by_name, created_at, updated_at")
             .order("date", { ascending: false })
