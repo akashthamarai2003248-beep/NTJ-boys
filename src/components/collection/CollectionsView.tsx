@@ -246,9 +246,9 @@ export function CollectionsView() {
     <div className="space-y-4 sm:space-y-5">
       {/* total banner */}
       <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-saffron-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-navy-950 dark:via-navy-900 dark:to-navy-800 dark:text-white">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-saffron-500/30 bg-saffron-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-saffron-700 dark:border-transparent dark:bg-saffron-500/20 dark:text-saffron-300">
                 {t("Total Collection", "மொத்த வரவு")}
               </span>
@@ -261,21 +261,21 @@ export function CollectionsView() {
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
-            <p className="text-[11.5px] text-muted dark:text-navy-200/80">
+            <p className="text-[11.5px] truncate text-muted dark:text-navy-200/80">
               {hasFilters
                 ? t(`filtered from ${formatINR(data?.allSum ?? 0)} overall`, `மொத்தம் ${formatINR(data?.allSum ?? 0)} இலிருந்து`)
                 : t("all contributions received", "பெறப்பட்ட அனைத்து வரவுகள்")}
             </p>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-4">
-            <div className="rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5">
-              <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{data?.total ?? "–"}</p>
-              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">{t("Receipts", "ரசீதுகள்")}</p>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <div className="min-w-[64px] rounded-xl border border-line bg-surface-2/80 px-3 py-2 text-center dark:border-white/10 dark:bg-white/5">
+              <p className="text-[16.5px] font-black tabular-nums leading-none text-ink dark:text-white sm:text-lg">{data?.total ?? "–"}</p>
+              <p className="mt-1 text-[9px] font-extrabold uppercase tracking-wider text-muted dark:text-navy-200/75 leading-none">{t("Receipts", "ரசீதுகள்")}</p>
             </div>
             {data && data.total > 0 && (
-              <div className="hidden rounded-xl border border-line bg-surface-2/80 px-3 py-1.5 text-center dark:border-white/10 dark:bg-white/5 sm:block">
-                <p className="text-base font-extrabold tabular-nums leading-none text-ink dark:text-white sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
-                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-muted dark:text-navy-200/75">{t("Average", "சராசரி")}</p>
+              <div className="hidden min-w-[64px] rounded-xl border border-line bg-surface-2/80 px-3 py-2 text-center dark:border-white/10 dark:bg-white/5 sm:block">
+                <p className="text-[16.5px] font-black tabular-nums leading-none text-ink dark:text-white sm:text-lg">{formatINR(Math.round(filteredSum / data.total))}</p>
+                <p className="mt-1 text-[9px] font-extrabold uppercase tracking-wider text-muted dark:text-navy-200/75 leading-none">{t("Average", "சராசரி")}</p>
               </div>
             )}
           </div>
