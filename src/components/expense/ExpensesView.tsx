@@ -67,7 +67,7 @@ export function ExpensesView() {
   const [payment, setPayment] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const [formOpen, setFormOpen] = useState(() => searchParams.get("add") === "1");
+  const [formOpen, setFormOpen] = useState(() => writable && searchParams.get("add") === "1");
   const [editing, setEditing] = useState<Expense | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -129,8 +129,8 @@ export function ExpensesView() {
 
   const clearFilters = () => { setQ(""); setEventId(""); setYear(""); setPayment(""); };
 
-  const openAdd = () => { setEditing(null); setFormError(null); setFormOpen(true); };
-  const openEdit = (rec: Expense) => { setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
+  const openAdd = () => { if (!writable) return; setEditing(null); setFormError(null); setFormOpen(true); };
+  const openEdit = (rec: Expense) => { if (!writable) return; setEditing(rec); setFormError(null); setFormOpen(true); setViewing(null); };
 
   const handleSubmit = async (input: ExpenseInput) => {
     setSubmitting(true);
@@ -190,9 +190,16 @@ export function ExpensesView() {
       <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-red-500/10 via-surface to-surface p-4 text-ink shadow-card sm:p-5 dark:border-line/80 dark:from-[#2a1222] dark:via-[#431932] dark:to-[#5a2132] dark:text-white">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red-700 dark:border-transparent dark:bg-gold-400/20 dark:text-gold-300">
-              {t("Total Expenses", "மொத்த செலவு")}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red-700 dark:border-transparent dark:bg-gold-400/20 dark:text-gold-300">
+                {t("Total Expenses", "மொத்த செலவு")}
+              </span>
+              {!writable && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-2/80 px-2 py-0.5 text-[10px] font-bold text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/80">
+                  👁️ {t("Monitoring Only", "நேரடி பார்வை")}
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-[24px] font-black leading-tight tracking-tight text-ink dark:text-white sm:text-[28px] tabular-nums">
               {formatINR(filteredSum)}
             </p>
@@ -493,7 +500,7 @@ export function ExpensesView() {
       )}
 
       <Modal
-        open={formOpen}
+        open={formOpen && writable}
         onClose={() => { if (!submitting) { setFormOpen(false); setEditing(null); } }}
         title={editing ? t("Edit Expense", "செலவு திருத்து") : t("Add Expense", "செலவு சேர்க்க")}
         description={t("Record what the Mandram spent", "மன்றம் செய்த செலவை பதிவு செய்யவும்")}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, HandCoins, Plus, Sparkles } from "lucide-react";
 import type { ActivityLog, EventWithStats, MemberPosition } from "@/lib/data/types";
 import type { SeriesBucket } from "@/lib/data/repository";
 import type { DashboardPayload } from "@/lib/data/dashboard";
@@ -118,7 +118,23 @@ export function DashboardView({ initialData }: { initialData?: DashboardPayload 
                   {t("Add Collection", "வரவு சேர்க்க")}
                 </Button>
               </Link>
-            ) : null}
+            ) : (
+              <Link
+                href="/collections"
+                prefetch={true}
+                onMouseEnter={() => prefetchRoute("/collections")}
+                onTouchStart={() => prefetchRoute("/collections")}
+                onPointerDown={() => prefetchRoute("/collections")}
+              >
+                <Button
+                  size="md"
+                  className="bg-white text-navy-900 shadow-none hover:bg-saffron-50 hover:text-saffron-800"
+                >
+                  <HandCoins className="size-4 text-saffron-600" />
+                  {t("View Collections", "வரவு காண்க")}
+                </Button>
+              </Link>
+            )}
             <Link
               href="/events"
               prefetch={true}

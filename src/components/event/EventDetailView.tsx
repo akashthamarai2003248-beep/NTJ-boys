@@ -260,6 +260,7 @@ export function EventDetailView({ id }: { id: string }) {
             photos={photos}
             collectionTotal={colFetch.data?.sum ?? 0}
             expenseTotal={expFetch.data?.sum ?? 0}
+            writable={writable}
           />
         </>
       ) : null}
@@ -318,7 +319,7 @@ function EventMoney({
 }
 
 function TabContent({
-  tab, event, collections, expenses, contributors, stats, photos, collectionTotal, expenseTotal,
+  tab, event, collections, expenses, contributors, stats, photos, collectionTotal, expenseTotal, writable,
 }: {
   tab: Tab;
   event: Event;
@@ -329,6 +330,7 @@ function TabContent({
   photos: GalleryPhoto[];
   collectionTotal: number;
   expenseTotal: number;
+  writable?: boolean;
 }) {
   const meta = eventTypeMeta(event.type);
 
@@ -382,7 +384,7 @@ function TabContent({
         total={collectionTotal}
         link={`/collections?eventId=${event.id}`}
         linkLabel="Open in வரவு"
-        ctaHref={`/collections?add=1&eventId=${event.id}`}
+        ctaHref={writable ? `/collections?add=1&eventId=${event.id}` : undefined}
       >
         {collections.length === 0 ? null : (
           <div className="divide-y divide-line">
@@ -413,7 +415,7 @@ function TabContent({
         total={expenseTotal}
         link={`/expenses?eventId=${event.id}`}
         linkLabel="Open in செலவு"
-        ctaHref="/expenses?add=1"
+        ctaHref={writable ? "/expenses?add=1" : undefined}
       >
         {expenses.length === 0 ? null : (
           <div className="divide-y divide-line">
@@ -540,7 +542,7 @@ function MoneyTab({
   children: React.ReactNode;
   link: string;
   linkLabel: string;
-  ctaHref: string;
+  ctaHref?: string;
 }) {
   return (
     <div className="card-surface overflow-hidden rounded-2xl">
@@ -548,9 +550,11 @@ function MoneyTab({
         <p className="text-[13.5px] font-extrabold">{title}</p>
         <div className="flex items-center gap-3">
           <p className="text-[13.5px] font-bold tabular-nums">{formatINR(total)}</p>
-          <Link href={ctaHref} className="inline-flex items-center gap-1 text-[12px] font-bold text-saffron-600 hover:underline dark:text-saffron-400">
-            <Plus className="size-3.5" /> Add
-          </Link>
+          {ctaHref ? (
+            <Link href={ctaHref} className="inline-flex items-center gap-1 text-[12px] font-bold text-saffron-600 hover:underline dark:text-saffron-400">
+              <Plus className="size-3.5" /> Add
+            </Link>
+          ) : null}
           <Link href={link} className="inline-flex items-center gap-0.5 text-[12px] font-bold text-muted hover:text-ink">
             {linkLabel} <ChevronRight className="size-3.5" />
           </Link>

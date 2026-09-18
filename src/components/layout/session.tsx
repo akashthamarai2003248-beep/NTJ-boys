@@ -29,10 +29,16 @@ function getStoredUser(): SessionUser | null {
       u.phone === "ntjboys" ||
       u.phone === "8248590767" ||
       u.email?.startsWith("8248590767@") ||
-      u.role === "admin";
-    if (u && isStoredAdmin) {
-      u.role = "admin";
-      u.position = "President";
+      u.id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+      u.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
+      u.id === "usr_admin";
+    if (u) {
+      if (isStoredAdmin) {
+        u.role = "admin";
+        u.position = "President";
+      } else {
+        u.role = "member";
+      }
     }
     return u;
   } catch {
@@ -84,15 +90,19 @@ export function SessionProvider({
     try {
       const res = await api.get<{ user: SessionUser | null }>("/api/session");
       if (res.user) {
-        if (
+        const isPrivilegedAdmin =
           res.user.email === "ntjboys@nbm.mandram" ||
           res.user.phone === "ntjboys" ||
           res.user.phone === "8248590767" ||
           res.user.email?.startsWith("8248590767@") ||
-          res.user.role === "admin"
-        ) {
+          res.user.id === "d532ba34-ff29-4fcc-98c6-1b9ed6878e99" ||
+          res.user.id === "c71a4b32-9d9c-498a-ac2d-10cde443e88d" ||
+          res.user.id === "usr_admin";
+        if (isPrivilegedAdmin) {
           res.user.role = "admin";
           res.user.position = "President";
+        } else {
+          res.user.role = "member";
         }
         setUser(res.user);
         syncUserToStorage(res.user);
