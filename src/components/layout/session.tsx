@@ -143,23 +143,35 @@ export function SessionProvider({
     const {
       data: { subscription },
     } = sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT" || (!session && event === "INITIAL_SESSION")) {
-        // Only clear if there was no server initialUser or stored demo session
-        const cached = getStoredUser();
-        if (!cached || !cached.id.startsWith("usr-")) {
-          if (!session) {
-            setUser(null);
-            try {
-              localStorage.removeItem(SESSION_USER_KEY);
-              if (typeof document !== "undefined") {
-                document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
-              }
-            } catch {
-              /* ignore */
-            }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        try {
+          localStorage.removeItem(SESSION_USER_KEY);
+          if (typeof document !== "undefined") {
+            document.cookie = "nbm_session=; path=/; max-age=0; SameSite=Lax";
           }
+        } catch {
+          /* ignore */
         }
         setLoading(false);
+        return;
+      }
+
+      if (event === "INITIAL_SESSION" && !session) {
+        // If we have a cached user from localStorage or initialUser from SSR, keep it intact!
+        const cached = getStoredUser();
+        if (cached) {
+          setUser(cached);
+          setLoading(false);
+          // Verify with server in background without blocking or destroying session
+          void load();
+        } else if (initialUser) {
+          setUser(initialUser);
+          setLoading(false);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
         return;
       }
 

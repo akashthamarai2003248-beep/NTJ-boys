@@ -63,24 +63,23 @@ export async function POST(req: Request) {
       const assignedPosition = isAdminPhone ? "Admin" : "Member";
 
       const newUserId = data.user.id;
-      // Profile creation is already handled automatically by the PostgreSQL
-      // trigger on_auth_user_created (migration 0004). As an extra safeguard,
-      // fire the RPC in the background without blocking the signup response.
-      void (async () => {
-        try {
-          await sb.rpc("create_user_profile", {
+      // Ensure user profile is created synchronously or with tight timeout so SSR on / finds the row
+      try {
+        await Promise.race([
+          sb.rpc("create_user_profile", {
             p_id: newUserId,
             p_name: name,
             p_phone: phone,
             p_email: email,
-          });
-          if (isAdminPhone) {
-            await sb.from("users").update({ role: "admin", position: "President" }).eq("id", newUserId);
-          }
-        } catch {
-          /* ignore */
+          }),
+          new Promise((resolve) => setTimeout(resolve, 800)),
+        ]);
+        if (isAdminPhone) {
+          await sb.from("users").update({ role: "admin", position: "President" }).eq("id", newUserId);
         }
-      })();
+      } catch {
+        /* ignore */
+      }
 
       if (!data.session) {
         // Email confirmation is enabled in Supabase Auth — the user

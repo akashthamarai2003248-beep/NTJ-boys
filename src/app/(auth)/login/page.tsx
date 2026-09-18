@@ -108,11 +108,6 @@ function LoginInner() {
   const [regError, setRegError] = useState("");
   const [regDone, setRegDone] = useState(false);
 
-  // Prefetch home route while user views the login/register screen
-  useEffect(() => {
-    router.prefetch("/");
-  }, [router]);
-
   // Check existing session on startup before deciding whether to show form or redirect
   useEffect(() => {
     if (params.has("logout")) {
@@ -131,7 +126,11 @@ function LoginInner() {
     if (alreadyLoggedIn) {
       const next = params.get("next");
       const destination = next && next.startsWith("/") ? next : "/";
-      router.replace(destination);
+      if (typeof window !== "undefined") {
+        window.location.replace(destination);
+      } else {
+        router.replace(destination);
+      }
       return;
     }
 
@@ -143,7 +142,11 @@ function LoginInner() {
             setAlreadyLoggedIn(true);
             const next = params.get("next");
             const destination = next && next.startsWith("/") ? next : "/";
-            router.replace(destination);
+            if (typeof window !== "undefined") {
+              window.location.replace(destination);
+            } else {
+              router.replace(destination);
+            }
           }
         }).catch(() => {});
       }
@@ -186,20 +189,7 @@ function LoginInner() {
       position: isAdminUser ? (user.position || "President") : (user.position || "Member"),
     };
 
-    if (session && isSupabaseMode()) {
-      try {
-        const sb = getSupabaseBrowser();
-        if (sb) {
-          await sb.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          });
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
+    // 1. Immediately persist session in localStorage & cookies synchronously (0ms)
     try {
       localStorage.setItem("nbm_user", JSON.stringify(finalUser));
       if (remember) localStorage.setItem("nbm.remember", identifier);
@@ -213,8 +203,35 @@ function LoginInner() {
     } catch {
       /* storage unavailable */
     }
+
+    // 2. Immediately switch UI to logged-in pulse state so the user gets instant visual feedback
+    setAlreadyLoggedIn(true);
+
+    // 3. Set browser Supabase session with tight timeout race so network never halts navigation
+    if (session && isSupabaseMode()) {
+      try {
+        const sb = getSupabaseBrowser();
+        if (sb) {
+          await Promise.race([
+            sb.auth.setSession({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            }),
+            new Promise((resolve) => setTimeout(resolve, 400)),
+          ]);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // 4. Navigate using full window replace to bypass stale Next.js router cache and guarantee clean SSR
     const destination = next && next.startsWith("/") ? next : "/";
-    router.replace(destination);
+    if (typeof window !== "undefined") {
+      window.location.replace(destination);
+    } else {
+      router.replace(destination);
+    }
   };
 
   const login = async (identifierArg: string, passwordArg: string) => {
